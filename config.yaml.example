@@ -1,0 +1,30 @@
+# Meshtopo Configuration Template
+# Copy this file to config.yaml and update with your settings
+
+# MQTT Broker Configuration
+mqtt:
+  broker: "192.168.1.100"  # IP address or hostname of your MQTT broker
+  port: 1883               # MQTT broker port
+  username: "your_mqtt_user"     # MQTT username
+  password: "your_mqtt_password" # MQTT password
+  topic: "msh/+/+/json/position/#"  # MQTT topic pattern for Meshtastic position packets
+
+# CalTopo API Configuration
+caltopo:
+  group: "MESH-TEAM-ALPHA"  # Your CalTopo group identifier
+
+# Mapping of Meshtastic hardware IDs to CalTopo device IDs
+# Add your node mappings here
+nodes:
+  "!823a4edc":
+    device_id: "TEAM-LEAD"
+  "!a4b8c2f0":
+    device_id: "COMMS"
+  # Add more nodes as needed:
+  # "!your_node_id":
+  #   device_id: "YOUR_DEVICE_NAME"
+
+# Logging Configuration (optional)
+logging:
+  level: "INFO"  # DEBUG, INFO, WARN, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
