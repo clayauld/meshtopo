@@ -8,8 +8,8 @@ import sys
 import time
 from typing import Any, Dict, Optional, Union
 
-from config.config import Config
 from caltopo_reporter import CalTopoReporter
+from config.config import Config
 from mqtt_client import MqttClient
 
 
