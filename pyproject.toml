@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "AGPL-3.0"}
 authors = [
-    {name = "Clayton Auld", email = "clayton@example.com"}
+    {name = "Clayton Auld", email = "clayton@clayauld.com"}
 ]
 keywords = ["meshtastic", "caltopo", "mqtt", "gateway", "lora", "mapping"]
 classifiers = [
