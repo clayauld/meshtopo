@@ -1,0 +1,35 @@
+services:
+  meshtopo:
+    build: .
+    container_name: meshtopo
+    restart: unless-stopped
+    volumes:
+      # Mount configuration file
+      - ./config.yaml:/app/config.yaml:ro
+      # Mount logs directory (optional)
+      - ./logs:/app/logs
+    environment:
+      # Set timezone (optional)
+      - TZ=UTC
+    # Resource limits (optional)
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('https://caltopo.com/api/v1/position/report/test', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
