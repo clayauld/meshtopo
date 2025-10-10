@@ -37,4 +37,4 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Default command
-CMD ["python", "gateway.py"]
+CMD ["python", "src/gateway.py"]

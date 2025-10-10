@@ -39,8 +39,8 @@ The system follows a simple linear data flow:
     ```bash
     git clone https://github.com/clayauld/meshtopo.git
     cd meshtopo
-    cp config.yaml.example config.yaml
-    # Edit config.yaml with your settings
+    cp config/config.yaml.example config/config.yaml
+    # Edit config/config.yaml with your settings
     ```
 
 2. **Start the service**:
@@ -66,19 +66,19 @@ The system follows a simple linear data flow:
 2. **Configure the service**:
 
     ```bash
-    cp config.yaml.example config.yaml
-    # Edit config.yaml with your MQTT and CalTopo settings
+    cp config/config.yaml.example config/config.yaml
+    # Edit config/config.yaml with your MQTT and CalTopo settings
     ```
 
 3. **Run the gateway**:
 
     ```bash
-    python gateway.py
+    python src/gateway.py
     ```
 
 ## Configuration
 
-The service is configured via `config.yaml`:
+The service is configured via `config/config.yaml`:
 
 ```yaml
 # MQTT Broker Configuration
@@ -169,21 +169,33 @@ The service provides detailed logging at multiple levels:
 
 ```
 meshtopo/
-├── gateway.py          # Main application entry point
-├── config.py           # Configuration management
-├── mqtt_client.py      # MQTT communication
-├── caltopo_reporter.py # CalTopo API integration
+├── config/             # Configuration files
+│   ├── config.py       # Configuration management
+│   └── config.yaml.example # Configuration template
+├── deploy/             # Deployment files
+│   ├── Dockerfile      # Container definition
+│   ├── docker-compose.yml # Docker Compose configuration
+│   └── meshtopo.service # Systemd service file
+├── docs/               # Documentation
+│   └── design.md       # Design documentation
+├── scripts/            # Shell scripts
+│   └── install.sh      # Installation script
+├── src/                # Python source code
+│   ├── gateway.py      # Main application entry point
+│   ├── gateway_app.py  # Main application class
+│   ├── mqtt_client.py  # MQTT communication
+│   ├── caltopo_reporter.py # CalTopo API integration
+│   └── test_gateway.py # Test suite
 ├── requirements.txt    # Python dependencies
-├── config.yaml.example # Configuration template
-├── Dockerfile          # Container definition
-├── docker-compose.yml  # Docker Compose configuration
+├── pyproject.toml      # Project configuration
+├── Makefile           # Development commands
 └── README.md          # This file
 ```
 
 ### Running Tests
 
 ```bash
-python -m pytest tests/
+python src/test_gateway.py
 ```
 
 ### Code Style
@@ -205,7 +217,7 @@ The service is designed for containerized deployment:
 docker build -t meshtopo .
 
 # Run container
-docker run -d --name meshtopo -v ./config.yaml:/app/config.yaml meshtopo
+docker run -d --name meshtopo -v ./config/config.yaml:/app/config/config.yaml meshtopo
 ```
 
 ### Docker Compose
@@ -221,7 +233,7 @@ docker-compose up -d
 For system-level deployment:
 
 ```bash
-sudo cp meshtopo.service /etc/systemd/system/
+sudo cp deploy/meshtopo.service /etc/systemd/system/
 sudo systemctl enable meshtopo
 sudo systemctl start meshtopo
 ```

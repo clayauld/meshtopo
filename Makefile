@@ -36,7 +36,7 @@ dev-setup: install
 
 # Run tests
 test:
-	python3 test_gateway.py
+	python3 src/test_gateway.py
 
 # Run linting
 lint:
@@ -76,13 +76,13 @@ docker-stop:
 
 # Run the gateway service
 run:
-	python3 gateway.py
+	python3 src/gateway.py
 
 # Show configuration help
 config:
 	@echo "Configuration Help:"
 	@echo "1. Copy config.yaml.example to config.yaml:"
-	@echo "   cp config.yaml.example config.yaml"
+	@echo "   cp config/config.yaml.example config/config.yaml"
 	@echo ""
 	@echo "2. Edit config.yaml with your settings:"
 	@echo "   - MQTT broker details"

@@ -8,9 +8,9 @@ import sys
 import time
 from typing import Any, Dict, Optional, Union
 
-from caltopo_reporter import CalTopoReporter
-from config import Config
-from mqtt_client import MqttClient
+from ..config.config import Config
+from .caltopo_reporter import CalTopoReporter
+from .mqtt_client import MqttClient
 
 
 class GatewayApp:
@@ -18,7 +18,7 @@ class GatewayApp:
     Main application class that orchestrates the gateway service.
     """
 
-    def __init__(self, config_path: str = "config.yaml"):
+    def __init__(self, config_path: str = "config/config.yaml"):
         """
         Initialize the gateway application.
 

@@ -7,12 +7,12 @@ import logging
 import sys
 from pathlib import Path
 
-# Add current directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent))
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Local imports after path modification
-from config import Config  # noqa: E402
-from gateway_app import GatewayApp  # noqa: E402
+from config.config import Config  # noqa: E402
+from src.gateway_app import GatewayApp  # noqa: E402
 
 
 def test_config_loading() -> bool:
@@ -21,7 +21,7 @@ def test_config_loading() -> bool:
 
     try:
         # Test with example config
-        config = Config.from_file("config.yaml.example")
+        config = Config.from_file("config/config.yaml.example")
         print("✓ Configuration loaded successfully")
 
         # Test node mapping
@@ -47,14 +47,14 @@ def test_message_processing() -> bool:
 
     try:
         # Create a test configuration
-        config = Config.from_file("config.yaml.example")
+        config = Config.from_file("config/config.yaml.example")
 
         # Create gateway app
-        app = GatewayApp("config.yaml.example")
+        app = GatewayApp("config/config.yaml.example")
         app.config = config
 
         # Initialize CalTopo reporter
-        from caltopo_reporter import CalTopoReporter
+        from src.caltopo_reporter import CalTopoReporter
 
         app.caltopo_reporter = CalTopoReporter(config)
 
@@ -86,8 +86,8 @@ def test_caltopo_url_building() -> bool:
     print("\nTesting CalTopo URL building...")
 
     try:
-        config = Config.from_file("config.yaml.example")
-        from caltopo_reporter import CalTopoReporter
+        config = Config.from_file("config/config.yaml.example")
+        from src.caltopo_reporter import CalTopoReporter
 
         reporter = CalTopoReporter(config)
 

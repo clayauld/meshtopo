@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     volumes:
       # Mount configuration file
-      - ./config.yaml:/app/config.yaml:ro
+      - ./config/config.yaml:/app/config/config.yaml:ro
       # Mount logs directory (optional)
       - ./logs:/app/logs
     environment:
