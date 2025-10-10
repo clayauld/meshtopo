@@ -7,12 +7,13 @@ import logging
 import sys
 from pathlib import Path
 
-# Add parent directory to path for imports
+# Add parent directory and src directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
 
 # Local imports after path modification
 from config.config import Config  # noqa: E402
-from src.gateway_app import GatewayApp  # noqa: E402
+from gateway_app import GatewayApp  # noqa: E402
 
 
 def test_config_loading() -> bool:
@@ -54,7 +55,7 @@ def test_message_processing() -> bool:
         app.config = config
 
         # Initialize CalTopo reporter
-        from src.caltopo_reporter import CalTopoReporter
+        from caltopo_reporter import CalTopoReporter
 
         app.caltopo_reporter = CalTopoReporter(config)
 
@@ -87,7 +88,7 @@ def test_caltopo_url_building() -> bool:
 
     try:
         config = Config.from_file("config/config.yaml.example")
-        from src.caltopo_reporter import CalTopoReporter
+        from caltopo_reporter import CalTopoReporter
 
         reporter = CalTopoReporter(config)
 
