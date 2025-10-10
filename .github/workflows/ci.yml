@@ -101,7 +101,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t meshtopo:latest .
+        docker build -t meshtopo:latest -f deploy/Dockerfile .
 
     - name: Test Docker image
       run: |
