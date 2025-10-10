@@ -5,8 +5,8 @@ FROM python:3.9-slim
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc=4:14.2.0-1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching

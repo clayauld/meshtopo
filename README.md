@@ -8,12 +8,12 @@ A lightweight Python gateway service that bridges Meshtastic LoRa mesh networks 
 
 ## Features
 
--   **Real-time Position Forwarding**: Automatically forwards Meshtastic position packets to CalTopo
--   **Configurable Node Mapping**: Maps Meshtastic hardware IDs to CalTopo device IDs
--   **Robust Error Handling**: Graceful handling of network issues and API failures
--   **Docker Deployment**: Easy deployment with Docker and Docker Compose
--   **Comprehensive Logging**: Detailed logging for monitoring and debugging
--   **Lightweight Design**: Minimal resource footprint for edge deployment
+- **Real-time Position Forwarding**: Automatically forwards Meshtastic position packets to CalTopo
+- **Configurable Node Mapping**: Maps Meshtastic hardware IDs to CalTopo device IDs
+- **Robust Error Handling**: Graceful handling of network issues and API failures
+- **Docker Deployment**: Easy deployment with Docker and Docker Compose
+- **Comprehensive Logging**: Detailed logging for monitoring and debugging
+- **Lightweight Design**: Minimal resource footprint for edge deployment
 
 ## Architecture
 
@@ -28,9 +28,9 @@ The system follows a simple linear data flow:
 
 ### Prerequisites
 
--   Python 3.9+ or Docker
--   Access to an MQTT broker with Meshtastic data
--   CalTopo account with API access
+- Python 3.9+ or Docker
+- Access to an MQTT broker with Meshtastic data
+- CalTopo account with API access
 
 ### Docker Deployment (Recommended)
 
@@ -50,6 +50,7 @@ The system follows a simple linear data flow:
     ```
 
 3. **View logs**:
+
     ```bash
     docker-compose logs -f
     ```
@@ -70,6 +71,7 @@ The system follows a simple linear data flow:
     ```
 
 3. **Run the gateway**:
+
     ```bash
     python gateway.py
     ```
@@ -101,12 +103,12 @@ nodes:
 
 ### Configuration Parameters
 
--   **mqtt.broker**: IP address or hostname of your MQTT broker
--   **mqtt.port**: MQTT broker port (default: 1883)
--   **mqtt.username/password**: MQTT authentication credentials
--   **mqtt.topic**: MQTT topic pattern for Meshtastic position packets
--   **caltopo.group**: Your CalTopo group identifier
--   **nodes**: Mapping of Meshtastic hardware IDs to CalTopo device IDs
+- **mqtt.broker**: IP address or hostname of your MQTT broker
+- **mqtt.port**: MQTT broker port (default: 1883)
+- **mqtt.username/password**: MQTT authentication credentials
+- **mqtt.topic**: MQTT topic pattern for Meshtastic position packets
+- **caltopo.group**: Your CalTopo group identifier
+- **nodes**: Mapping of Meshtastic hardware IDs to CalTopo device IDs
 
 ## Data Flow
 
@@ -146,20 +148,20 @@ https://caltopo.com/api/v1/position/report/{GROUP}?id={DEVICE_ID}&lat={LAT}&lng=
 
 The service includes comprehensive error handling:
 
--   **MQTT Disconnection**: Automatic reconnection with exponential backoff
--   **Invalid JSON**: Malformed packets are logged and discarded
--   **Unmapped Nodes**: Unknown node IDs are logged at DEBUG level
--   **API Failures**: CalTopo API errors are logged with full details
--   **Network Issues**: Graceful handling of connectivity problems
+- **MQTT Disconnection**: Automatic reconnection with exponential backoff
+- **Invalid JSON**: Malformed packets are logged and discarded
+- **Unmapped Nodes**: Unknown node IDs are logged at DEBUG level
+- **API Failures**: CalTopo API errors are logged with full details
+- **Network Issues**: Graceful handling of connectivity problems
 
 ## Logging
 
 The service provides detailed logging at multiple levels:
 
--   **INFO**: Successful operations and status updates
--   **WARN**: Recoverable errors and reconnection attempts
--   **ERROR**: API failures and critical errors
--   **DEBUG**: Detailed debugging information
+- **INFO**: Successful operations and status updates
+- **WARN**: Recoverable errors and reconnection attempts
+- **ERROR**: API failures and critical errors
+- **DEBUG**: Detailed debugging information
 
 ## Development
 
@@ -230,19 +232,19 @@ sudo systemctl start meshtopo
 
 The service provides several monitoring endpoints:
 
--   **Log monitoring**: `docker-compose logs -f`
--   **Process status**: `docker-compose ps`
--   **Resource usage**: `docker stats meshtopo`
+- **Log monitoring**: `docker-compose logs -f`
+- **Process status**: `docker-compose ps`
+- **Resource usage**: `docker stats meshtopo`
 
 ### Metrics
 
 Key metrics to monitor:
 
--   MQTT connection status
--   Position packets processed per minute
--   CalTopo API success rate
--   Error rates by type
--   Memory and CPU usage
+- MQTT connection status
+- Position packets processed per minute
+- CalTopo API success rate
+- Error rates by type
+- Memory and CPU usage
 
 ## Troubleshooting
 
@@ -290,14 +292,14 @@ This project is licensed under the GNU Affero General Public License v3 (AGPLv3)
 
 For support and questions:
 
--   Create an issue on GitHub
--   Check the troubleshooting section
--   Review the configuration examples
+- Create an issue on GitHub
+- Check the troubleshooting section
+- Review the configuration examples
 
 ## Future Enhancements
 
--   Two-way messaging from CalTopo to Meshtastic
--   Additional telemetry forwarding (battery, signal strength)
--   Web-based status dashboard
--   Multiple CalTopo group support
--   Position history and analytics
+- Two-way messaging from CalTopo to Meshtastic
+- Additional telemetry forwarding (battery, signal strength)
+- Web-based status dashboard
+- Multiple CalTopo group support
+- Position history and analytics
