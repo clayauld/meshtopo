@@ -33,17 +33,17 @@ echo "✓ Dependencies installed"
 mkdir -p logs
 
 # Copy example config if config.yaml doesn't exist
-if [ ! -f "config.yaml" ]; then
+if [ ! -f "config/config.yaml" ]; then
     echo "Creating configuration file from template..."
-    cp config.yaml.example config.yaml
-    echo "✓ Configuration file created: config.yaml"
-    echo "  Please edit config.yaml with your MQTT and CalTopo settings"
+    cp config/config.yaml.example config/config.yaml
+    echo "✓ Configuration file created: config/config.yaml"
+    echo "  Please edit config/config.yaml with your MQTT and CalTopo settings"
 else
     echo "✓ Configuration file already exists"
 fi
 
 # Make scripts executable
-chmod +x gateway.py test_gateway.py
+chmod +x src/gateway.py src/test_gateway.py
 
 echo "✓ Scripts made executable"
 
@@ -51,8 +51,8 @@ echo ""
 echo "Installation completed successfully!"
 echo ""
 echo "Next steps:"
-echo "1. Edit config.yaml with your MQTT and CalTopo settings"
-echo "2. Run the service: python3 gateway.py"
+echo "1. Edit config/config.yaml with your MQTT and CalTopo settings"
+echo "2. Run the service: python3 src/gateway.py"
 echo "3. Or use Docker: docker-compose up -d"
 echo ""
 echo "For more information, see README.md"
