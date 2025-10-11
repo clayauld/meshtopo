@@ -5,7 +5,7 @@ Configuration management for the Meshtopo gateway service.
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import yaml
 
@@ -32,13 +32,22 @@ class CalTopoTeamApiConfig:
 
 
 @dataclass
-class OAuthConfig:
-    """OAuth configuration for web UI authentication."""
+class UserCalTopoCredentials:
+    """CalTopo credentials for a specific user."""
 
-    provider: str = "google"
-    client_id: str = ""
-    client_secret: str = ""
-    redirect_uri: str = ""
+    credential_id: str
+    secret_key: str
+    accessible_maps: List[str] = field(default_factory=list)
+
+
+@dataclass
+class UserConfig:
+    """User configuration for simple authentication."""
+
+    username: str
+    password_hash: str
+    role: str = "user"  # "admin" or "user"
+    caltopo_credentials: Optional[UserCalTopoCredentials] = None
 
 
 @dataclass
@@ -48,7 +57,6 @@ class CalTopoConfig:
     group: str
     map_id: str = ""
     team_api: CalTopoTeamApiConfig = field(default_factory=CalTopoTeamApiConfig)
-    oauth: OAuthConfig = field(default_factory=OAuthConfig)
 
 
 @dataclass
@@ -145,6 +153,7 @@ class Config:
     logging: LoggingConfig
     ssl: SslConfig = field(default_factory=SslConfig)
     web_ui: WebUiConfig = field(default_factory=WebUiConfig)
+    users: List[UserConfig] = field(default_factory=list)
 
     @classmethod
     def from_file(cls, config_path: str) -> "Config":
@@ -224,20 +233,10 @@ class Config:
             secret_key=team_api_data.get("secret_key", ""),
         )
 
-        # Process OAuth configuration
-        oauth_data = caltopo_data.get("oauth", {})
-        oauth_config = OAuthConfig(
-            provider=oauth_data.get("provider", "google"),
-            client_id=oauth_data.get("client_id", ""),
-            client_secret=oauth_data.get("client_secret", ""),
-            redirect_uri=oauth_data.get("redirect_uri", ""),
-        )
-
         caltopo_config = CalTopoConfig(
             group=caltopo_data["group"],
             map_id=caltopo_data.get("map_id", ""),
             team_api=team_api_config,
-            oauth=oauth_config,
         )
 
         # Validate and process node mappings
@@ -253,6 +252,36 @@ class Config:
                 )
 
             nodes[node_id] = NodeMapping(device_id=node_config["device_id"])
+
+        # Process users configuration (optional)
+        users_data = data.get("users", [])
+        users = []
+        for user_data in users_data:
+            if not isinstance(user_data, dict):
+                raise ValueError("User configuration must be a dictionary")
+
+            required_user_keys = ["username", "password_hash"]
+            for key in required_user_keys:
+                if key not in user_data:
+                    raise ValueError(f"Missing required user configuration: {key}")
+
+            # Process CalTopo credentials if present
+            caltopo_creds = None
+            if "caltopo_credentials" in user_data:
+                creds_data = user_data["caltopo_credentials"]
+                caltopo_creds = UserCalTopoCredentials(
+                    credential_id=creds_data.get("credential_id", ""),
+                    secret_key=creds_data.get("secret_key", ""),
+                    accessible_maps=creds_data.get("accessible_maps", [])
+                )
+
+            user_config = UserConfig(
+                username=user_data["username"],
+                password_hash=user_data["password_hash"],
+                role=user_data.get("role", "user"),
+                caltopo_credentials=caltopo_creds
+            )
+            users.append(user_config)
 
         # Process SSL configuration (optional)
         ssl_data = data.get("ssl", {})
@@ -328,6 +357,7 @@ class Config:
             logging=logging_config,
             ssl=ssl_config,
             web_ui=web_ui_config,
+            users=users,
         )
 
     def get_node_device_id(self, node_id: str) -> Optional[str]:
@@ -342,6 +372,21 @@ class Config:
         """
         node_mapping = self.nodes.get(node_id)
         return node_mapping.device_id if node_mapping else None
+
+    def get_user_by_username(self, username: str) -> Optional[UserConfig]:
+        """
+        Get user configuration by username.
+
+        Args:
+            username: Username to search for
+
+        Returns:
+            UserConfig: User configuration if found, None otherwise
+        """
+        for user in self.users:
+            if user.username == username:
+                return user
+        return None
 
     def setup_logging(self) -> None:
         """

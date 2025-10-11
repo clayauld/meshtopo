@@ -69,6 +69,15 @@ def create_app(config_path: str = "config/config.yaml") -> Flask:
     app.config["MESHTOPO_CONFIG"] = config
     app.config["LIMITER"] = limiter
 
+    # Add user context processor
+    @app.context_processor
+    def inject_user():
+        """Inject user information into template context."""
+        from .models.user import UserManager
+        user_manager = UserManager()
+        user_info = user_manager.get_current_user()
+        return dict(user_info=user_info)
+
     # Register blueprints
     from .routes.auth import auth_bp
     from .routes.maps import maps_bp

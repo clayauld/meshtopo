@@ -13,34 +13,29 @@ logger = logging.getLogger(__name__)
 class CalTopoTeamAPI:
     """CalTopo Team API client."""
 
-    def __init__(self, config):
+    def __init__(self, credential_id: str, secret_key: str):
         """
         Initialize CalTopo Team API client.
 
         Args:
-            config: Configuration object with CalTopo settings
+            credential_id: CalTopo service account credential ID
+            secret_key: CalTopo service account secret key
         """
-        self.config = config
+        self.credential_id = credential_id
+        self.secret_key = secret_key
         self.base_url = "https://caltopo.com/api/v1"
         self.team_api_url = f"{self.base_url}/team"
 
         # Set up authentication
         self.auth_header = None
-        if config.caltopo.team_api.enabled:
+        if credential_id and secret_key:
             self._setup_authentication()
 
     def _setup_authentication(self):
         """Set up authentication headers for Team API."""
         try:
-            credential_id = self.config.caltopo.team_api.credential_id
-            secret_key = self.config.caltopo.team_api.secret_key
-
-            if not credential_id or not secret_key:
-                logger.warning("CalTopo Team API credentials not configured")
-                return
-
             # Create basic auth header
-            credentials = f"{credential_id}:{secret_key}"
+            credentials = f"{self.credential_id}:{self.secret_key}"
             encoded_credentials = base64.b64encode(credentials.encode()).decode()
             self.auth_header = f"Basic {encoded_credentials}"
 
@@ -57,10 +52,6 @@ class CalTopoTeamAPI:
             list: List of map information dictionaries
         """
         try:
-            if not self.config.caltopo.team_api.enabled:
-                logger.warning("CalTopo Team API not enabled")
-                return []
-
             if not self.auth_header:
                 logger.error("CalTopo Team API not authenticated")
                 return []
@@ -91,10 +82,6 @@ class CalTopoTeamAPI:
             dict: Map details or None if not found
         """
         try:
-            if not self.config.caltopo.team_api.enabled:
-                logger.warning("CalTopo Team API not enabled")
-                return None
-
             if not self.auth_header:
                 logger.error("CalTopo Team API not authenticated")
                 return None
@@ -128,10 +115,6 @@ class CalTopoTeamAPI:
             bool: True if connection successful, False otherwise
         """
         try:
-            if not self.config.caltopo.team_api.enabled:
-                logger.warning("CalTopo Team API not enabled")
-                return False
-
             if not self.auth_header:
                 logger.error("CalTopo Team API not authenticated")
                 return False
@@ -161,10 +144,6 @@ class CalTopoTeamAPI:
             str: Created map ID or None if failed
         """
         try:
-            if not self.config.caltopo.team_api.enabled:
-                logger.warning("CalTopo Team API not enabled")
-                return None
-
             if not self.auth_header:
                 logger.error("CalTopo Team API not authenticated")
                 return None
@@ -205,10 +184,6 @@ class CalTopoTeamAPI:
             bool: True if update successful, False otherwise
         """
         try:
-            if not self.config.caltopo.team_api.enabled:
-                logger.warning("CalTopo Team API not enabled")
-                return False
-
             if not self.auth_header:
                 logger.error("CalTopo Team API not authenticated")
                 return False
@@ -246,10 +221,6 @@ class CalTopoTeamAPI:
             bool: True if deletion successful, False otherwise
         """
         try:
-            if not self.config.caltopo.team_api.enabled:
-                logger.warning("CalTopo Team API not enabled")
-                return False
-
             if not self.auth_header:
                 logger.error("CalTopo Team API not authenticated")
                 return False
@@ -276,10 +247,6 @@ class CalTopoTeamAPI:
             dict: Team information or None if failed
         """
         try:
-            if not self.config.caltopo.team_api.enabled:
-                logger.warning("CalTopo Team API not enabled")
-                return None
-
             if not self.auth_header:
                 logger.error("CalTopo Team API not authenticated")
                 return None

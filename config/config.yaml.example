@@ -21,19 +21,31 @@ caltopo:
         credential_id: "" # CalTopo service account credential ID
         secret_key: "" # CalTopo service account secret key
 
-    # OAuth configuration for web UI authentication
-    oauth:
-        provider: "google" # google, apple, facebook, microsoft, yahoo
-        client_id: "" # OAuth client ID
-        client_secret: "" # OAuth client secret
-        redirect_uri: "https://meshtopo.example.com/auth/callback"
-
 # Mapping of Meshtastic hardware IDs to CalTopo device IDs
 nodes:
     "!823a4edc":
         device_id: "TEAM-LEAD"
     "!a4b8c2f0":
         device_id: "COMMS"
+
+# User accounts for web UI authentication
+# Generate password hashes using: python -c "import bcrypt; print(bcrypt.hashpw('your_password'.encode(), bcrypt.gensalt()).decode())"
+users:
+    - username: "admin"
+      password_hash: "$2b$12$..." # Replace with actual bcrypt hash
+      role: "admin"
+      caltopo_credentials:
+          credential_id: "ABC123DEF456"
+          secret_key: "base64_encoded_secret"
+          accessible_maps: ["map-id-1", "map-id-2"]
+
+    - username: "user1"
+      password_hash: "$2b$12$..." # Replace with actual bcrypt hash
+      role: "user"
+      caltopo_credentials:
+          credential_id: "XYZ789GHI012"
+          secret_key: "base64_encoded_secret"
+          accessible_maps: ["map-id-3"]
 
 # SSL/TLS configuration for automatic certificate provisioning
 ssl:

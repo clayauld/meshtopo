@@ -71,15 +71,34 @@
                 </ul>
 
                 <ul class="navbar-nav">
-                    {% if current_user %}
+                    {% if user_info %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user"></i> {{ current_user.name or current_user.email }}
+                            <i class="fas fa-user"></i> {{ user_info.username }}
+                            {% if user_info.role == 'admin' %}
+                            <span class="badge bg-warning text-dark ms-1">Admin</span>
+                            {% endif %}
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" onclick="logout()">
-                                <i class="fas fa-sign-out-alt"></i> Logout
-                            </a></li>
+                            <li><span class="dropdown-item-text">
+                                <i class="fas fa-user"></i> {{ user_info.username }}
+                            </span></li>
+                            <li><span class="dropdown-item-text">
+                                <i class="fas fa-shield-alt"></i> {{ user_info.role|title }}
+                            </span></li>
+                            {% if user_info.has_caltopo_credentials %}
+                            <li><span class="dropdown-item-text">
+                                <i class="fas fa-map"></i> CalTopo Access
+                            </span></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="POST" action="{{ url_for('auth.logout') }}" class="d-inline">
+                                    <button type="submit" class="dropdown-item">
+                                        <i class="fas fa-sign-out-alt"></i> Logout
+                                    </button>
+                                </form>
+                            </li>
                         </ul>
                     </li>
                     {% else %}
@@ -133,27 +152,6 @@
 
     <!-- Custom JavaScript -->
     <script>
-        // Logout function
-        async function logout() {
-            try {
-                const response = await fetch('{{ url_for("auth.logout") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-
-                if (response.ok) {
-                    window.location.href = '{{ url_for("auth.login") }}';
-                } else {
-                    alert('Logout failed');
-                }
-            } catch (error) {
-                console.error('Logout error:', error);
-                alert('Logout failed');
-            }
-        }
-
         // Auto-refresh status
         function refreshStatus() {
             fetch('{{ url_for("api.system_status") }}')

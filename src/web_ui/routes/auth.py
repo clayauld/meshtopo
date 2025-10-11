@@ -1,87 +1,76 @@
 """
-Authentication routes for OAuth 2.0 integration.
+Simple authentication routes for username/password login.
 """
 
 import logging
-from flask import Blueprint, redirect, request, session, url_for, render_template, jsonify, current_app
-from authlib.integrations.flask_client import OAuth
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, current_app, session, flash
 
-from ..services.oauth_client import OAuthClient
+from ..utils.password import verify_password
 from ..models.user import UserManager
 
 logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint("auth", __name__)
 
-# Initialize OAuth client
-oauth_client = OAuthClient()
 
-
-@auth_bp.route("/login")
+@auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     """
-    Initiate OAuth authentication flow.
+    Handle user login.
 
-    Supports multiple providers: google, apple, facebook, microsoft, yahoo
+    GET: Display login form
+    POST: Validate credentials and create session
     """
-    provider = request.args.get("provider", "google")
+    if request.method == "GET":
+        return render_template("login.html")
+
+    # Handle POST request
+    username = request.form.get("username", "").strip()
+    password = request.form.get("password", "")
+    remember_me = request.form.get("remember_me") == "on"
+
+    if not username or not password:
+        flash("Username and password are required", "error")
+        return render_template("login.html")
 
     try:
-        # Get authorization URL
-        auth_url = oauth_client.get_authorization_url(provider)
+        # Get configuration
+        config = current_app.config["MESHTOPO_CONFIG"]
 
-        if auth_url:
-            return redirect(auth_url)
-        else:
-            return jsonify({"error": f"Unsupported OAuth provider: {provider}"}), 400
+        # Find user in configuration
+        user_config = config.get_user_by_username(username)
+        if not user_config:
+            flash("Invalid username or password", "error")
+            return render_template("login.html")
 
-    except Exception as e:
-        logger.error(f"OAuth login error: {e}")
-        return jsonify({"error": "Authentication failed"}), 500
+        # Verify password
+        if not verify_password(password, user_config.password_hash):
+            flash("Invalid username or password", "error")
+            return render_template("login.html")
 
-
-@auth_bp.route("/callback")
-def callback():
-    """
-    Handle OAuth callback and token exchange.
-    """
-    try:
-        # Get authorization code from callback
-        code = request.args.get("code")
-        state = request.args.get("state")
-        error = request.args.get("error")
-
-        if error:
-            logger.warning(f"OAuth error: {error}")
-            return render_template("login.html", error=f"Authentication failed: {error}")
-
-        if not code:
-            return render_template("login.html", error="No authorization code received")
-
-        # Exchange code for token
-        token_data = oauth_client.exchange_code_for_token(code, state)
-
-        if not token_data:
-            return render_template("login.html", error="Failed to exchange authorization code")
-
-        # Get user information
-        user_info = oauth_client.get_user_info(token_data)
-
-        if not user_info:
-            return render_template("login.html", error="Failed to retrieve user information")
-
-        # Store user session
+        # Create user session
         user_manager = UserManager()
-        user_manager.create_session(user_info, token_data)
+        success = user_manager.create_session(user_config)
 
-        logger.info(f"User authenticated: {user_info.get('email', 'unknown')}")
+        if success:
+            logger.info(f"User logged in: {username}")
 
-        # Redirect to maps page
-        return redirect(url_for("maps.index"))
+            # Set session timeout based on remember me
+            if remember_me:
+                session.permanent = True
+            else:
+                session.permanent = False
+
+            # Redirect to maps page
+            return redirect(url_for("maps.index"))
+        else:
+            flash("Failed to create session", "error")
+            return render_template("login.html")
 
     except Exception as e:
-        logger.error(f"OAuth callback error: {e}")
-        return render_template("login.html", error="Authentication failed")
+        logger.error(f"Login error: {e}")
+        flash("Login failed. Please try again.", "error")
+        return render_template("login.html")
 
 
 @auth_bp.route("/logout", methods=["POST"])
@@ -94,12 +83,14 @@ def logout():
         user_manager.destroy_session()
 
         logger.info("User logged out")
+        flash("You have been logged out", "info")
 
-        return jsonify({"status": "success", "message": "Logged out successfully"})
+        return redirect(url_for("auth.login"))
 
     except Exception as e:
         logger.error(f"Logout error: {e}")
-        return jsonify({"error": "Logout failed"}), 500
+        flash("Logout failed", "error")
+        return redirect(url_for("auth.login"))
 
 
 @auth_bp.route("/status")
@@ -115,9 +106,8 @@ def status():
             return jsonify({
                 "authenticated": True,
                 "user": {
-                    "email": user_info.get("email"),
-                    "name": user_info.get("name"),
-                    "provider": user_info.get("provider")
+                    "username": user_info.get("username"),
+                    "role": user_info.get("role")
                 }
             })
         else:
@@ -139,10 +129,9 @@ def user():
 
         if user_info:
             return jsonify({
-                "email": user_info.get("email"),
-                "name": user_info.get("name"),
-                "provider": user_info.get("provider"),
-                "picture": user_info.get("picture")
+                "username": user_info.get("username"),
+                "role": user_info.get("role"),
+                "has_caltopo_credentials": user_info.get("has_caltopo_credentials", False)
             })
         else:
             return jsonify({"error": "Not authenticated"}), 401

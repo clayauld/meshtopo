@@ -1,5 +1,5 @@
 """
-User session management for web UI authentication.
+User session management for simple authentication.
 """
 
 import logging
@@ -10,34 +10,39 @@ logger = logging.getLogger(__name__)
 
 
 class UserManager:
-    """User session management."""
+    """User session management for simple authentication."""
 
     def __init__(self):
         """Initialize user manager."""
         self.session_key = "meshtopo_user"
 
-    def create_session(self, user_info: Dict[str, Any], token_data: Dict[str, Any]) -> bool:
+    def create_session(self, user_config: Any) -> bool:
         """
-        Create user session with user information and token data.
+        Create user session with user configuration.
 
         Args:
-            user_info: User information from OAuth provider
-            token_data: OAuth token data
+            user_config: User configuration from config
 
         Returns:
             bool: True if session created successfully
         """
         try:
             session_data = {
-                "user_info": user_info,
-                "token_data": token_data,
+                "username": user_config.username,
+                "role": user_config.role,
+                "has_caltopo_credentials": user_config.caltopo_credentials is not None,
+                "caltopo_credentials": {
+                    "credential_id": user_config.caltopo_credentials.credential_id,
+                    "secret_key": user_config.caltopo_credentials.secret_key,
+                    "accessible_maps": user_config.caltopo_credentials.accessible_maps
+                } if user_config.caltopo_credentials else None,
                 "authenticated": True
             }
 
             session[self.session_key] = session_data
             session.permanent = True
 
-            logger.info(f"Created session for user: {user_info.get('email', 'unknown')}")
+            logger.info(f"Created session for user: {user_config.username}")
             return True
 
         except Exception as e:
@@ -57,18 +62,18 @@ class UserManager:
             if not session_data or not session_data.get("authenticated"):
                 return None
 
-            return session_data.get("user_info")
+            return session_data
 
         except Exception as e:
             logger.error(f"Failed to get current user: {e}")
             return None
 
-    def get_token_data(self) -> Optional[Dict[str, Any]]:
+    def get_caltopo_credentials(self) -> Optional[Dict[str, Any]]:
         """
-        Get current user's token data from session.
+        Get current user's CalTopo credentials from session.
 
         Returns:
-            dict: Token data or None if not authenticated
+            dict: CalTopo credentials or None if not authenticated or no credentials
         """
         try:
             session_data = session.get(self.session_key)
@@ -76,10 +81,10 @@ class UserManager:
             if not session_data or not session_data.get("authenticated"):
                 return None
 
-            return session_data.get("token_data")
+            return session_data.get("caltopo_credentials")
 
         except Exception as e:
-            logger.error(f"Failed to get token data: {e}")
+            logger.error(f"Failed to get CalTopo credentials: {e}")
             return None
 
     def is_authenticated(self) -> bool:
@@ -95,6 +100,21 @@ class UserManager:
 
         except Exception as e:
             logger.error(f"Failed to check authentication status: {e}")
+            return False
+
+    def is_admin(self) -> bool:
+        """
+        Check if current user is an admin.
+
+        Returns:
+            bool: True if user is admin
+        """
+        try:
+            session_data = session.get(self.session_key)
+            return session_data and session_data.get("role") == "admin"
+
+        except Exception as e:
+            logger.error(f"Failed to check admin status: {e}")
             return False
 
     def destroy_session(self) -> bool:
@@ -115,69 +135,32 @@ class UserManager:
             logger.error(f"Failed to destroy user session: {e}")
             return False
 
-    def update_user_info(self, user_info: Dict[str, Any]) -> bool:
+    def get_username(self) -> Optional[str]:
         """
-        Update user information in current session.
-
-        Args:
-            user_info: Updated user information
+        Get current user's username.
 
         Returns:
-            bool: True if update successful
-        """
-        try:
-            session_data = session.get(self.session_key)
-
-            if not session_data or not session_data.get("authenticated"):
-                logger.warning("No authenticated session to update")
-                return False
-
-            session_data["user_info"] = user_info
-            session[self.session_key] = session_data
-
-            logger.info("Updated user information in session")
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to update user info: {e}")
-            return False
-
-    def get_user_email(self) -> Optional[str]:
-        """
-        Get current user's email address.
-
-        Returns:
-            str: User email or None if not authenticated
+            str: Username or None if not authenticated
         """
         user_info = self.get_current_user()
-        return user_info.get("email") if user_info else None
+        return user_info.get("username") if user_info else None
 
-    def get_user_name(self) -> Optional[str]:
+    def get_role(self) -> Optional[str]:
         """
-        Get current user's display name.
-
-        Returns:
-            str: User name or None if not authenticated
-        """
-        user_info = self.get_current_user()
-        return user_info.get("name") if user_info else None
-
-    def get_user_provider(self) -> Optional[str]:
-        """
-        Get current user's OAuth provider.
+        Get current user's role.
 
         Returns:
-            str: OAuth provider or None if not authenticated
+            str: User role or None if not authenticated
         """
         user_info = self.get_current_user()
-        return user_info.get("provider") if user_info else None
+        return user_info.get("role") if user_info else None
 
-    def get_user_picture(self) -> Optional[str]:
+    def has_caltopo_access(self) -> bool:
         """
-        Get current user's profile picture URL.
+        Check if current user has CalTopo credentials.
 
         Returns:
-            str: Profile picture URL or None if not authenticated
+            bool: True if user has CalTopo credentials
         """
         user_info = self.get_current_user()
-        return user_info.get("picture") if user_info else None
+        return user_info.get("has_caltopo_credentials", False) if user_info else False

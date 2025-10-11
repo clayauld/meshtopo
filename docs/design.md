@@ -47,10 +47,11 @@ The system can be enhanced with additional optional components to provide a comp
 
 3. **Web Management Interface**: An optional Flask-based web application that provides:
 
-    - OAuth 2.0 authentication for CalTopo integration
+    - Simple username/password authentication
     - Map selection interface for choosing target CalTopo maps
     - RESTful API endpoints for programmatic access
     - Real-time status monitoring and configuration management
+    - Per-user CalTopo credentials management
 
 4. **Enhanced Configuration Management**: Centralized configuration via `config.yaml` that controls all optional components, enabling users to customize their deployment based on specific needs.
 
@@ -140,7 +141,7 @@ src/web_ui/
 ├── app.py              # Main application entry point
 ├── routes/
 │   ├── __init__.py
-│   ├── auth.py         # OAuth authentication routes
+│   ├── auth.py         # Simple authentication routes
 │   ├── maps.py         # Map selection and management
 │   └── api.py          # RESTful API endpoints
 ├── models/
@@ -149,47 +150,52 @@ src/web_ui/
 │   └── config.py       # Configuration state management
 ├── services/
 │   ├── __init__.py
-│   ├── caltopo_api.py  # CalTopo Team API integration
-│   └── oauth_client.py # OAuth provider integration
-└── templates/
-    ├── base.html       # Base template
-    ├── login.html      # OAuth login page
-    ├── maps.html       # Map selection interface
-    └── status.html     # Service status dashboard
+│   └── caltopo_api.py  # CalTopo Team API integration
+├── templates/
+│   ├── base.html       # Base template
+│   ├── login.html      # Simple login page
+│   ├── maps.html       # Map selection interface
+│   └── status.html     # Service status dashboard
+└── utils/
+    └── password.py     # Password hashing utilities
 ```
 
-#### 4.4.2 OAuth 2.0 Authentication Flow
+#### 4.4.2 Simple Authentication System
 
-The web UI implements OAuth 2.0 authentication supporting multiple providers:
+The web UI implements a simple username/password authentication system:
 
-1. **Provider Selection**: Users choose from Google, Apple, Facebook, Microsoft, or Yahoo OAuth providers
-2. **Authorization Request**: Application redirects to provider's authorization endpoint
-3. **User Consent**: User authenticates with provider and grants permissions
-4. **Authorization Code**: Provider redirects back with authorization code
-5. **Token Exchange**: Application exchanges code for access token
-6. **Session Management**: Access token stored in secure session for API calls
+1. **User Login**: Users enter username and password on the login form
+2. **Password Verification**: System verifies password against bcrypt hash stored in configuration
+3. **Session Creation**: Upon successful authentication, a secure session is created
+4. **Session Management**: Sessions are managed with configurable timeout and security settings
+5. **Role-Based Access**: Users have assigned roles (admin/user) with different permissions
 
-**Supported OAuth Providers:**
+**Authentication Features:**
 
--   Google OAuth 2.0
--   Apple Sign-In
--   Facebook Login
--   Microsoft Azure AD
--   Yahoo OAuth 2.0
+-   bcrypt password hashing with salt
+-   Secure session management
+-   Role-based access control (admin/user)
+-   Per-user CalTopo credentials
+-   Configurable session timeout
+-   Remember me functionality
 
 #### 4.4.3 CalTopo Integration Architecture
 
-The web UI integrates with CalTopo using a dual authentication approach:
+The web UI integrates with CalTopo using per-user service account credentials:
 
-1. **OAuth Authentication**: User authentication via OAuth providers for web UI access
-2. **Team API Authentication**: Service account credentials for CalTopo API access
+1. **User Authentication**: Simple username/password authentication for web UI access
+2. **Per-User CalTopo Credentials**: Each user can have their own CalTopo service account credentials
+3. **Map Access Control**: Users can be restricted to specific CalTopo maps
+4. **Credential Management**: CalTopo credentials are stored securely in user configuration
 
 **CalTopo Team API Integration:**
 
 -   Service account authentication using credential ID and secret key
+-   Per-user credential management
 -   Map listing and retrieval via CalTopo Team API endpoints
 -   Map selection and configuration updates
 -   Real-time map status monitoring
+-   Access control based on user permissions
 
 #### 4.4.4 RESTful API Design
 
@@ -197,17 +203,17 @@ The web UI exposes RESTful API endpoints for programmatic access:
 
 **Authentication Endpoints:**
 
--   `GET /api/auth/login` - Initiate OAuth flow
--   `GET /api/auth/callback` - OAuth callback handler
--   `POST /api/auth/logout` - Terminate user session
--   `GET /api/auth/status` - Check authentication status
+-   `POST /auth/login` - User login with username/password
+-   `POST /auth/logout` - Terminate user session
+-   `GET /auth/status` - Check authentication status
+-   `GET /auth/user` - Get current user information
 
 **Map Management Endpoints:**
 
--   `GET /api/maps/list` - Retrieve available CalTopo maps
--   `GET /api/maps/current` - Get currently selected map
--   `POST /api/maps/select` - Select target map for position forwarding
--   `GET /api/maps/{map_id}/status` - Get map-specific status
+-   `GET /maps/list` - Retrieve available CalTopo maps
+-   `GET /maps/current` - Get currently selected map
+-   `POST /maps/select` - Select target map for position forwarding
+-   `GET /maps/{map_id}/status` - Get map-specific status
 
 **Configuration Endpoints:**
 
@@ -226,12 +232,15 @@ The web UI exposes RESTful API endpoints for programmatic access:
 
 The web UI implements several security measures:
 
-1. **Session Security**: Secure session management with configurable secret keys
-2. **CSRF Protection**: Cross-site request forgery protection for all forms
-3. **Input Validation**: Comprehensive input validation and sanitization
-4. **Rate Limiting**: API rate limiting to prevent abuse
-5. **HTTPS Enforcement**: Automatic HTTPS redirection when SSL is enabled
-6. **Secure Headers**: Security headers for XSS and clickjacking protection
+1. **Password Security**: bcrypt password hashing with salt for secure password storage
+2. **Session Security**: Secure session management with configurable secret keys and timeouts
+3. **CSRF Protection**: Cross-site request forgery protection for all forms
+4. **Input Validation**: Comprehensive input validation and sanitization
+5. **Rate Limiting**: API rate limiting to prevent abuse, especially for login attempts
+6. **HTTPS Enforcement**: Automatic HTTPS redirection when SSL is enabled
+7. **Secure Headers**: Security headers for XSS and clickjacking protection
+8. **Role-Based Access**: Admin and user roles with different permission levels
+9. **Credential Isolation**: Per-user CalTopo credentials for access control
 
 ---
 
@@ -297,12 +306,24 @@ caltopo:
         credential_id: "" # CalTopo service account credential ID
         secret_key: "" # CalTopo service account secret key
 
-    # OAuth configuration for web UI authentication
-    oauth:
-        provider: "google" # google, apple, facebook, microsoft, yahoo
-        client_id: "" # OAuth client ID
-        client_secret: "" # OAuth client secret
-        redirect_uri: "https://meshtopo.example.com/auth/callback"
+# User accounts for web UI authentication
+# Generate password hashes using: python -c "import bcrypt; print(bcrypt.hashpw('your_password'.encode(), bcrypt.gensalt()).decode())"
+users:
+    - username: "admin"
+      password_hash: "$2b$12$..." # Replace with actual bcrypt hash
+      role: "admin"
+      caltopo_credentials:
+          credential_id: "ABC123DEF456"
+          secret_key: "base64_encoded_secret"
+          accessible_maps: ["map-id-1", "map-id-2"]
+
+    - username: "user1"
+      password_hash: "$2b$12$..." # Replace with actual bcrypt hash
+      role: "user"
+      caltopo_credentials:
+          credential_id: "XYZ789GHI012"
+          secret_key: "base64_encoded_secret"
+          accessible_maps: ["map-id-3"]
 
 # Mapping of Meshtastic hardware IDs to CalTopo device IDs
 nodes:
@@ -760,13 +781,15 @@ The following enhancements are planned for future releases:
 
 The following features have been implemented in the enhanced architecture:
 
--   **Map Selection UI**: Web-based interface for selecting CalTopo maps with OAuth authentication
+-   **Map Selection UI**: Web-based interface for selecting CalTopo maps with simple authentication
 -   **API Endpoints**: RESTful API for programmatic access to map management and configuration
 -   **Integrated MQTT Broker**: Optional Mosquitto broker included in Docker Compose stack
 -   **SSL/TLS Support**: Automatic SSL certificate provisioning with Traefik and Let's Encrypt
 -   **Enhanced Configuration**: Comprehensive configuration management for all optional components
+-   **User Management**: Simple username/password authentication with role-based access control
+-   **Per-User CalTopo Integration**: Individual CalTopo credentials for each user
 
-### 9.2 Planned Enhancements
+### 9.2 Planned (Potential) Enhancements
 
 -   **Two-Way Messaging**: Implement a mechanism to send short text messages back to the Meshtastic network from CalTopo.
 -   **Status Reporting**: Forward additional Meshtastic telemetry (e.g., battery level, signal strength) to CalTopo.
@@ -783,20 +806,19 @@ The web UI provides comprehensive RESTful API endpoints for external integration
 
 #### 9.3.1 Authentication API
 
--   `GET /api/auth/login` - Initiate OAuth authentication flow
--   `GET /api/auth/callback` - Handle OAuth callback and token exchange
--   `POST /api/auth/logout` - Terminate user session
--   `GET /api/auth/status` - Check current authentication status
--   `GET /api/auth/user` - Get current user information
+-   `POST /auth/login` - User login with username/password
+-   `POST /auth/logout` - Terminate user session
+-   `GET /auth/status` - Check current authentication status
+-   `GET /auth/user` - Get current user information
 
 #### 9.3.2 Map Management API
 
--   `GET /api/maps/list` - Retrieve all available CalTopo maps
--   `GET /api/maps/current` - Get currently selected map configuration
--   `POST /api/maps/select` - Select target map for position forwarding
--   `GET /api/maps/{map_id}` - Get detailed information about specific map
--   `GET /api/maps/{map_id}/status` - Get real-time status of map integration
--   `POST /api/maps/{map_id}/test` - Test connection to specific map
+-   `GET /maps/list` - Retrieve all available CalTopo maps
+-   `GET /maps/current` - Get currently selected map configuration
+-   `POST /maps/select` - Select target map for position forwarding
+-   `GET /maps/{map_id}` - Get detailed information about specific map
+-   `GET /maps/{map_id}/status` - Get real-time status of map integration
+-   `POST /maps/{map_id}/test` - Test connection to specific map
 
 #### 9.3.3 Configuration API
 
@@ -832,10 +854,15 @@ The API endpoints enable various integration scenarios:
 **Automation Scripts:**
 
 ```bash
-# Select map via API
-curl -X POST https://meshtopo.example.com/api/maps/select \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{"map_id": "team-alpha-map-123"}'
+# Login and get session token
+curl -X POST https://meshtopo.example.com/auth/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=your_password"
+
+# Select map via API (requires authentication)
+curl -X POST https://meshtopo.example.com/maps/select \
+  -H "Cookie: session=your_session_cookie" \
+  -d "map_id=team-alpha-map-123"
 
 # Get system status
 curl https://meshtopo.example.com/api/status
