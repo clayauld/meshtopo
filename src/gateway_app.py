@@ -7,10 +7,59 @@ import signal
 import sys
 import time
 from typing import Any, Dict, Optional, Union
+from threading import Thread
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import json
 
 from caltopo_reporter import CalTopoReporter
 from config.config import Config
 from mqtt_client import MqttClient
+
+
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    """HTTP handler for health check endpoints."""
+
+    def do_GET(self):
+        """Handle GET requests for health checks."""
+        if self.path == "/health":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+
+            # Get gateway stats
+            gateway_app = self.server.gateway_app
+            health_data = {
+                "status": "healthy" if gateway_app.running else "stopped",
+                "timestamp": time.time(),
+                "uptime": time.time() - gateway_app.stats.get("start_time", 0),
+                "stats": gateway_app.stats
+            }
+
+            self.wfile.write(json.dumps(health_data).encode())
+        elif self.path == "/metrics":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+
+            # Get gateway metrics
+            gateway_app = self.server.gateway_app
+            metrics_data = {
+                "messages_received": gateway_app.stats.get("messages_received", 0),
+                "messages_processed": gateway_app.stats.get("messages_processed", 0),
+                "position_updates_sent": gateway_app.stats.get("position_updates_sent", 0),
+                "errors": gateway_app.stats.get("errors", 0),
+                "uptime": time.time() - gateway_app.stats.get("start_time", 0),
+                "timestamp": time.time()
+            }
+
+            self.wfile.write(json.dumps(metrics_data).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def log_message(self, format, *args):
+        """Suppress HTTP server logs."""
+        pass
 
 
 class GatewayApp:
@@ -31,6 +80,8 @@ class GatewayApp:
         self.caltopo_reporter: Optional[CalTopoReporter] = None
         self.running = False
         self.logger = logging.getLogger(__name__)
+        self.health_server: Optional[HTTPServer] = None
+        self.health_thread: Optional[Thread] = None
 
         # Statistics
         self.stats: Dict[str, Union[int, float]] = {
@@ -57,6 +108,12 @@ class GatewayApp:
             self.config.setup_logging()
             self.logger.info("Configuration loaded successfully")
 
+            # Check if we should use internal MQTT broker
+            if self.config.mqtt.use_internal_broker:
+                self.logger.info("Using internal MQTT broker")
+                # Update broker hostname to use internal service name
+                self.config.mqtt.broker = "mosquitto"
+
             # Initialize CalTopo reporter
             self.logger.info("Initializing CalTopo reporter...")
             self.caltopo_reporter = CalTopoReporter(self.config)
@@ -71,12 +128,45 @@ class GatewayApp:
             self.logger.info("Initializing MQTT client...")
             self.mqtt_client = MqttClient(self.config, self._process_message)
 
+            # Start health check server if web UI is enabled
+            if self.config.web_ui.enabled:
+                self._start_health_server()
+
             self.logger.info("Application initialized successfully")
             return True
 
         except Exception as e:
             self.logger.error(f"Failed to initialize application: {e}")
             return False
+
+    def _start_health_server(self):
+        """Start HTTP server for health checks and metrics."""
+        try:
+            # Use a different port for health checks to avoid conflicts
+            health_port = self.config.web_ui.port + 1000
+
+            self.health_server = HTTPServer(("0.0.0.0", health_port), HealthCheckHandler)
+            self.health_server.gateway_app = self
+
+            def run_server():
+                self.logger.info(f"Starting health check server on port {health_port}")
+                self.health_server.serve_forever()
+
+            self.health_thread = Thread(target=run_server, daemon=True)
+            self.health_thread.start()
+
+        except Exception as e:
+            self.logger.error(f"Failed to start health check server: {e}")
+
+    def _stop_health_server(self):
+        """Stop HTTP server for health checks."""
+        if self.health_server:
+            try:
+                self.health_server.shutdown()
+                self.health_server.server_close()
+                self.logger.info("Health check server stopped")
+            except Exception as e:
+                self.logger.error(f"Error stopping health check server: {e}")
 
     def start(self) -> None:
         """
@@ -131,6 +221,9 @@ class GatewayApp:
 
         self.logger.info("Stopping gateway service...")
         self.running = False
+
+        # Stop health check server
+        self._stop_health_server()
 
         # Disconnect MQTT client
         if self.mqtt_client:

@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block title %}Status - Meshtopo Gateway{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-chart-line"></i> System Status</h2>
+            <button class="btn btn-outline-primary" onclick="refreshStatus()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+
+        <!-- Overall Status -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-heartbeat"></i> Overall System Health
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <div class="status-indicator status-unknown" id="overall-status"></div>
+                        <h6 class="mt-2">Overall Status</h6>
+                        <p class="text-muted small" id="overall-message">Checking...</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="status-indicator status-unknown" id="gateway-status"></div>
+                        <h6 class="mt-2">Gateway Service</h6>
+                        <p class="text-muted small" id="gateway-message">Checking...</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="status-indicator status-unknown" id="mqtt-status"></div>
+                        <h6 class="mt-2">MQTT Broker</h6>
+                        <p class="text-muted small" id="mqtt-message">Checking...</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="status-indicator status-unknown" id="caltopo-status"></div>
+                        <h6 class="mt-2">CalTopo API</h6>
+                        <p class="text-muted small" id="caltopo-message">Checking...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Details -->
+        <div class="row">
+            <!-- Gateway Service -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-satellite-dish"></i> Gateway Service
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="gateway-details">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading gateway status...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MQTT Broker -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-broadcast-tower"></i> MQTT Broker
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="mqtt-details">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading MQTT status...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CalTopo API -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-map"></i> CalTopo API
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="caltopo-details">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading CalTopo status...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Web UI -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-globe"></i> Web UI
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="webui-details">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading Web UI status...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar"></i> Performance Metrics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="metrics-content">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Loading metrics...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Logs -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-alt"></i> Recent Logs
+                </h5>
+                <div>
+                    <select class="form-select form-select-sm" id="logLevel" onchange="loadLogs()">
+                        <option value="INFO">INFO</option>
+                        <option value="WARN">WARN</option>
+                        <option value="ERROR">ERROR</option>
+                        <option value="DEBUG">DEBUG</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="logs-content">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Loading logs...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Refresh all status information
+async function refreshStatus() {
+    await Promise.all([
+        loadSystemStatus(),
+        loadMetrics(),
+        loadLogs()
+    ]);
+}
+
+// Load system status
+async function loadSystemStatus() {
+    try {
+        const response = await fetch('{{ url_for("api.system_status") }}');
+        const data = await response.json();
+
+        if (response.ok) {
+            updateSystemStatus(data);
+        } else {
+            console.error('Failed to load system status:', data.error);
+        }
+    } catch (error) {
+        console.error('System status error:', error);
+    }
+}
+
+// Update system status display
+function updateSystemStatus(data) {
+    // Update overall status
+    const overallStatus = document.getElementById('overall-status');
+    const overallMessage = document.getElementById('overall-message');
+    overallStatus.className = `status-indicator status-${data.status === 'healthy' ? 'online' : 'offline'}`;
+    overallMessage.textContent = data.status === 'healthy' ? 'All systems operational' : 'Some systems degraded';
+
+    // Update individual service status
+    updateServiceStatus('gateway', data.services.gateway);
+    updateServiceStatus('mqtt', data.services.mqtt);
+    updateServiceStatus('caltopo', data.services.caltopo);
+    updateServiceStatus('webui', data.services.web_ui);
+}
+
+// Update individual service status
+function updateServiceStatus(serviceName, serviceData) {
+    const statusElement = document.getElementById(`${serviceName}-status`);
+    const messageElement = document.getElementById(`${serviceName}-message`);
+    const detailsElement = document.getElementById(`${serviceName}-details`);
+
+    if (statusElement && messageElement) {
+        const status = serviceData?.status || 'unknown';
+        statusElement.className = `status-indicator status-${status}`;
+        messageElement.textContent = serviceData?.message || 'Status unknown';
+    }
+
+    if (detailsElement) {
+        detailsElement.innerHTML = `
+            <div class="row">
+                <div class="col-6">
+                    <small class="text-muted">Status:</small><br>
+                    <span class="badge bg-${status === 'healthy' ? 'success' : 'danger'}">${status}</span>
+                </div>
+                <div class="col-6">
+                    <small class="text-muted">Last Check:</small><br>
+                    <small>${new Date().toLocaleTimeString()}</small>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Load metrics
+async function loadMetrics() {
+    try {
+        const response = await fetch('{{ url_for("api.metrics") }}');
+        const data = await response.json();
+
+        if (response.ok) {
+            displayMetrics(data);
+        } else {
+            console.error('Failed to load metrics:', data.error);
+        }
+    } catch (error) {
+        console.error('Metrics error:', error);
+    }
+}
+
+// Display metrics
+function displayMetrics(data) {
+    const content = document.getElementById('metrics-content');
+
+    content.innerHTML = `
+        <div class="row">
+            <div class="col-md-3 text-center">
+                <h4 class="text-primary">${data.gateway?.position_updates_sent || 0}</h4>
+                <small class="text-muted">Position Updates Sent</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h4 class="text-danger">${data.gateway?.errors || 0}</h4>
+                <small class="text-muted">Errors</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h4 class="text-info">${data.web_ui?.active_sessions || 0}</h4>
+                <small class="text-muted">Active Sessions</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h4 class="text-success">${data.web_ui?.requests_per_minute || 0}</h4>
+                <small class="text-muted">Requests/Min</small>
+            </div>
+        </div>
+    `;
+}
+
+// Load logs
+async function loadLogs() {
+    const level = document.getElementById('logLevel').value;
+
+    try {
+        const response = await fetch(`{{ url_for("api.logs") }}?level=${level}&limit=50`);
+        const data = await response.json();
+
+        if (response.ok) {
+            displayLogs(data.logs);
+        } else {
+            console.error('Failed to load logs:', data.error);
+        }
+    } catch (error) {
+        console.error('Logs error:', error);
+    }
+}
+
+// Display logs
+function displayLogs(logs) {
+    const content = document.getElementById('logs-content');
+
+    if (logs.length === 0) {
+        content.innerHTML = '<p class="text-muted text-center">No logs available</p>';
+        return;
+    }
+
+    const logsHtml = logs.map(log => `
+        <div class="log-entry mb-2 p-2 border-start border-3 border-${getLogLevelColor(log.level)}">
+            <div class="d-flex justify-content-between">
+                <small class="text-muted">${log.timestamp}</small>
+                <span class="badge bg-${getLogLevelColor(log.level)}">${log.level}</span>
+            </div>
+            <div class="log-message">${log.message}</div>
+        </div>
+    `).join('');
+
+    content.innerHTML = logsHtml;
+}
+
+// Get log level color
+function getLogLevelColor(level) {
+    switch (level.toUpperCase()) {
+        case 'ERROR': return 'danger';
+        case 'WARN': return 'warning';
+        case 'INFO': return 'info';
+        case 'DEBUG': return 'secondary';
+        default: return 'secondary';
+    }
+}
+
+// Auto-refresh every 30 seconds
+setInterval(refreshStatus, 30000);
+
+// Load initial data
+document.addEventListener('DOMContentLoaded', function() {
+    refreshStatus();
+});
+</script>
+
+<style>
+.log-entry {
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+}
+
+.log-message {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+</style>
+{% endblock %}

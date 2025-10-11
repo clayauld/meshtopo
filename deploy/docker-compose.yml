@@ -1,35 +1,137 @@
+networks:
+    meshtopo:
+        driver: bridge
+
+volumes:
+    mosquitto_data:
+    traefik_certs:
+    traefik_logs:
+
 services:
-  meshtopo:
-    build: .
-    container_name: meshtopo
-    restart: unless-stopped
-    volumes:
-      # Mount configuration file
-      - ./config/config.yaml:/app/config/config.yaml:ro
-      # Mount logs directory (optional)
-      - ./logs:/app/logs
-    environment:
-      # Set timezone (optional)
-      - TZ=UTC
-    # Resource limits (optional)
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.5'
-        reservations:
-          memory: 64M
-          cpus: '0.1'
-    # Health check
-    healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('https://caltopo.com/api/v1/position/report/test', timeout=5)"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    # Logging configuration
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    # Traefik reverse proxy with SSL termination (conditional)
+    traefik:
+        image: traefik:v2.10
+        container_name: traefik
+        restart: unless-stopped
+        command:
+            - --api.dashboard=true
+            - --api.insecure=false
+            - --providers.docker=true
+            - --providers.docker.exposedbydefault=false
+            - --entrypoints.web.address=:80
+            - --entrypoints.websecure.address=:443
+            - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+            - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+            - --certificatesresolvers.letsencrypt.acme.email=${SSL_EMAIL}
+            - --certificatesresolvers.letsencrypt.acme.storage=/certs/acme.json
+            - --log.level=INFO
+            - --accesslog=true
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - traefik_certs:/certs
+            - traefik_logs:/logs
+        networks:
+            - meshtopo
+        profiles:
+            - ssl
+
+    # Mosquitto MQTT broker (conditional)
+    mosquitto:
+        image: eclipse-mosquitto:2.0
+        container_name: mosquitto
+        restart: unless-stopped
+        ports:
+            - "1883:1883"
+            - "9001:9001"
+        volumes:
+            - mosquitto_data:/mosquitto/data
+            - mosquitto_data:/mosquitto/log
+            - ./deploy/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+        networks:
+            - meshtopo
+        profiles:
+            - mqtt
+
+    # Core Meshtopo gateway service
+    meshtopo-gateway:
+        build: .
+        container_name: meshtopo-gateway
+        restart: unless-stopped
+        volumes:
+            - ./config/config.yaml:/app/config/config.yaml:ro
+            - ./logs:/app/logs
+        environment:
+            - TZ=UTC
+        deploy:
+            resources:
+                limits:
+                    memory: 128M
+                    cpus: "0.5"
+                reservations:
+                    memory: 64M
+                    cpus: "0.1"
+        healthcheck:
+            test: ["CMD", "python", "-c", "import requests; requests.get('https://caltopo.com/api/v1/position/report/test', timeout=5)"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 10s
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "3"
+        networks:
+            - meshtopo
+        depends_on:
+            - mosquitto
+        profiles:
+            - core
+
+    # Web management interface (conditional)
+    meshtopo-web:
+        build:
+            context: .
+            dockerfile: deploy/Dockerfile.web
+        container_name: meshtopo-web
+        restart: unless-stopped
+        volumes:
+            - ./config/config.yaml:/app/config/config.yaml:ro
+            - ./logs:/app/logs
+        environment:
+            - TZ=UTC
+            - FLASK_ENV=production
+        deploy:
+            resources:
+                limits:
+                    memory: 256M
+                    cpus: "0.5"
+                reservations:
+                    memory: 128M
+                    cpus: "0.1"
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 10s
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "3"
+        networks:
+            - meshtopo
+        depends_on:
+            - meshtopo-gateway
+        profiles:
+            - web
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.meshtopo-web.rule=Host(`${SSL_DOMAIN}`)"
+            - "traefik.http.routers.meshtopo-web.entrypoints=websecure"
+            - "traefik.http.routers.meshtopo-web.tls.certresolver=letsencrypt"
+            - "traefik.http.services.meshtopo-web.loadbalancer.server.port=8080"

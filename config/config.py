@@ -3,7 +3,7 @@ Configuration management for the Meshtopo gateway service.
 """
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -19,6 +19,26 @@ class MqttConfig:
     username: str
     password: str
     topic: str
+    use_internal_broker: bool = False
+
+
+@dataclass
+class CalTopoTeamApiConfig:
+    """CalTopo Team API configuration."""
+
+    enabled: bool = False
+    credential_id: str = ""
+    secret_key: str = ""
+
+
+@dataclass
+class OAuthConfig:
+    """OAuth configuration for web UI authentication."""
+
+    provider: str = "google"
+    client_id: str = ""
+    client_secret: str = ""
+    redirect_uri: str = ""
 
 
 @dataclass
@@ -26,6 +46,86 @@ class CalTopoConfig:
     """CalTopo API configuration."""
 
     group: str
+    map_id: str = ""
+    team_api: CalTopoTeamApiConfig = field(default_factory=CalTopoTeamApiConfig)
+    oauth: OAuthConfig = field(default_factory=OAuthConfig)
+
+
+@dataclass
+class SslServiceConfig:
+    """SSL configuration for individual services."""
+
+    enabled: bool = False
+    subdomain: str = ""
+    port: int = 443
+
+
+@dataclass
+class SslConfig:
+    """SSL/TLS configuration."""
+
+    enabled: bool = False
+    email: str = ""
+    domain: str = ""
+    acme_challenge: str = "http"
+    services: Dict[str, SslServiceConfig] = field(default_factory=dict)
+
+
+@dataclass
+class SessionConfig:
+    """Session configuration."""
+
+    timeout: int = 3600
+    secure: bool = True
+    httponly: bool = True
+
+
+@dataclass
+class RateLimitConfig:
+    """Rate limiting configuration."""
+
+    enabled: bool = True
+    requests_per_minute: int = 60
+
+
+@dataclass
+class WebUiConfig:
+    """Web UI configuration."""
+
+    enabled: bool = False
+    host: str = "0.0.0.0"
+    port: int = 8080
+    secret_key: str = ""
+    session: SessionConfig = field(default_factory=SessionConfig)
+    rate_limit: RateLimitConfig = field(default_factory=RateLimitConfig)
+
+
+@dataclass
+class FileLoggingConfig:
+    """File logging configuration."""
+
+    enabled: bool = False
+    path: str = "/app/logs/meshtopo.log"
+    max_size: str = "10MB"
+    backup_count: int = 5
+
+
+@dataclass
+class WebUiLoggingConfig:
+    """Web UI specific logging configuration."""
+
+    level: str = "INFO"
+    access_log: bool = True
+
+
+@dataclass
+class LoggingConfig:
+    """Logging configuration."""
+
+    level: str = "INFO"
+    format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    file: FileLoggingConfig = field(default_factory=FileLoggingConfig)
+    web_ui: WebUiLoggingConfig = field(default_factory=WebUiLoggingConfig)
 
 
 @dataclass
@@ -36,14 +136,6 @@ class NodeMapping:
 
 
 @dataclass
-class LoggingConfig:
-    """Logging configuration."""
-
-    level: str = "INFO"
-    format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-
-
-@dataclass
 class Config:
     """Main configuration class."""
 
@@ -51,6 +143,8 @@ class Config:
     caltopo: CalTopoConfig
     nodes: Dict[str, NodeMapping]
     logging: LoggingConfig
+    ssl: SslConfig = field(default_factory=SslConfig)
+    web_ui: WebUiConfig = field(default_factory=WebUiConfig)
 
     @classmethod
     def from_file(cls, config_path: str) -> "Config":
@@ -114,6 +208,7 @@ class Config:
             username=mqtt_data["username"],
             password=mqtt_data["password"],
             topic=mqtt_data["topic"],
+            use_internal_broker=mqtt_data.get("use_internal_broker", False),
         )
 
         # Validate CalTopo configuration
@@ -121,7 +216,29 @@ class Config:
         if "group" not in caltopo_data:
             raise ValueError("Missing required CalTopo configuration: group")
 
-        caltopo_config = CalTopoConfig(group=caltopo_data["group"])
+        # Process Team API configuration
+        team_api_data = caltopo_data.get("team_api", {})
+        team_api_config = CalTopoTeamApiConfig(
+            enabled=team_api_data.get("enabled", False),
+            credential_id=team_api_data.get("credential_id", ""),
+            secret_key=team_api_data.get("secret_key", ""),
+        )
+
+        # Process OAuth configuration
+        oauth_data = caltopo_data.get("oauth", {})
+        oauth_config = OAuthConfig(
+            provider=oauth_data.get("provider", "google"),
+            client_id=oauth_data.get("client_id", ""),
+            client_secret=oauth_data.get("client_secret", ""),
+            redirect_uri=oauth_data.get("redirect_uri", ""),
+        )
+
+        caltopo_config = CalTopoConfig(
+            group=caltopo_data["group"],
+            map_id=caltopo_data.get("map_id", ""),
+            team_api=team_api_config,
+            oauth=oauth_config,
+        )
 
         # Validate and process node mappings
         nodes_data = data["nodes"]
@@ -137,13 +254,71 @@ class Config:
 
             nodes[node_id] = NodeMapping(device_id=node_config["device_id"])
 
+        # Process SSL configuration (optional)
+        ssl_data = data.get("ssl", {})
+        ssl_services = {}
+        for service_name, service_data in ssl_data.get("services", {}).items():
+            ssl_services[service_name] = SslServiceConfig(
+                enabled=service_data.get("enabled", False),
+                subdomain=service_data.get("subdomain", ""),
+                port=service_data.get("port", 443),
+            )
+
+        ssl_config = SslConfig(
+            enabled=ssl_data.get("enabled", False),
+            email=ssl_data.get("email", ""),
+            domain=ssl_data.get("domain", ""),
+            acme_challenge=ssl_data.get("acme_challenge", "http"),
+            services=ssl_services,
+        )
+
+        # Process Web UI configuration (optional)
+        web_ui_data = data.get("web_ui", {})
+        session_data = web_ui_data.get("session", {})
+        session_config = SessionConfig(
+            timeout=session_data.get("timeout", 3600),
+            secure=session_data.get("secure", True),
+            httponly=session_data.get("httponly", True),
+        )
+
+        rate_limit_data = web_ui_data.get("rate_limit", {})
+        rate_limit_config = RateLimitConfig(
+            enabled=rate_limit_data.get("enabled", True),
+            requests_per_minute=rate_limit_data.get("requests_per_minute", 60),
+        )
+
+        web_ui_config = WebUiConfig(
+            enabled=web_ui_data.get("enabled", False),
+            host=web_ui_data.get("host", "0.0.0.0"),
+            port=web_ui_data.get("port", 8080),
+            secret_key=web_ui_data.get("secret_key", ""),
+            session=session_config,
+            rate_limit=rate_limit_config,
+        )
+
         # Process logging configuration (optional)
         logging_data = data.get("logging", {})
+        file_data = logging_data.get("file", {})
+        file_logging_config = FileLoggingConfig(
+            enabled=file_data.get("enabled", False),
+            path=file_data.get("path", "/app/logs/meshtopo.log"),
+            max_size=file_data.get("max_size", "10MB"),
+            backup_count=file_data.get("backup_count", 5),
+        )
+
+        web_ui_logging_data = logging_data.get("web_ui", {})
+        web_ui_logging_config = WebUiLoggingConfig(
+            level=web_ui_logging_data.get("level", "INFO"),
+            access_log=web_ui_logging_data.get("access_log", True),
+        )
+
         logging_config = LoggingConfig(
             level=logging_data.get("level", "INFO"),
             format=logging_data.get(
                 "format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
             ),
+            file=file_logging_config,
+            web_ui=web_ui_logging_config,
         )
 
         return cls(
@@ -151,6 +326,8 @@ class Config:
             caltopo=caltopo_config,
             nodes=nodes,
             logging=logging_config,
+            ssl=ssl_config,
+            web_ui=web_ui_config,
         )
 
     def get_node_device_id(self, node_id: str) -> Optional[str]:
