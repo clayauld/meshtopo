@@ -11,6 +11,7 @@ from flask import Flask
 from flask_session import Session
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
 
 from config.config import Config
 
@@ -46,6 +47,8 @@ def create_app(config_path: str = "config/config.yaml") -> Flask:
         SESSION_COOKIE_HTTPONLY=config.web_ui.session.httponly,
         SESSION_COOKIE_SAMESITE="Lax",
         PERMANENT_SESSION_LIFETIME=config.web_ui.session.timeout,
+        WTF_CSRF_ENABLED=True,
+        WTF_CSRF_TIME_LIMIT=None,
     )
 
     # Configure logging
@@ -54,6 +57,7 @@ def create_app(config_path: str = "config/config.yaml") -> Flask:
 
     # Initialize extensions
     Session(app)
+    CSRFProtect(app)
 
     # Configure rate limiting
     if config.web_ui.rate_limit.enabled:
@@ -62,6 +66,11 @@ def create_app(config_path: str = "config/config.yaml") -> Flask:
             key_func=get_remote_address,
             default_limits=[f"{config.web_ui.rate_limit.requests_per_minute} per minute"],
         )
+
+        # Add specific rate limits for authentication endpoints
+        limiter.limit("5 per minute")(app.route("/auth/login", methods=["POST"]))
+        limiter.limit("10 per minute")(app.route("/auth/logout", methods=["POST"]))
+
     else:
         limiter = None
 
@@ -82,10 +91,12 @@ def create_app(config_path: str = "config/config.yaml") -> Flask:
     from .routes.auth import auth_bp
     from .routes.maps import maps_bp
     from .routes.api import api_bp
+    from .routes.users import users_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(maps_bp, url_prefix="/maps")
     app.register_blueprint(api_bp, url_prefix="/api")
+    app.register_blueprint(users_bp, url_prefix="/users")
 
     # Add health check endpoint
     @app.route("/health")

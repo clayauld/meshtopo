@@ -57,7 +57,7 @@ services:
 
     # Core Meshtopo gateway service
     meshtopo-gateway:
-        build: .
+        image: ghcr.io/${GITHUB_REPOSITORY:-clayauld/meshtopo}:latest
         container_name: meshtopo-gateway
         restart: unless-stopped
         volumes:
@@ -93,9 +93,7 @@ services:
 
     # Web management interface (conditional)
     meshtopo-web:
-        build:
-            context: .
-            dockerfile: deploy/Dockerfile.web
+        image: ghcr.io/${GITHUB_REPOSITORY:-clayauld/meshtopo}-web:latest
         container_name: meshtopo-web
         restart: unless-stopped
         volumes:

@@ -1,0 +1,153 @@
+# Meshtopo Gateway Service - Docker Configuration Example
+# This configuration is optimized for Docker Compose deployment
+
+# MQTT Broker Configuration
+mqtt:
+    broker: "mosquitto"                # Docker service name
+    port: 1883                         # Internal Docker port
+    username: "meshtopo"               # MQTT username
+    password: "docker_mqtt_password"   # MQTT password
+    topic: "msh/2/json/+/+"            # Meshtastic topic pattern
+    ssl: false                         # Internal Docker communication
+    keepalive: 60
+
+# CalTopo API Configuration
+caltopo:
+    group: "DOCKER-TEAM"               # Your CalTopo group
+    map_id: ""                         # Set via web UI
+
+    # CalTopo Team API configuration
+    team_api:
+        enabled: true
+        credential_id: "DOCKER_CRED_123"
+        secret_key: "DOCKER_SECRET_KEY_BASE64"
+
+# Docker user accounts
+users:
+    - username: "admin"
+      password_hash: "$2b$12$DOCKER_ADMIN_HASH_HERE"  # Generate with password utility
+      role: "admin"
+      caltopo_credentials:
+          credential_id: "DOCKER_ADMIN_CRED"
+          secret_key: "DOCKER_ADMIN_SECRET"
+          accessible_maps: ["docker-map-1", "docker-map-2"]
+
+    - username: "user1"
+      password_hash: "$2b$12$DOCKER_USER1_HASH_HERE"  # Generate with password utility
+      role: "user"
+      caltopo_credentials:
+          credential_id: "DOCKER_USER1_CRED"
+          secret_key: "DOCKER_USER1_SECRET"
+          accessible_maps: ["docker-map-1"]
+
+# Docker node mappings
+nodes:
+    "!823a4edc":
+        device_id: "DOCKER-LEAD"
+        description: "Docker Team Lead"
+        enabled: true
+
+    "!a4b8c2f0":
+        device_id: "DOCKER-COMMS"
+        description: "Docker Communications"
+        enabled: true
+
+# Docker logging configuration
+logging:
+    level: "INFO"
+    file:
+        enabled: true
+        path: "/app/logs/meshtopo.log"  # Docker container path
+        max_size: "10MB"
+        backup_count: 5
+    web_ui:
+        level: "INFO"
+        access_log: true
+
+# Docker web UI configuration
+web_ui:
+    host: "0.0.0.0"                   # Bind to all interfaces in container
+    port: 5000                        # Internal container port
+    secret_key: "docker-secret-key-change-in-production"
+    session:
+        timeout: 3600
+        secure: false                 # Traefik handles SSL termination
+        httponly: true
+    rate_limit:
+        enabled: true
+        requests_per_minute: 60
+        login_attempts_per_minute: 5
+
+# SSL/TLS handled by Traefik
+ssl:
+    enabled: false                    # Traefik handles SSL termination
+    cert_file: ""
+    key_file: ""
+
+# Docker MQTT broker configuration
+mqtt_broker:
+    enabled: true                      # Use integrated Mosquitto
+    port: 1883
+    persistence: true
+    authentication:
+        enabled: true
+        users:
+            - username: "meshtopo"
+              password: "docker_mqtt_password"
+              acl: "readwrite"
+    ssl:
+        enabled: false                 # Internal Docker communication
+
+# Docker-specific settings
+docker:
+    # Volume mounts
+    volumes:
+        - "/var/lib/meshtopo/data:/app/data"
+        - "/var/lib/meshtopo/logs:/app/logs"
+        - "/var/lib/meshtopo/sessions:/app/sessions"
+
+    # Environment variables (can be overridden in docker-compose.yml)
+    environment:
+        MESHTOPO_CONFIG_PATH: "/app/config/config.yaml"
+        MESHTOPO_LOG_LEVEL: "INFO"
+        MESHTOPO_WEB_HOST: "0.0.0.0"
+        MESHTOPO_WEB_PORT: "5000"
+
+    # Health check settings
+    health_check:
+        enabled: true
+        interval: 30
+        timeout: 10
+        retries: 3
+        start_period: 40
+
+# Docker Compose specific settings
+compose:
+    # Service dependencies
+    depends_on:
+        - mosquitto
+        - traefik
+
+    # Resource limits
+    resources:
+        limits:
+            memory: "512M"
+            cpus: "0.5"
+        reservations:
+            memory: "256M"
+            cpus: "0.25"
+
+    # Restart policy
+    restart: "unless-stopped"
+
+    # Network configuration
+    networks:
+        - meshtopo-network
+
+    # Labels for Traefik
+    labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.meshtopo.rule=Host(`meshtopo.yourdomain.com`)"
+        - "traefik.http.routers.meshtopo.tls=true"
+        - "traefik.http.routers.meshtopo.tls.certresolver=letsencrypt"
+        - "traefik.http.services.meshtopo.loadbalancer.server.port=5000"

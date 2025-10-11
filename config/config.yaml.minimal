@@ -1,0 +1,83 @@
+# Meshtopo Gateway Service - Minimal Configuration
+# This configuration includes ONLY the core functionality:
+# - MQTT client connection to external broker
+# - CalTopo position reporting
+# - Meshtastic node mapping
+# - Basic logging
+#
+# All advanced features are disabled:
+# - No Web UI
+# - No user management
+# - No SSL/TLS
+# - No Team API
+# - No integrated MQTT broker
+# - No advanced logging
+
+# MQTT Broker Configuration (REQUIRED - Core functionality)
+mqtt:
+    broker: "your-mqtt-broker.com"     # External MQTT broker (required)
+    port: 1883                         # MQTT port (1883 for non-SSL, 8883 for SSL)
+    username: ""                       # MQTT username (empty if no auth)
+    password: ""                       # MQTT password (empty if no auth)
+    topic: "msh/2/json/+/+"            # Meshtastic topic pattern (required)
+
+# CalTopo API Configuration (REQUIRED - Core functionality)
+caltopo:
+    group: "YOUR-GROUP-ID"            # CalTopo group ID (required)
+    map_id: ""                         # Will be set automatically
+    team_api:
+        enabled: false                 # Disabled - no Team API features
+
+# Meshtastic Node Mapping (REQUIRED - Core functionality)
+nodes:
+    "!12345678":                       # Replace with your Meshtastic hardware ID
+        device_id: "MY-DEVICE"         # Replace with desired CalTopo device name
+
+# Basic Logging Configuration (REQUIRED - Core functionality)
+logging:
+    level: "INFO"                      # Log level: DEBUG, INFO, WARNING, ERROR
+    file:
+        enabled: false                 # Disabled - console logging only
+        path: ""                       # Not used
+        max_size: ""                   # Not used
+        backup_count: 0                # Not used
+    web_ui:
+        level: "INFO"                  # Not used (Web UI disabled)
+        access_log: false              # Not used (Web UI disabled)
+
+# Web UI Configuration (DISABLED - Not core functionality)
+web_ui:
+    enabled: false                     # Disabled - no Web UI
+    host: "127.0.0.1"                 # Not used
+    port: 5000                        # Not used
+    secret_key: ""                    # Not used
+    session:
+        timeout: 3600                  # Not used
+        secure: false                  # Not used
+        httponly: true                 # Not used
+    rate_limit:
+        enabled: false                 # Not used
+
+# SSL/TLS Configuration (DISABLED - Not core functionality)
+ssl:
+    enabled: false                     # Disabled - no SSL/TLS
+    email: ""                          # Not used
+    domain: ""                         # Not used
+    acme_challenge: ""                 # Not used
+    services: {}                       # Not used
+
+# User Management (DISABLED - Not core functionality)
+users: []                             # Empty - no user management
+
+# Optional: MQTT Broker Configuration (DISABLED - Using external broker)
+mqtt_broker:
+    enabled: false                     # Disabled - using external MQTT broker
+    port: 1883                        # Not used
+    persistence: false                # Not used
+    authentication:
+        enabled: false                 # Not used
+        users: []                      # Not used
+    ssl:
+        enabled: false                 # Not used
+        cert_file: ""                  # Not used
+        key_file: ""                   # Not used

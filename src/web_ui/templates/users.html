@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - Meshtopo Gateway{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-users"></i> User Management</h2>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <i class="fas fa-plus"></i> Add User
+                </button>
+            </div>
+
+            {% if users %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Current Users</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Role</th>
+                                    <th>CalTopo Access</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ user.username }}</strong>
+                                        {% if user.username == current_user.username %}
+                                        <span class="badge bg-info ms-2">You</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.role == 'admin' %}
+                                        <span class="badge bg-warning text-dark">Admin</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">User</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.caltopo_credentials %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> Enabled
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-light text-dark">
+                                            <i class="fas fa-times"></i> Disabled
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    data-bs-toggle="modal" data-bs-target="#editUserModal"
+                                                    data-username="{{ user.username }}"
+                                                    data-role="{{ user.role }}"
+                                                    data-credential-id="{{ user.caltopo_credentials.credential_id if user.caltopo_credentials else '' }}"
+                                                    data-secret-key="{{ user.caltopo_credentials.secret_key if user.caltopo_credentials else '' }}"
+                                                    data-accessible-maps="{{ user.caltopo_credentials.accessible_maps | join(',') if user.caltopo_credentials else '' }}">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </button>
+                                            {% if user.username != current_user.username %}
+                                            <form method="POST" action="{{ url_for('users.remove_user', username=user.username) }}"
+                                                  class="d-inline" onsubmit="return confirm('Are you sure you want to remove user {{ user.username }}?')">
+                                                {{ csrf_token() }}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i> Remove
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">No Users Found</h5>
+                    <p class="card-text">Add your first user to get started.</p>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                        <i class="fas fa-plus"></i> Add User
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-plus"></i> Add New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('users.add_user') }}">
+                {{ csrf_token() }}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username *</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="role" class="form-label">Role</label>
+                                <select class="form-select" id="role" name="role">
+                                    <option value="user">User</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password *</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+
+                    <hr>
+                    <h6><i class="fas fa-map"></i> CalTopo Credentials (Optional)</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="credential_id" class="form-label">Credential ID</label>
+                                <input type="text" class="form-control" id="credential_id" name="credential_id">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="secret_key" class="form-label">Secret Key</label>
+                                <input type="password" class="form-control" id="secret_key" name="secret_key">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="accessible_maps" class="form-label">Accessible Maps (comma-separated)</label>
+                        <input type="text" class="form-control" id="accessible_maps" name="accessible_maps"
+                               placeholder="map-id-1, map-id-2">
+                        <div class="form-text">Leave empty to allow access to all maps</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-edit"></i> Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="editUserForm">
+                {{ csrf_token() }}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="edit_username" name="username" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_role" class="form-label">Role</label>
+                                <select class="form-select" id="edit_role" name="role">
+                                    <option value="user">User</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit_password" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="edit_password" name="password">
+                        <div class="form-text">Leave empty to keep current password</div>
+                    </div>
+
+                    <hr>
+                    <h6><i class="fas fa-map"></i> CalTopo Credentials</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_credential_id" class="form-label">Credential ID</label>
+                                <input type="text" class="form-control" id="edit_credential_id" name="credential_id">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_secret_key" class="form-label">Secret Key</label>
+                                <input type="password" class="form-control" id="edit_secret_key" name="secret_key">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_accessible_maps" class="form-label">Accessible Maps (comma-separated)</label>
+                        <input type="text" class="form-control" id="edit_accessible_maps" name="accessible_maps">
+                        <div class="form-text">Leave empty to allow access to all maps</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Password Hash Generator Modal -->
+<div class="modal fade" id="hashGeneratorModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-key"></i> Password Hash Generator</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('users.generate_hash') }}">
+                {{ csrf_token() }}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="hash_password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="hash_password" name="password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Generate Hash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Handle edit user modal data
+document.getElementById('editUserModal').addEventListener('show.bs.modal', function (event) {
+    var button = event.relatedTarget;
+    var username = button.getAttribute('data-username');
+    var role = button.getAttribute('data-role');
+    var credentialId = button.getAttribute('data-credential-id');
+    var secretKey = button.getAttribute('data-secret-key');
+    var accessibleMaps = button.getAttribute('data-accessible-maps');
+
+    var modal = this;
+    modal.querySelector('#edit_username').value = username;
+    modal.querySelector('#edit_role').value = role;
+    modal.querySelector('#edit_credential_id').value = credentialId || '';
+    modal.querySelector('#edit_secret_key').value = secretKey || '';
+    modal.querySelector('#edit_accessible_maps').value = accessibleMaps || '';
+
+    // Update form action
+    modal.querySelector('#editUserForm').action = "{{ url_for('users.update_user', username='PLACEHOLDER') }}".replace('PLACEHOLDER', username);
+});
+</script>
+{% endblock %}

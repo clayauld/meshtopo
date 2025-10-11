@@ -9,7 +9,12 @@ help:
 	@echo "Development:"
 	@echo "  install      Install dependencies"
 	@echo "  dev-setup    Setup development environment"
-	@echo "  test         Run tests"
+	@echo "  test         Run all tests"
+	@echo "  test-password Run password utility tests"
+	@echo "  test-user-manager Run user manager tests"
+	@echo "  test-flask-app Run Flask app tests"
+	@echo "  test-auth    Run authentication tests"
+	@echo "  test-users   Run user management tests"
 	@echo "  lint         Run linting checks"
 	@echo "  format       Format code with black and isort"
 	@echo "  clean        Clean up temporary files"
@@ -45,6 +50,23 @@ dev-setup: install
 test:
 	python3 src/test_gateway.py
 	python3 -c "from src.web_ui.utils.password import hash_password, verify_password; print('Password utilities test passed')"
+	python3 tests/run_tests.py
+
+# Run specific test modules
+test-password:
+	python3 tests/test_password_utils.py
+
+test-user-manager:
+	python3 tests/test_user_manager.py
+
+test-flask-app:
+	python3 tests/test_flask_app.py
+
+test-auth:
+	python3 tests/test_authentication.py
+
+test-users:
+	python3 tests/test_user_management.py
 
 # Run linting
 lint:

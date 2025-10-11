@@ -1,0 +1,152 @@
+# Meshtopo Gateway Service - Production Configuration Example
+# This configuration is optimized for production deployment with security best practices
+
+# MQTT Broker Configuration
+mqtt:
+    broker: "mqtt.yourdomain.com"      # Your production MQTT broker
+    port: 8883                         # SSL-enabled MQTT port
+    username: "meshtopo_prod"          # Production MQTT username
+    password: "STRONG_MQTT_PASSWORD"   # Strong MQTT password
+    topic: "msh/2/json/+/+"            # Meshtastic topic pattern
+    ssl: true                          # Enable SSL for MQTT
+    keepalive: 60
+
+# CalTopo API Configuration
+caltopo:
+    group: "PRODUCTION-TEAM"           # Your production CalTopo group
+    map_id: ""                         # Set via web UI
+
+    # CalTopo Team API configuration
+    team_api:
+        enabled: true
+        credential_id: "PROD_CRED_123" # Production CalTopo credentials
+        secret_key: "PROD_SECRET_KEY_BASE64_ENCODED"
+
+# Production user accounts
+# Generate password hashes using: python3 src/web_ui/utils/password.py 'strong_password'
+users:
+    - username: "admin"
+      password_hash: "$2b$12$PRODUCTION_ADMIN_HASH_HERE"  # Generate with strong password
+      role: "admin"
+      caltopo_credentials:
+          credential_id: "ADMIN_PROD_CRED"
+          secret_key: "ADMIN_PROD_SECRET"
+          accessible_maps: ["prod-map-1", "prod-map-2", "prod-map-3"]
+
+    - username: "operator1"
+      password_hash: "$2b$12$OPERATOR1_HASH_HERE"  # Generate with strong password
+      role: "user"
+      caltopo_credentials:
+          credential_id: "OP1_PROD_CRED"
+          secret_key: "OP1_PROD_SECRET"
+          accessible_maps: ["prod-map-1"]
+
+    - username: "operator2"
+      password_hash: "$2b$12$OPERATOR2_HASH_HERE"  # Generate with strong password
+      role: "user"
+      caltopo_credentials:
+          credential_id: "OP2_PROD_CRED"
+          secret_key: "OP2_PROD_SECRET"
+          accessible_maps: ["prod-map-2"]
+
+# Production node mappings
+nodes:
+    "!823a4edc":
+        device_id: "PROD-LEAD"
+        description: "Production Team Lead"
+        enabled: true
+
+    "!a4b8c2f0":
+        device_id: "PROD-COMMS-1"
+        description: "Primary Communications"
+        enabled: true
+
+    "!b5c9d3e1":
+        device_id: "PROD-COMMS-2"
+        description: "Secondary Communications"
+        enabled: true
+
+    "!c6d0e4f2":
+        device_id: "PROD-FIELD-1"
+        description: "Field Operations Unit 1"
+        enabled: true
+
+    "!d7e1f5g3":
+        device_id: "PROD-FIELD-2"
+        description: "Field Operations Unit 2"
+        enabled: true
+
+# Production logging configuration
+logging:
+    level: "WARNING"                   # Production log level
+    file:
+        enabled: true
+        path: "/var/log/meshtopo/meshtopo.log"
+        max_size: "50MB"               # Larger log files for production
+        backup_count: 10               # More backup files
+    web_ui:
+        level: "WARNING"
+        access_log: true
+
+# Production web UI configuration
+web_ui:
+    host: "0.0.0.0"                   # Bind to all interfaces
+    port: 443                         # HTTPS port
+    secret_key: "PRODUCTION_SECRET_KEY_CHANGE_THIS"  # Strong secret key
+    session:
+        timeout: 1800                 # 30 minutes for production
+        secure: true                  # Secure cookies for HTTPS
+        httponly: true                # HTTP-only cookies
+    rate_limit:
+        enabled: true
+        requests_per_minute: 30       # Stricter rate limiting for production
+        login_attempts_per_minute: 3  # Stricter login rate limiting
+
+# Production SSL/TLS configuration
+ssl:
+    enabled: true
+    cert_file: "/etc/letsencrypt/live/meshtopo.yourdomain.com/fullchain.pem"
+    key_file: "/etc/letsencrypt/live/meshtopo.yourdomain.com/privkey.pem"
+
+# Production MQTT broker configuration (if using integrated broker)
+mqtt_broker:
+    enabled: true
+    port: 8883
+    persistence: true
+    authentication:
+        enabled: true
+        users:
+            - username: "meshtopo_prod"
+              password: "STRONG_MQTT_PASSWORD"
+              acl: "readwrite"
+    ssl:
+        enabled: true
+        cert_file: "/etc/ssl/certs/mqtt-prod.crt"
+        key_file: "/etc/ssl/private/mqtt-prod.key"
+
+# Production advanced configuration
+advanced:
+    position_forwarding:
+        enabled: true
+        interval: 60                  # 1 minute intervals for production
+        max_distance: 50              # Stricter distance threshold
+
+    message_filtering:
+        enabled: true
+        allowed_types: ["position", "text", "telemetry"]
+        blocked_nodes: []             # Add any blocked nodes here
+
+    performance:
+        max_concurrent_connections: 200
+        connection_timeout: 15
+        retry_attempts: 5
+        retry_delay: 10
+
+# Security headers and additional production settings
+security:
+    csrf_protection: true
+    secure_headers: true
+    content_security_policy: "default-src 'self'"
+    x_frame_options: "DENY"
+    x_content_type_options: "nosniff"
+    strict_transport_security: true

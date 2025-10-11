@@ -4,6 +4,8 @@ Simple authentication routes for username/password login.
 
 import logging
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, current_app, session, flash
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from ..utils.password import verify_password
 from ..models.user import UserManager
@@ -54,6 +56,9 @@ def login():
 
         if success:
             logger.info(f"User logged in: {username}")
+
+            # Regenerate session ID for security
+            session.regenerate()
 
             # Set session timeout based on remember me
             if remember_me:
