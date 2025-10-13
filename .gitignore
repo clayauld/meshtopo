@@ -73,6 +73,6 @@ config/config.yaml.bak
 # Archived components
 archived/
 
-# Beads database issues
+# Beads database
 .beads/*.db
 .beads/*.db-*
