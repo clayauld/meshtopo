@@ -1,7 +1,7 @@
 # Meshtopo Configuration
 
 <div align="center">
-  <img src="../assets/images/Meshtopo-logo-no-type.png" alt="Meshtopo Logo" width="150">
+  <img src="../assets/images/Meshtopo-logo.png" alt="Meshtopo Logo" width="150">
 </div>
 
 This directory contains configuration files and examples for the Meshtopo gateway service.
