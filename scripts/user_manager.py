@@ -3,22 +3,24 @@
 User management utility for Meshtopo Gateway Service.
 """
 
-import sys
 import os
-import yaml
+import sys
 from pathlib import Path
 
-# Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+import yaml
 
-from web_ui.utils.password import hash_password, verify_password
-from config.config import Config, UserConfig, UserCalTopoCredentials
+# Add project root to path for imports
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from config.config import Config, UserCalTopoCredentials, UserConfig
+from src.web_ui.utils.password import hash_password, verify_password
 
 
 def load_config(config_path="config/config.yaml"):
     """Load configuration from file."""
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             return yaml.safe_load(f)
     except FileNotFoundError:
         print(f"Error: Configuration file {config_path} not found")
@@ -31,7 +33,7 @@ def load_config(config_path="config/config.yaml"):
 def save_config(config_data, config_path="config/config.yaml"):
     """Save configuration to file."""
     try:
-        with open(config_path, 'w') as f:
+        with open(config_path, "w") as f:
             yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
         print(f"✓ Configuration saved to {config_path}")
     except Exception as e:
@@ -41,7 +43,7 @@ def save_config(config_data, config_path="config/config.yaml"):
 
 def list_users(config_data):
     """List all users."""
-    users = config_data.get('users', [])
+    users = config_data.get("users", [])
     if not users:
         print("No users configured")
         return
@@ -51,10 +53,12 @@ def list_users(config_data):
     for i, user in enumerate(users, 1):
         print(f"{i}. Username: {user.get('username', 'N/A')}")
         print(f"   Role: {user.get('role', 'user')}")
-        print(f"   Has CalTopo credentials: {'Yes' if user.get('caltopo_credentials') else 'No'}")
-        if user.get('caltopo_credentials'):
-            creds = user['caltopo_credentials']
-            accessible_maps = creds.get('accessible_maps', [])
+        print(
+            f"   Has CalTopo credentials: {'Yes' if user.get('caltopo_credentials') else 'No'}"
+        )
+        if user.get("caltopo_credentials"):
+            creds = user["caltopo_credentials"]
+            accessible_maps = creds.get("accessible_maps", [])
             print(f"   Accessible maps: {len(accessible_maps)} maps")
         print()
 
@@ -70,8 +74,8 @@ def add_user(config_data):
         return False
 
     # Check if user already exists
-    existing_users = config_data.get('users', [])
-    if any(user.get('username') == username for user in existing_users):
+    existing_users = config_data.get("users", [])
+    if any(user.get("username") == username for user in existing_users):
         print(f"Error: User '{username}' already exists")
         return False
 
@@ -81,8 +85,8 @@ def add_user(config_data):
         return False
 
     role = input("Role (admin/user, default: user): ").strip().lower()
-    if role not in ['admin', 'user']:
-        role = 'user'
+    if role not in ["admin", "user"]:
+        role = "user"
 
     # Generate password hash
     password_hash = hash_password(password)
@@ -91,35 +95,35 @@ def add_user(config_data):
     has_caltopo = input("Add CalTopo credentials? (y/N): ").strip().lower()
     caltopo_credentials = None
 
-    if has_caltopo in ['y', 'yes']:
+    if has_caltopo in ["y", "yes"]:
         credential_id = input("CalTopo credential ID: ").strip()
         secret_key = input("CalTopo secret key: ").strip()
 
         if credential_id and secret_key:
-            accessible_maps_input = input("Accessible map IDs (comma-separated, optional): ").strip()
-            accessible_maps = [m.strip() for m in accessible_maps_input.split(',') if m.strip()]
+            accessible_maps_input = input(
+                "Accessible map IDs (comma-separated, optional): "
+            ).strip()
+            accessible_maps = [
+                m.strip() for m in accessible_maps_input.split(",") if m.strip()
+            ]
 
             caltopo_credentials = {
-                'credential_id': credential_id,
-                'secret_key': secret_key,
-                'accessible_maps': accessible_maps
+                "credential_id": credential_id,
+                "secret_key": secret_key,
+                "accessible_maps": accessible_maps,
             }
 
     # Create user
-    user_data = {
-        'username': username,
-        'password_hash': password_hash,
-        'role': role
-    }
+    user_data = {"username": username, "password_hash": password_hash, "role": role}
 
     if caltopo_credentials:
-        user_data['caltopo_credentials'] = caltopo_credentials
+        user_data["caltopo_credentials"] = caltopo_credentials
 
     # Add to config
-    if 'users' not in config_data:
-        config_data['users'] = []
+    if "users" not in config_data:
+        config_data["users"] = []
 
-    config_data['users'].append(user_data)
+    config_data["users"].append(user_data)
 
     print(f"✓ User '{username}' added successfully")
     return True
@@ -127,7 +131,7 @@ def add_user(config_data):
 
 def remove_user(config_data):
     """Remove a user."""
-    users = config_data.get('users', [])
+    users = config_data.get("users", [])
     if not users:
         print("No users to remove")
         return False
@@ -141,10 +145,10 @@ def remove_user(config_data):
 
         if 1 <= choice <= len(users):
             user = users[choice - 1]
-            username = user.get('username', 'Unknown')
+            username = user.get("username", "Unknown")
 
             confirm = input(f"Remove user '{username}'? (y/N): ").strip().lower()
-            if confirm in ['y', 'yes']:
+            if confirm in ["y", "yes"]:
                 del users[choice - 1]
                 print(f"✓ User '{username}' removed successfully")
                 return True
@@ -161,7 +165,7 @@ def remove_user(config_data):
 
 def change_password(config_data):
     """Change user password."""
-    users = config_data.get('users', [])
+    users = config_data.get("users", [])
     if not users:
         print("No users configured")
         return False
@@ -175,7 +179,7 @@ def change_password(config_data):
 
         if 1 <= choice <= len(users):
             user = users[choice - 1]
-            username = user.get('username', 'Unknown')
+            username = user.get("username", "Unknown")
 
             password = input(f"New password for '{username}': ").strip()
             if not password:
@@ -184,7 +188,7 @@ def change_password(config_data):
 
             # Generate new password hash
             password_hash = hash_password(password)
-            user['password_hash'] = password_hash
+            user["password_hash"] = password_hash
 
             print(f"✓ Password for '{username}' changed successfully")
             return True
@@ -224,25 +228,25 @@ def main():
         print()
         command = input("Enter command: ").strip().lower()
 
-    if command == 'hash':
+    if command == "hash":
         generate_password_hash()
         return
 
     # Load configuration
     config_data = load_config()
 
-    if command == 'list':
+    if command == "list":
         list_users(config_data)
-    elif command == 'add':
+    elif command == "add":
         if add_user(config_data):
             save_config(config_data)
-    elif command == 'remove':
+    elif command == "remove":
         if remove_user(config_data):
             save_config(config_data)
-    elif command == 'password':
+    elif command == "password":
         if change_password(config_data):
             save_config(config_data)
-    elif command == 'interactive':
+    elif command == "interactive":
         while True:
             print("\nMeshtopo User Management")
             print("=" * 25)
@@ -255,20 +259,20 @@ def main():
 
             choice = input("\nEnter choice: ").strip()
 
-            if choice == '1':
+            if choice == "1":
                 list_users(config_data)
-            elif choice == '2':
+            elif choice == "2":
                 if add_user(config_data):
                     save_config(config_data)
-            elif choice == '3':
+            elif choice == "3":
                 if remove_user(config_data):
                     save_config(config_data)
-            elif choice == '4':
+            elif choice == "4":
                 if change_password(config_data):
                     save_config(config_data)
-            elif choice == '5':
+            elif choice == "5":
                 generate_password_hash()
-            elif choice == '0':
+            elif choice == "0":
                 break
             else:
                 print("Invalid choice")

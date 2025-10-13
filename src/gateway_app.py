@@ -2,14 +2,14 @@
 Main gateway application that orchestrates MQTT and CalTopo communication.
 """
 
+import json
 import logging
 import signal
 import sys
 import time
-from typing import Any, Dict, Optional, Union
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import json
+from typing import Any, Dict, Optional, Union
 
 from caltopo_reporter import CalTopoReporter
 from config.config import Config
@@ -32,7 +32,7 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
                 "status": "healthy" if gateway_app.running else "stopped",
                 "timestamp": time.time(),
                 "uptime": time.time() - gateway_app.stats.get("start_time", 0),
-                "stats": gateway_app.stats
+                "stats": gateway_app.stats,
             }
 
             self.wfile.write(json.dumps(health_data).encode())
@@ -46,10 +46,12 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
             metrics_data = {
                 "messages_received": gateway_app.stats.get("messages_received", 0),
                 "messages_processed": gateway_app.stats.get("messages_processed", 0),
-                "position_updates_sent": gateway_app.stats.get("position_updates_sent", 0),
+                "position_updates_sent": gateway_app.stats.get(
+                    "position_updates_sent", 0
+                ),
                 "errors": gateway_app.stats.get("errors", 0),
                 "uptime": time.time() - gateway_app.stats.get("start_time", 0),
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
 
             self.wfile.write(json.dumps(metrics_data).encode())
@@ -92,8 +94,9 @@ class GatewayApp:
             "start_time": 0.0,
         }
 
-        # Node ID mapping: numeric ID -> hardware ID
+        # Node ID mapping: numeric ID -> hardware ID -> callsign
         self.node_id_mapping: Dict[str, str] = {}
+        self.callsign_mapping: Dict[str, str] = {}  # hardware_id -> callsign
 
     def initialize(self) -> bool:
         """
@@ -132,7 +135,7 @@ class GatewayApp:
             self.mqtt_client = MqttClient(self.config, self._process_message)
 
             # Start health check server if web UI is enabled
-            if self.config.web_ui.enabled:
+            if hasattr(self.config, "web_ui") and self.config.web_ui.enabled:
                 self._start_health_server()
 
             self.logger.info("Application initialized successfully")
@@ -148,7 +151,9 @@ class GatewayApp:
             # Use a different port for health checks to avoid conflicts
             health_port = self.config.web_ui.port + 1000
 
-            self.health_server = HTTPServer(("0.0.0.0", health_port), HealthCheckHandler)
+            self.health_server = HTTPServer(
+                ("0.0.0.0", health_port), HealthCheckHandler
+            )
             self.health_server.gateway_app = self
 
             def run_server():
@@ -342,8 +347,26 @@ class GatewayApp:
                 )
                 return
 
+        # Get callsign for this hardware ID
+        callsign = self.callsign_mapping.get(hardware_id)
+        if not callsign:
+            # Check if we have a configured device_id for this hardware ID
+            configured_device_id = self.config.get_node_device_id(hardware_id)
+            if configured_device_id:
+                callsign = configured_device_id
+                self.callsign_mapping[hardware_id] = callsign
+                self.logger.debug(
+                    f"Using configured device_id as callsign: {hardware_id} -> {callsign}"
+                )
+            else:
+                self.logger.warning(
+                    f"No callsign mapping found for hardware ID {hardware_id}. "
+                    f"Position update will be skipped until nodeinfo message is received."
+                )
+                return
+
         success = self.caltopo_reporter.send_position_update(
-            hardware_id, latitude, longitude
+            callsign, latitude, longitude
         )
 
         if success:
@@ -379,6 +402,19 @@ class GatewayApp:
             self.logger.debug(
                 f"Mapped numeric node ID {node_id} to hardware ID {node_id_from_payload}"
             )
+
+            # Extract and store callsign from longname
+            if longname:
+                self.callsign_mapping[node_id_from_payload] = longname
+                self.logger.debug(
+                    f"Mapped hardware ID {node_id_from_payload} to callsign {longname}"
+                )
+            elif shortname:
+                # Fallback to shortname if longname not available
+                self.callsign_mapping[node_id_from_payload] = shortname
+                self.logger.debug(
+                    f"Mapped hardware ID {node_id_from_payload} to callsign {shortname} (from shortname)"
+                )
 
         self.logger.info(
             f"Node info from {node_id}: ID={node_id_from_payload}, "
@@ -431,9 +467,7 @@ class GatewayApp:
         # Extract route information
         route = payload.get("route", [])
 
-        self.logger.info(
-            f"Traceroute from {node_id}: Route={route}"
-        )
+        self.logger.info(f"Traceroute from {node_id}: Route={route}")
 
     def _signal_handler(self, signum: int, frame: Any) -> None:
         """

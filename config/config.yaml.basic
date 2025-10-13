@@ -1,68 +1,25 @@
-# Meshtopo Gateway Service - Basic Configuration Example
-# This is a minimal configuration for getting started quickly
+# Minimal Meshtopo Configuration
+# This is the simplest possible configuration
 
-# MQTT Broker Configuration
 mqtt:
-    broker: "localhost"                 # Change to your MQTT broker address
-    port: 1883                         # Standard MQTT port
-    username: ""                        # Leave empty if no authentication
-    password: ""                        # Leave empty if no authentication
-    topic: "msh/REGION/2/json/+/+"            # Standard Meshtastic topic pattern
+    broker: "192.168.1.100"
+    port: 1883
+    username: "user"
+    password: "pass"
+    topic: "msh/US/2/json/+/+"
 
-# CalTopo API Configuration
 caltopo:
-    group: "YOUR-GROUP-ID"             # Replace with your CalTopo group ID
-    map_id: ""                         # Will be set via web UI
+    connect_key: "YOUR_CONNECT_KEY_HERE"
 
-    # CalTopo Team API (optional - for map selection feature)
-    team_api:
-        enabled: false                 # Set to true if you have Team API credentials
-        credential_id: ""              # Your CalTopo service account credential ID
-        secret_key: ""                 # Your CalTopo service account secret key
+# Optional: Internal MQTT broker
+mqtt_broker:
+    enabled: false
+    port: 1883
+    websocket_port: 9001
+    users:
+        - username: "meshtopo"
+          password: "password"
+          acl: "readwrite"
 
-# User accounts for web UI authentication
-# Generate password hashes using: python3 src/web_ui/utils/password.py 'your_password'
-users:
-    - username: "admin"
-      password_hash: "$2b$12$REPLACE_WITH_ACTUAL_HASH"  # Generate with password utility
-      role: "admin"
-      caltopo_credentials:
-          credential_id: ""            # Optional: Your CalTopo credentials
-          secret_key: ""               # Optional: Your CalTopo secret key
-          accessible_maps: []          # Optional: List of accessible map IDs
-
-# Mapping of Meshtastic hardware IDs to CalTopo device IDs
-nodes:
-    "!12345678":                       # Replace with your Meshtastic hardware ID
-        device_id: "MY-DEVICE"         # Replace with desired CalTopo device name
-
-# Logging Configuration
 logging:
     level: "INFO"
-    file:
-        enabled: true
-        path: "meshtopo.log"
-        max_size: "10MB"
-        backup_count: 5
-    web_ui:
-        level: "INFO"
-        access_log: true
-
-# Web UI Configuration
-web_ui:
-    host: "127.0.0.1"                  # Localhost for development
-    port: 5000
-    secret_key: "change-this-secret-key"  # Change this in production!
-    session:
-        timeout: 3600
-        secure: false                   # Set to true for HTTPS
-        httponly: true
-    rate_limit:
-        enabled: true
-        requests_per_minute: 60
-
-# SSL/TLS Configuration (disabled for basic setup)
-ssl:
-    enabled: false
-    cert_file: ""
-    key_file: ""

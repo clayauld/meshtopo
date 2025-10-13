@@ -9,7 +9,9 @@ A lightweight Python gateway service that bridges Meshtastic LoRa mesh networks 
 ## Features
 
 -   **Real-time Position Forwarding**: Automatically forwards Meshtastic position packets to CalTopo
--   **Intelligent Node Mapping**: Automatically maps Meshtastic numeric node IDs to hardware IDs using fallback mechanisms, then to CalTopo device IDs
+-   **Automatic Device Registration**: Devices automatically appear in CalTopo Team Account using their callsigns
+-   **Intelligent Node Mapping**: Maps Meshtastic numeric node IDs to hardware IDs, then to callsigns
+-   **Internal MQTT Broker**: Optional integrated Mosquitto broker with configurable users and ACL
 -   **Robust Error Handling**: Graceful handling of network issues and API failures
 -   **Docker Deployment**: Easy deployment with Docker and Docker Compose
 -   **Comprehensive Logging**: Detailed logging for monitoring and debugging
@@ -22,7 +24,7 @@ The system follows a simple linear data flow:
 1. **Meshtastic Network** → LoRa mesh nodes with MQTT gateway
 2. **MQTT Broker** → Central message broker (e.g., Mosquitto)
 3. **Gateway Service** → This Python service (filters, transforms, forwards)
-4. **CalTopo API** → Cloud mapping platform
+4. **CalTopo Team Account** → Cloud mapping platform with automatic device registration
 
 ## Quick Start
 
@@ -30,7 +32,14 @@ The system follows a simple linear data flow:
 
 -   Python 3.9+ or Docker
 -   Access to an MQTT broker with Meshtastic data
--   CalTopo account with API access
+-   CalTopo Team Account with access URL
+
+### Obtaining CalTopo Connect Key
+
+1. Log into your CalTopo Team Account Administration page
+2. Navigate to **Trackable Devices** → **Access URLs**
+3. Copy the connect key from your team's access URL
+4. The connect key looks like: `aoJpFiwnxxgGEuaMY6W0gcqdeQ3T2bjoQfzvWbduT9LjJ`
 
 ### Docker Deployment (Recommended)
 
@@ -53,6 +62,53 @@ The system follows a simple linear data flow:
 
     ```bash
     docker-compose logs -f
+    ```
+
+### Internal MQTT Broker Setup
+
+Meshtopo can optionally run its own Mosquitto MQTT broker:
+
+1. **Enable internal broker in config.yaml**:
+
+    ```yaml
+    mqtt_broker:
+        enabled: true
+        port: 1883
+        websocket_port: 9001
+        persistence: true
+        max_connections: 1000
+        allow_anonymous: false
+        users:
+            - username: "meshtopo"
+              password: "secure_password"
+              acl: "readwrite"
+        acl_enabled: false
+    ```
+
+2. **Generate broker configuration**:
+
+    ```bash
+    make setup-broker
+    # or manually:
+    python3 scripts/generate_mosquitto_config.py
+    ```
+
+3. **Start the broker**:
+
+    ```bash
+    docker-compose up -d mosquitto
+    ```
+
+4. **Configure gateway to use internal broker**:
+
+    ```yaml
+    mqtt:
+        broker: "mosquitto" # Docker service name
+        port: 1883
+        username: "meshtopo"
+        password: "secure_password"
+        topic: "msh/US/2/json/+/+"
+        use_internal_broker: true
     ```
 
 ### Manual Installation
@@ -87,21 +143,30 @@ mqtt:
     port: 1883
     username: "your_mqtt_user"
     password: "your_mqtt_password"
-    topic: "msh/REGION/2/json/+/+"
+    topic: "msh/US/2/json/+/+"
 
-**Note**: Replace `REGION` with your LoRa region code. See [Meshtastic LoRa Region by Country](https://meshtastic.org/docs/configuration/region-by-country/) for the correct region code for your country.
-
-# CalTopo API Configuration
+# CalTopo Team Account Configuration
 caltopo:
-    group: "MESH-TEAM-ALPHA"
+    connect_key: "G3rvYRwG3TtrQVyUIB3WKfbyzFqSfUldGDxC4blVzrkte"
 
-# Node ID Mapping
+# Optional: Node display name overrides
 nodes:
     "!823a4edc":
         device_id: "TEAM-LEAD"
     "!a4b8c2f0":
-        device_id: "COMMS"
+        device_id: "COMMS-1"
 ```
+
+**Note**: Replace `US` in the topic with your LoRa region code. See [Meshtastic LoRa Region by Country](https://meshtastic.org/docs/configuration/region-by-country/) for the correct region code for your country.
+
+### Device Registration
+
+Meshtopo uses CalTopo's Team Account access URL feature for automatic device registration:
+
+1. **Automatic Registration**: When a Meshtastic node first reports its position, it automatically appears in your CalTopo Team Account
+2. **Callsign Identification**: Devices are identified by their Meshtastic `longname` field (callsign)
+3. **Display Name Override**: Optionally configure custom display names in the `nodes` section
+4. **No Pre-registration**: No need to manually add devices to CalTopo
 
 ### Node Mapping Mechanism
 
@@ -122,7 +187,7 @@ When `nodeinfo` messages are received, the gateway builds a mapping from numeric
 }
 ```
 
-This creates: `862485920` → `!33687da0`
+This creates: `862485920` → `!33687da0` → `AMRG3-Heltec`
 
 #### 2. Fallback Mapping (Position Messages)
 
@@ -142,17 +207,15 @@ When position messages arrive before nodeinfo messages, the gateway uses the `se
 
 This automatically maps: `862485920` → `!33687da0`
 
-#### 3. Configuration Mapping
+#### 3. Callsign Resolution
 
-The final step maps hardware IDs to CalTopo device names using your configuration:
+The final step determines the callsign for CalTopo:
 
-```yaml
-nodes:
-    "!33687da0":
-        device_id: "AMRG3"
-```
+1. **Configured Override**: If the hardware ID is in the `nodes` config, use the configured `device_id`
+2. **Meshtastic Longname**: Otherwise, use the `longname` from nodeinfo messages
+3. **Fallback to Shortname**: If no longname, use the `shortname`
 
-**Complete mapping chain**: `862485920` → `!33687da0` → `AMRG3`
+**Complete mapping chain**: `862485920` → `!33687da0` → `AMRG3` (or configured name)
 
 This ensures position updates are never missed, even when nodeinfo messages are delayed or unavailable.
 
@@ -161,13 +224,13 @@ This ensures position updates are never missed, even when nodeinfo messages are 
 -   **mqtt.broker**: IP address or hostname of your MQTT broker
 -   **mqtt.port**: MQTT broker port (default: 1883)
 -   **mqtt.username/password**: MQTT authentication credentials
--   **mqtt.topic**: MQTT topic pattern for Meshtastic position packets (replace `REGION` with your LoRa region code)
--   **caltopo.group**: Your CalTopo group identifier
--   **nodes**: Mapping of Meshtastic hardware IDs to CalTopo device IDs
+-   **mqtt.topic**: MQTT topic pattern for Meshtastic position packets (replace `US` with your LoRa region code)
+-   **caltopo.connect_key**: Your CalTopo Team Account connect key
+-   **nodes**: Optional mapping of Meshtastic hardware IDs to custom display names
 
 ### LoRa Region Codes
 
-The `REGION` in the MQTT topic must be replaced with the appropriate LoRa region code for your country. Common region codes include:
+The region code in the MQTT topic must be replaced with the appropriate LoRa region code for your country. Common region codes include:
 
 -   **US** - United States
 -   **EU_868** - European Union (868 MHz)
@@ -187,8 +250,8 @@ For the complete list of region codes by country, see the [Meshtastic LoRa Regio
 2. **MQTT Gateway** forwards data to MQTT broker
 3. **Gateway Service** subscribes to position topics
 4. **Position packets** are parsed and validated
-5. **CalTopo API** receives formatted position reports
-6. **CalTopo maps** display real-time positions
+5. **CalTopo Team Account** receives formatted position reports
+6. **CalTopo maps** display real-time positions with automatic device registration
 
 ## API Integration
 
@@ -209,10 +272,10 @@ The service processes JSON position packets from Meshtastic:
 
 ### CalTopo Output Format
 
-Position data is forwarded to CalTopo via HTTP GET:
+Position data is forwarded to CalTopo via HTTP GET using the Team Account access URL:
 
 ```
-https://caltopo.com/api/v1/position/report/{GROUP}?id={DEVICE_ID}&lat={LAT}&lng={LNG}
+https://caltopo.com/api/v1/position/report/{CONNECT_KEY}?id={CALLSIGN}&lat={LAT}&lng={LNG}
 ```
 
 ## Error Handling
@@ -255,8 +318,8 @@ meshtopo/
 │   ├── gateway.py      # Main application entry point
 │   ├── gateway_app.py  # Main application class
 │   ├── mqtt_client.py  # MQTT communication
-│   ├── caltopo_reporter.py # CalTopo API integration
-│   └── test_gateway.py # Test suite
+│   └── caltopo_reporter.py # CalTopo API integration
+├── tests/              # Test suite
 ├── requirements.txt    # Python dependencies
 ├── pyproject.toml      # Project configuration
 ├── Makefile           # Development commands
@@ -266,7 +329,7 @@ meshtopo/
 ### Running Tests
 
 ```bash
-python src/test_gateway.py
+python -m pytest tests/
 ```
 
 ### Code Style
@@ -346,9 +409,15 @@ Key metrics to monitor:
     - Ensure nodes are broadcasting position data
 
 3. **CalTopo API Errors**
-    - Verify group ID and device mappings
-    - Check CalTopo API status
+
+    - Verify connect key is correct
+    - Check CalTopo Team Account status
     - Verify internet connectivity
+
+4. **Devices Not Appearing in CalTopo**
+    - Ensure connect key is from Team Account access URL
+    - Check that nodes are sending position data
+    - Verify callsign extraction from nodeinfo messages
 
 ### Debug Mode
 
@@ -383,6 +452,5 @@ For support and questions:
 
 -   Two-way messaging from CalTopo to Meshtastic
 -   Additional telemetry forwarding (battery, signal strength)
--   Web-based status dashboard
--   Multiple CalTopo group support
 -   Position history and analytics
+-   Multiple CalTopo team support

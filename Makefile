@@ -1,6 +1,6 @@
 # Meshtopo Gateway Service - Development Makefile
 
-.PHONY: help install test lint format clean docker-build docker-run docker-stop dev-setup users
+.PHONY: help install test lint format clean docker-build docker-run docker-stop dev-setup setup-broker generate-broker-config
 
 # Default target
 help:
@@ -10,11 +10,9 @@ help:
 	@echo "  install      Install dependencies"
 	@echo "  dev-setup    Setup development environment"
 	@echo "  test         Run all tests"
-	@echo "  test-password Run password utility tests"
-	@echo "  test-user-manager Run user manager tests"
-	@echo "  test-flask-app Run Flask app tests"
-	@echo "  test-auth    Run authentication tests"
-	@echo "  test-users   Run user management tests"
+	@echo "  test-config  Run configuration tests"
+	@echo "  test-gateway Run gateway tests"
+	@echo "  test-mqtt    Run MQTT topic format tests"
 	@echo "  lint         Run linting checks"
 	@echo "  format       Format code with black and isort"
 	@echo "  clean        Clean up temporary files"
@@ -26,47 +24,35 @@ help:
 	@echo ""
 	@echo "Service:"
 	@echo "  run          Run the gateway service"
-	@echo "  web-ui       Run the web UI"
 	@echo "  config       Show configuration help"
 	@echo ""
-	@echo "User Management:"
-	@echo "  users        Interactive user management"
-	@echo "  hash-password Generate password hash"
+	@echo "MQTT Broker:"
+	@echo "  setup-broker Setup internal MQTT broker"
+	@echo "  generate-broker-config Generate broker configuration files"
 
 # Install dependencies
 install:
 	pip3 install -r requirements.txt
-	pip3 install -r requirements-web.txt
 
 # Setup development environment
 dev-setup: install
-	pip3 install -r requirements.txt
-	pip3 install -r requirements-web.txt
 	pip3 install black flake8 mypy pytest pytest-cov isort pre-commit
 	pre-commit install
 	@echo "Development environment setup complete!"
 
 # Run tests
 test:
-	python3 src/test_gateway.py
-	python3 -c "from src.web_ui.utils.password import hash_password, verify_password; print('Password utilities test passed')"
-	python3 tests/run_tests.py
+	python3 -m pytest tests/ -v
 
 # Run specific test modules
-test-password:
-	python3 tests/test_password_utils.py
+test-config:
+	python3 tests/test_config.py
 
-test-user-manager:
-	python3 tests/test_user_manager.py
+test-gateway:
+	python3 tests/test_gateway_app.py
 
-test-flask-app:
-	python3 tests/test_flask_app.py
-
-test-auth:
-	python3 tests/test_authentication.py
-
-test-users:
-	python3 tests/test_user_management.py
+test-mqtt:
+	python3 tests/test_mqtt_topic_format.py
 
 # Run linting
 lint:
@@ -95,7 +81,6 @@ clean:
 # Build Docker images
 docker-build:
 	docker build -t meshtopo:latest -f deploy/Dockerfile .
-	docker build -t meshtopo-web:latest -f deploy/Dockerfile.web .
 
 # Run with Docker Compose
 docker-run:
@@ -109,17 +94,13 @@ docker-stop:
 run:
 	python3 src/gateway.py
 
-# Run the web UI
-web-ui:
-	PYTHONPATH=. python3 src/web_ui/app.py
+# Setup internal MQTT broker
+setup-broker:
+	./scripts/setup_broker.sh
 
-# Interactive user management
-users:
-	python3 scripts/user_manager.py interactive
-
-# Generate password hash
-hash-password:
-	python3 src/web_ui/utils/password.py
+# Generate broker configuration files
+generate-broker-config:
+	python3 scripts/generate_mosquitto_config.py
 
 # Show configuration help
 config:
@@ -129,15 +110,14 @@ config:
 	@echo ""
 	@echo "2. Edit config.yaml with your settings:"
 	@echo "   - MQTT broker details"
-	@echo "   - CalTopo group ID"
-	@echo "   - Node mappings"
-	@echo "   - User accounts (see docs/authentication.md)"
+	@echo "   - CalTopo connect key"
+	@echo "   - Node mappings (optional)"
+	@echo "   - Internal MQTT broker settings (optional)"
 	@echo ""
 	@echo "3. Run the service:"
 	@echo "   make run          # Core gateway only"
-	@echo "   make web-ui       # Web UI only"
 	@echo "   make docker-run   # Full stack with Docker"
 	@echo ""
-	@echo "4. Manage users:"
-	@echo "   make users        # Interactive user management"
-	@echo "   make hash-password # Generate password hash"
+	@echo "4. Setup internal MQTT broker:"
+	@echo "   make setup-broker # Setup and start internal broker"
+	@echo "   make generate-broker-config # Generate broker config files only"

@@ -1,309 +1,209 @@
-# Meshtopo Configuration Examples
+# Meshtopo Configuration
 
-This directory contains several configuration examples for different deployment scenarios.
+This directory contains configuration files and examples for the Meshtopo gateway service.
 
 ## Configuration Files
 
-### `config.yaml.example`
+### Main Configuration
 
-**Comprehensive example** with all features enabled and documented. This is the most complete configuration showing:
+-   **`config.yaml`** - Your active configuration file (not tracked in git)
+-   **`config.yaml.example`** - Complete example with all options documented
+-   **`config.yaml.basic`** - Minimal configuration for basic setup
+-   **`config.yaml.minimal`** - Bare minimum configuration for testing
+-   **`config.yaml.production`** - Production-ready configuration
+-   **`config.yaml.docker`** - Docker-optimized configuration
 
--   Full MQTT broker configuration with SSL
--   Complete CalTopo Team API integration
--   Multiple users with different roles and CalTopo credentials
--   Multiple Meshtastic nodes with descriptions
--   Advanced logging configuration
--   Complete web UI settings with security features
--   SSL/TLS configuration
--   Optional integrated MQTT broker
--   Advanced performance and filtering settings
--   Environment-specific overrides
+## Quick Setup
 
-### `config.yaml.minimal`
+1. **Copy an example configuration**:
 
-**Absolute minimal configuration** for core functionality only:
-
--   External MQTT broker connection
--   CalTopo position reporting
--   Meshtastic node mapping
--   Basic console logging
--   All advanced features disabled (no Web UI, SSL, users, etc.)
-
-### `config.yaml.basic`
-
-**Minimal configuration** for getting started quickly. Perfect for:
-
--   Development and testing
--   Simple single-user setups
--   Local deployments
--   Learning the system
-
-### `config.yaml.production`
-
-**Production-ready configuration** with security best practices:
-
--   Strong authentication and security settings
--   Optimized logging for production
--   Stricter rate limiting
--   SSL/TLS with Let's Encrypt
--   Performance optimizations
--   Security headers and policies
-
-### `config.yaml.docker`
-
-**Docker Compose optimized** configuration for containerized deployments:
-
--   Docker service names and internal ports
--   Traefik SSL termination
--   Integrated Mosquitto broker
--   Docker-specific paths and settings
--   Health checks and resource limits
--   Traefik labels for automatic SSL
-
-## Quick Start
-
-1. **Choose the appropriate example** for your use case:
-    - `config.yaml.minimal` - Core functionality only (no Web UI)
-    - `config.yaml.basic` - Simple setup with Web UI
-    - `config.yaml.production` - Full production deployment
-    - `config.yaml.docker` - Docker Compose deployment
-2. **Copy it to `config.yaml`**:
     ```bash
-    cp config/config.yaml.minimal config/config.yaml  # For minimal setup
-    cp config/config.yaml.basic config/config.yaml    # For basic setup
-    ```
-3. **Edit the configuration** with your specific settings:
-    - MQTT broker details
-    - CalTopo group ID
-    - Meshtastic node mappings
-    - User accounts and passwords (if using Web UI)
-4. **Generate password hashes** (if using Web UI):
-    ```bash
-    python3 src/web_ui/utils/password.py 'your_password'
-    ```
-5. **Start the service**:
-    ```bash
-    python3 src/gateway.py          # Core service only (minimal config)
-    python3 src/web_ui/app.py       # Web UI only (basic+ configs)
-    # or
-    docker-compose up -d            # Full stack with Docker
+    cp config.yaml.example config.yaml
     ```
 
-## Minimal Configuration (Core Functionality Only)
+2. **Edit the configuration**:
 
-The `config.yaml.minimal` file provides the absolute minimum configuration needed for core Meshtopo functionality:
+    ```bash
+    nano config.yaml
+    ```
 
-### What's Included (Core Features)
+3. **Required settings**:
+    - MQTT broker connection details
+    - CalTopo Team Account connect key
+    - MQTT topic pattern with correct region code
 
--   **MQTT Client**: Connects to external MQTT broker to receive Meshtastic messages
--   **CalTopo Integration**: Forwards position data to CalTopo mapping platform
--   **Node Mapping**: Maps Meshtastic hardware IDs to CalTopo device names
--   **Basic Logging**: Console logging for monitoring and debugging
-
-### What's Disabled (Advanced Features)
-
--   **Web UI**: No web interface for configuration or monitoring
--   **User Management**: No authentication or user accounts
--   **SSL/TLS**: No encryption (use external SSL termination if needed)
--   **Team API**: No CalTopo Team API features (map selection, etc.)
--   **File Logging**: No log files (console only)
--   **Integrated MQTT Broker**: Uses external MQTT broker only
-
-### Use Cases for Minimal Configuration
-
--   **Embedded Systems**: Resource-constrained environments
--   **Headless Servers**: No GUI or web interface needed
--   **Simple Deployments**: Just need position forwarding
--   **Development**: Testing core functionality without complexity
--   **Legacy Integration**: Existing systems that don't need advanced features
-
-### Running with Minimal Configuration
-
-```bash
-# Copy minimal config
-cp config/config.yaml.minimal config/config.yaml
-
-# Edit with your settings
-nano config/config.yaml
-
-# Run core gateway only
-python3 src/gateway.py
-```
-
-### Minimal Configuration Requirements
-
--   External MQTT broker (Mosquitto, AWS IoT, etc.)
--   CalTopo group ID
--   At least one Meshtastic node mapping
--   Python 3.9+ with basic dependencies
-
-## Configuration Sections
+## Configuration Structure
 
 ### MQTT Configuration
 
 ```yaml
 mqtt:
-    broker: "your-mqtt-broker.com"
-    port: 1883
-    username: "your_username"
-    password: "your_password"
-    topic: "msh/REGION/2/json/+/+"
-
-**Region Codes**: Replace `REGION` with the appropriate LoRa region code for your country. Common region codes:
-- `US` - United States
-- `EU_868` - European Union (868 MHz)
-- `ANZ` - Australia/New Zealand
-- `CN` - China
-- `JP` - Japan
-
-See the [Meshtastic LoRa Region by Country documentation](https://meshtastic.org/docs/configuration/region-by-country/) for the complete list of region codes.
+    broker: "192.168.1.100" # MQTT broker hostname/IP
+    port: 1883 # MQTT broker port
+    username: "user" # MQTT username
+    password: "pass" # MQTT password
+    topic: "msh/US/2/json/+/+" # MQTT topic pattern
 ```
 
 ### CalTopo Configuration
 
 ```yaml
 caltopo:
-    group: "YOUR-GROUP-ID"
-    map_id: "" # Set via web UI
-    team_api:
-        enabled: true
-        credential_id: "YOUR_CREDENTIAL_ID"
-        secret_key: "YOUR_SECRET_KEY"
+    connect_key: "YOUR_CONNECT_KEY_HERE" # From Team Account access URL
 ```
 
-### User Management
-
-```yaml
-users:
-    - username: "admin"
-      password_hash: "$2b$12$..." # Generate with password utility
-      role: "admin"
-      caltopo_credentials:
-          credential_id: "ADMIN_CRED"
-          secret_key: "ADMIN_SECRET"
-          accessible_maps: ["map1", "map2"]
-```
-
-### Node Mapping
-
-The gateway uses an intelligent mapping system to handle Meshtastic messages:
-
-#### Automatic Node ID Discovery
-
-The gateway automatically builds mappings between numeric node IDs and hardware IDs using two methods:
-
-1. **Primary Method (Nodeinfo Messages)**: When `nodeinfo` messages are received, the gateway extracts the hardware ID from the payload
-2. **Fallback Method (Position Messages)**: When position messages arrive first, the gateway uses the `sender` field as a fallback
-
-#### Configuration Mapping
-
-You only need to configure the final mapping from hardware IDs to CalTopo device names:
+### Optional Node Overrides
 
 ```yaml
 nodes:
-    "!12345678": # Meshtastic hardware ID
-        device_id: "MY-DEVICE" # CalTopo device name
-        description: "Device description"
-        enabled: true
+    "!823a4edc": # Meshtastic hardware ID
+        device_id: "TEAM-LEAD" # Custom display name in CalTopo
 ```
 
-#### Complete Mapping Chain
+### Internal MQTT Broker Configuration
 
-The gateway creates this mapping chain automatically:
+```yaml
+mqtt_broker:
+    enabled: true # Enable internal Mosquitto broker
+    port: 1883 # MQTT broker port
+    websocket_port: 9001 # WebSocket port for web clients
+    persistence: true # Enable message persistence
+    max_connections: 1000 # Maximum concurrent connections
+    allow_anonymous: false # Allow anonymous connections
+    users:
+        - username: "meshtopo" # MQTT username
+          password: "secure_password" # MQTT password
+          acl: "readwrite" # Access level: read, write, readwrite
+        - username: "readonly" # Read-only user
+          password: "readonly_pass" # Read-only password
+          acl: "read" # Read-only access
+    acl_enabled: false # Enable Access Control Lists
+```
 
--   **Numeric Node ID** (from `from` field) → **Hardware ID** (from `sender` field or nodeinfo payload) → **CalTopo Device Name** (from configuration)
+## Obtaining CalTopo Connect Key
 
-This ensures position updates are never missed, even when nodeinfo messages are delayed or unavailable.
+1. Log into your CalTopo Team Account
+2. Navigate to **Team Settings** → **Access URLs**
+3. Copy the connect key from your team's access URL
+4. The connect key looks like: `G3rvYRwG3TtrQVyUIB3WKfbyzFqSfUldGDxC4blVzrkte`
 
-## Security Best Practices
+## Region Codes
 
-### Password Security
+Replace `US` in the MQTT topic with your LoRa region code:
 
--   Use strong, unique passwords for each user
--   Generate password hashes using the provided utility
--   Never store plain text passwords in configuration files
+-   **US** - United States
+-   **EU_868** - European Union (868 MHz)
+-   **ANZ** - Australia/New Zealand
+-   **CN** - China
+-   **JP** - Japan
+-   **KR** - Korea
+-   **IN** - India
+-   **BR_902** - Brazil
+-   **RU** - Russia
 
-### SSL/TLS Configuration
+For the complete list, see [Meshtastic LoRa Region by Country](https://meshtastic.org/docs/configuration/region-by-country/).
 
--   Always use SSL in production environments
--   Use Let's Encrypt for automatic certificate management
--   Enable secure cookies and HTTP-only flags
+## Device Registration
 
-### Rate Limiting
+Devices automatically register in CalTopo using their Meshtastic callsigns:
 
--   Enable rate limiting for all production deployments
--   Set appropriate limits based on your usage patterns
--   Monitor for abuse and adjust limits as needed
+1. **Automatic**: Devices appear when they first report position
+2. **Callsign**: Uses Meshtastic `longname` field as identifier
+3. **Override**: Optional custom display names in `nodes` section
+4. **No Setup**: No pre-registration required
 
-### User Roles
+## Internal MQTT Broker Setup
 
--   Use admin role only for system administrators
--   Assign user role for regular operators
--   Limit CalTopo access based on operational needs
+### Quick Setup
 
-## Environment-Specific Settings
+1. **Enable broker in config.yaml**:
+
+    ```yaml
+    mqtt_broker:
+        enabled: true
+        users:
+            - username: "meshtopo"
+              password: "your_password"
+              acl: "readwrite"
+    ```
+
+2. **Generate configuration**:
+
+    ```bash
+    make setup-broker
+    ```
+
+3. **Start broker**:
+    ```bash
+    docker-compose up -d mosquitto
+    ```
+
+### User Management
+
+-   **Username/Password**: Define MQTT users in `mqtt_broker.users`
+-   **ACL Levels**: `read`, `write`, or `readwrite`
+-   **Password Security**: Passwords are hashed using Mosquitto's PBKDF2 method
+-   **Anonymous Access**: Disabled by default for security
+
+### Security Features
+
+-   **No Anonymous Access**: All connections require authentication
+-   **Password Hashing**: Uses PBKDF2 with SHA512
+-   **ACL Support**: Fine-grained access control (optional)
+-   **Connection Limits**: Configurable max connections
+-   **WebSocket Support**: Secure WebSocket connections on separate port
+
+## Logging Configuration
+
+```yaml
+logging:
+    level: "INFO" # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    file:
+        enabled: true # Enable file logging
+        path: "/var/log/meshtopo/meshtopo.log"
+        max_size: "10MB" # Maximum log file size
+        backup_count: 5 # Number of backup files
+```
+
+## Environment-Specific Configurations
 
 ### Development
 
--   Use `127.0.0.1` for web UI host
--   Disable SSL for easier testing
--   Use DEBUG or INFO log levels
--   Enable access logging for debugging
+-   Use `config.yaml.minimal` for testing
+-   Set logging level to `DEBUG`
+-   Use local MQTT broker
 
 ### Production
 
--   Use `0.0.0.0` for web UI host
--   Enable SSL with proper certificates
--   Use WARNING or ERROR log levels
--   Implement proper backup strategies
+-   Use `config.yaml.production` as template
+-   Set logging level to `WARNING`
+-   Configure proper log rotation
+-   Use secure MQTT credentials
 
 ### Docker
 
--   Use Docker service names for internal communication
--   Let Traefik handle SSL termination
--   Use Docker volumes for persistent data
--   Configure health checks and resource limits
+-   Use `config.yaml.docker` as template
+-   Set MQTT broker to service name (e.g., `mosquitto`)
+-   Configure log paths for container
 
 ## Troubleshooting
 
+### Configuration Validation
+
+```bash
+python -c "from config.config import Config; Config.from_file('config.yaml')"
+```
+
 ### Common Issues
 
-**"Invalid username or password"**
+1. **Invalid connect key**: Ensure it's from Team Account access URL
+2. **Wrong region code**: Check Meshtastic documentation for your country
+3. **MQTT connection failed**: Verify broker settings and network connectivity
+4. **Devices not appearing**: Check that nodes are sending position data
 
--   Verify password hash was generated correctly
--   Check username spelling in configuration
--   Ensure user exists in users section
+## Security Notes
 
-**"MQTT connection failed"**
-
--   Verify broker address and port
--   Check username/password credentials
--   Ensure network connectivity
-
-**"CalTopo API error"**
-
--   Verify credential ID and secret key
--   Check CalTopo group ID
--   Ensure Team API is enabled if needed
-
-**"Web UI not accessible"**
-
--   Check host and port settings
--   Verify SSL configuration
--   Check firewall rules
-
-### Log Analysis
-
--   Check log files for error messages
--   Use appropriate log levels for your environment
--   Monitor access logs for security issues
--   Set up log rotation to manage disk space
-
-## Support
-
-For additional help:
-
--   Check the main README.md file
--   Review the authentication documentation
--   Examine the Docker Compose configuration
--   Test with the basic configuration first
+-   Never commit `config.yaml` to version control (contains sensitive data)
+-   Use strong MQTT passwords
+-   Keep CalTopo connect key secure
+-   Consider using environment variables for sensitive data in production

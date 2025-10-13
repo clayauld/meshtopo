@@ -128,8 +128,8 @@ def test_node_mapping_mechanism() -> bool:
             "payload": {
                 "id": "!823a4edc",
                 "longname": "TEST-DEVICE",
-                "shortname": "TEST"
-            }
+                "shortname": "TEST",
+            },
         }
 
         app._process_nodeinfo_message(nodeinfo_message, 862485920)
@@ -144,11 +144,12 @@ def test_node_mapping_mechanism() -> bool:
             "from": 862481648,
             "sender": "!a4b8c2f0",
             "type": "position",
-            "payload": {"latitude_i": 612188460, "longitude_i": -1499001320}
+            "payload": {"latitude_i": 612188460, "longitude_i": -1499001320},
         }
 
         # Initialize CalTopo reporter to avoid errors
         from caltopo_reporter import CalTopoReporter
+
         app.caltopo_reporter = CalTopoReporter(config)
 
         app._process_position_message(position_message, 862481648)
@@ -178,11 +179,7 @@ def test_message_type_handling() -> bool:
         telemetry_message = {
             "from": 862485920,
             "type": "telemetry",
-            "payload": {
-                "battery_level": 95,
-                "voltage": 4.1,
-                "uptime_seconds": 3600
-            }
+            "payload": {"battery_level": 95, "voltage": 4.1, "uptime_seconds": 3600},
         }
 
         app._process_telemetry_message(telemetry_message, 862485920)
@@ -192,20 +189,14 @@ def test_message_type_handling() -> bool:
         traceroute_message = {
             "from": 862485920,
             "type": "traceroute",
-            "payload": {
-                "route": ["DEVICE1", "DEVICE2"]
-            }
+            "payload": {"route": ["DEVICE1", "DEVICE2"]},
         }
 
         app._process_traceroute_message(traceroute_message, 862485920)
         print("✓ Traceroute message processing works correctly")
 
         # Test empty type message
-        empty_type_message = {
-            "from": 862485920,
-            "type": "",
-            "payload": {}
-        }
+        empty_type_message = {"from": 862485920, "type": "", "payload": {}}
 
         # This should be handled gracefully
         app._process_message(empty_type_message)
@@ -231,7 +222,7 @@ def main() -> int:
         test_message_processing,
         test_caltopo_url_building,
         test_node_mapping_mechanism,
-        test_message_type_handling
+        test_message_type_handling,
     ]
 
     passed = 0

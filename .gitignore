@@ -60,6 +60,8 @@ config.yaml
 
 # Test coverage
 .coverage
+.coverage.*
+coverage.xml
 .pytest_cache/
 htmlcov/
 
@@ -67,3 +69,6 @@ htmlcov/
 *.tmp
 *.temp
 config/config.yaml.bak
+
+# Archived components
+archived/

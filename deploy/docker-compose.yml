@@ -49,11 +49,19 @@ services:
         volumes:
             - mosquitto_data:/mosquitto/data
             - mosquitto_data:/mosquitto/log
-            - ./deploy/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+            - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+            - ./passwd:/mosquitto/config/passwd:ro
+            - ./aclfile:/mosquitto/config/aclfile:ro
         networks:
             - meshtopo
         profiles:
             - mqtt
+        healthcheck:
+            test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "test", "-m", "healthcheck"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 10s
 
     # Core Meshtopo gateway service
     meshtopo-gateway:
@@ -90,46 +98,3 @@ services:
             - mosquitto
         profiles:
             - core
-
-    # Web management interface (conditional)
-    meshtopo-web:
-        image: ghcr.io/${GITHUB_REPOSITORY:-clayauld/meshtopo}-web:latest
-        container_name: meshtopo-web
-        restart: unless-stopped
-        volumes:
-            - ./config/config.yaml:/app/config/config.yaml:ro
-            - ./logs:/app/logs
-        environment:
-            - TZ=UTC
-            - FLASK_ENV=production
-        deploy:
-            resources:
-                limits:
-                    memory: 256M
-                    cpus: "0.5"
-                reservations:
-                    memory: 128M
-                    cpus: "0.1"
-        healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-            interval: 30s
-            timeout: 10s
-            retries: 3
-            start_period: 10s
-        logging:
-            driver: "json-file"
-            options:
-                max-size: "10m"
-                max-file: "3"
-        networks:
-            - meshtopo
-        depends_on:
-            - meshtopo-gateway
-        profiles:
-            - web
-        labels:
-            - "traefik.enable=true"
-            - "traefik.http.routers.meshtopo-web.rule=Host(`${SSL_DOMAIN}`)"
-            - "traefik.http.routers.meshtopo-web.entrypoints=websecure"
-            - "traefik.http.routers.meshtopo-web.tls.certresolver=letsencrypt"
-            - "traefik.http.services.meshtopo-web.loadbalancer.server.port=8080"

@@ -11,101 +11,33 @@ import yaml
 
 
 @dataclass
-class MqttConfig:
-    """MQTT broker configuration."""
+class MqttUser:
+    """MQTT user configuration."""
 
-    broker: str
-    port: int
     username: str
     password: str
-    topic: str
-    use_internal_broker: bool = False
+    acl: str = "readwrite"  # "read", "write", "readwrite"
 
 
 @dataclass
-class CalTopoTeamApiConfig:
-    """CalTopo Team API configuration."""
+class MqttBrokerConfig:
+    """Internal MQTT broker configuration."""
 
     enabled: bool = False
-    credential_id: str = ""
-    secret_key: str = ""
-
-
-@dataclass
-class UserCalTopoCredentials:
-    """CalTopo credentials for a specific user."""
-
-    credential_id: str
-    secret_key: str
-    accessible_maps: List[str] = field(default_factory=list)
-
-
-@dataclass
-class UserConfig:
-    """User configuration for simple authentication."""
-
-    username: str
-    password_hash: str
-    role: str = "user"  # "admin" or "user"
-    caltopo_credentials: Optional[UserCalTopoCredentials] = None
+    port: int = 1883
+    websocket_port: int = 9001
+    persistence: bool = True
+    max_connections: int = 1000
+    allow_anonymous: bool = False
+    users: List[MqttUser] = field(default_factory=list)
+    acl_enabled: bool = False
 
 
 @dataclass
 class CalTopoConfig:
     """CalTopo API configuration."""
 
-    group: str
-    map_id: str = ""
-    team_api: CalTopoTeamApiConfig = field(default_factory=CalTopoTeamApiConfig)
-
-
-@dataclass
-class SslServiceConfig:
-    """SSL configuration for individual services."""
-
-    enabled: bool = False
-    subdomain: str = ""
-    port: int = 443
-
-
-@dataclass
-class SslConfig:
-    """SSL/TLS configuration."""
-
-    enabled: bool = False
-    email: str = ""
-    domain: str = ""
-    acme_challenge: str = "http"
-    services: Dict[str, SslServiceConfig] = field(default_factory=dict)
-
-
-@dataclass
-class SessionConfig:
-    """Session configuration."""
-
-    timeout: int = 3600
-    secure: bool = True
-    httponly: bool = True
-
-
-@dataclass
-class RateLimitConfig:
-    """Rate limiting configuration."""
-
-    enabled: bool = True
-    requests_per_minute: int = 60
-
-
-@dataclass
-class WebUiConfig:
-    """Web UI configuration."""
-
-    enabled: bool = False
-    host: str = "0.0.0.0"
-    port: int = 8080
-    secret_key: str = ""
-    session: SessionConfig = field(default_factory=SessionConfig)
-    rate_limit: RateLimitConfig = field(default_factory=RateLimitConfig)
+    connect_key: str
 
 
 @dataclass
@@ -119,21 +51,12 @@ class FileLoggingConfig:
 
 
 @dataclass
-class WebUiLoggingConfig:
-    """Web UI specific logging configuration."""
-
-    level: str = "INFO"
-    access_log: bool = True
-
-
-@dataclass
 class LoggingConfig:
     """Logging configuration."""
 
     level: str = "INFO"
     format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     file: FileLoggingConfig = field(default_factory=FileLoggingConfig)
-    web_ui: WebUiLoggingConfig = field(default_factory=WebUiLoggingConfig)
 
 
 @dataclass
@@ -151,9 +74,7 @@ class Config:
     caltopo: CalTopoConfig
     nodes: Dict[str, NodeMapping]
     logging: LoggingConfig
-    ssl: SslConfig = field(default_factory=SslConfig)
-    web_ui: WebUiConfig = field(default_factory=WebUiConfig)
-    users: List[UserConfig] = field(default_factory=list)
+    mqtt_broker: MqttBrokerConfig = field(default_factory=MqttBrokerConfig)
 
     @classmethod
     def from_file(cls, config_path: str) -> "Config":
@@ -222,21 +143,11 @@ class Config:
 
         # Validate CalTopo configuration
         caltopo_data = data["caltopo"]
-        if "group" not in caltopo_data:
-            raise ValueError("Missing required CalTopo configuration: group")
-
-        # Process Team API configuration
-        team_api_data = caltopo_data.get("team_api", {})
-        team_api_config = CalTopoTeamApiConfig(
-            enabled=team_api_data.get("enabled", False),
-            credential_id=team_api_data.get("credential_id", ""),
-            secret_key=team_api_data.get("secret_key", ""),
-        )
+        if "connect_key" not in caltopo_data:
+            raise ValueError("Missing required CalTopo configuration: connect_key")
 
         caltopo_config = CalTopoConfig(
-            group=caltopo_data["group"],
-            map_id=caltopo_data.get("map_id", ""),
-            team_api=team_api_config,
+            connect_key=caltopo_data["connect_key"],
         )
 
         # Validate and process node mappings
@@ -253,78 +164,6 @@ class Config:
 
             nodes[node_id] = NodeMapping(device_id=node_config["device_id"])
 
-        # Process users configuration (optional)
-        users_data = data.get("users", [])
-        users = []
-        for user_data in users_data:
-            if not isinstance(user_data, dict):
-                raise ValueError("User configuration must be a dictionary")
-
-            required_user_keys = ["username", "password_hash"]
-            for key in required_user_keys:
-                if key not in user_data:
-                    raise ValueError(f"Missing required user configuration: {key}")
-
-            # Process CalTopo credentials if present
-            caltopo_creds = None
-            if "caltopo_credentials" in user_data:
-                creds_data = user_data["caltopo_credentials"]
-                caltopo_creds = UserCalTopoCredentials(
-                    credential_id=creds_data.get("credential_id", ""),
-                    secret_key=creds_data.get("secret_key", ""),
-                    accessible_maps=creds_data.get("accessible_maps", [])
-                )
-
-            user_config = UserConfig(
-                username=user_data["username"],
-                password_hash=user_data["password_hash"],
-                role=user_data.get("role", "user"),
-                caltopo_credentials=caltopo_creds
-            )
-            users.append(user_config)
-
-        # Process SSL configuration (optional)
-        ssl_data = data.get("ssl", {})
-        ssl_services = {}
-        for service_name, service_data in ssl_data.get("services", {}).items():
-            ssl_services[service_name] = SslServiceConfig(
-                enabled=service_data.get("enabled", False),
-                subdomain=service_data.get("subdomain", ""),
-                port=service_data.get("port", 443),
-            )
-
-        ssl_config = SslConfig(
-            enabled=ssl_data.get("enabled", False),
-            email=ssl_data.get("email", ""),
-            domain=ssl_data.get("domain", ""),
-            acme_challenge=ssl_data.get("acme_challenge", "http"),
-            services=ssl_services,
-        )
-
-        # Process Web UI configuration (optional)
-        web_ui_data = data.get("web_ui", {})
-        session_data = web_ui_data.get("session", {})
-        session_config = SessionConfig(
-            timeout=session_data.get("timeout", 3600),
-            secure=session_data.get("secure", True),
-            httponly=session_data.get("httponly", True),
-        )
-
-        rate_limit_data = web_ui_data.get("rate_limit", {})
-        rate_limit_config = RateLimitConfig(
-            enabled=rate_limit_data.get("enabled", True),
-            requests_per_minute=rate_limit_data.get("requests_per_minute", 60),
-        )
-
-        web_ui_config = WebUiConfig(
-            enabled=web_ui_data.get("enabled", False),
-            host=web_ui_data.get("host", "0.0.0.0"),
-            port=web_ui_data.get("port", 8080),
-            secret_key=web_ui_data.get("secret_key", ""),
-            session=session_config,
-            rate_limit=rate_limit_config,
-        )
-
         # Process logging configuration (optional)
         logging_data = data.get("logging", {})
         file_data = logging_data.get("file", {})
@@ -335,19 +174,35 @@ class Config:
             backup_count=file_data.get("backup_count", 5),
         )
 
-        web_ui_logging_data = logging_data.get("web_ui", {})
-        web_ui_logging_config = WebUiLoggingConfig(
-            level=web_ui_logging_data.get("level", "INFO"),
-            access_log=web_ui_logging_data.get("access_log", True),
-        )
-
         logging_config = LoggingConfig(
             level=logging_data.get("level", "INFO"),
             format=logging_data.get(
                 "format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
             ),
             file=file_logging_config,
-            web_ui=web_ui_logging_config,
+        )
+
+        # Process MQTT broker configuration (optional)
+        mqtt_broker_data = data.get("mqtt_broker", {})
+        mqtt_users = []
+        for user_data in mqtt_broker_data.get("users", []):
+            if isinstance(user_data, dict):
+                mqtt_user = MqttUser(
+                    username=user_data.get("username", ""),
+                    password=user_data.get("password", ""),
+                    acl=user_data.get("acl", "readwrite"),
+                )
+                mqtt_users.append(mqtt_user)
+
+        mqtt_broker_config = MqttBrokerConfig(
+            enabled=mqtt_broker_data.get("enabled", False),
+            port=mqtt_broker_data.get("port", 1883),
+            websocket_port=mqtt_broker_data.get("websocket_port", 9001),
+            persistence=mqtt_broker_data.get("persistence", True),
+            max_connections=mqtt_broker_data.get("max_connections", 1000),
+            allow_anonymous=mqtt_broker_data.get("allow_anonymous", False),
+            users=mqtt_users,
+            acl_enabled=mqtt_broker_data.get("acl_enabled", False),
         )
 
         return cls(
@@ -355,9 +210,7 @@ class Config:
             caltopo=caltopo_config,
             nodes=nodes,
             logging=logging_config,
-            ssl=ssl_config,
-            web_ui=web_ui_config,
-            users=users,
+            mqtt_broker=mqtt_broker_config,
         )
 
     def get_node_device_id(self, node_id: str) -> Optional[str]:
@@ -372,21 +225,6 @@ class Config:
         """
         node_mapping = self.nodes.get(node_id)
         return node_mapping.device_id if node_mapping else None
-
-    def get_user_by_username(self, username: str) -> Optional[UserConfig]:
-        """
-        Get user configuration by username.
-
-        Args:
-            username: Username to search for
-
-        Returns:
-            UserConfig: User configuration if found, None otherwise
-        """
-        for user in self.users:
-            if user.username == username:
-                return user
-        return None
 
     def setup_logging(self) -> None:
         """
