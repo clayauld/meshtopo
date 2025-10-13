@@ -88,6 +88,24 @@ repos:
       - id: markdownlint
         args: [--fix, --config, .markdownlint.json]
 
+  # Local hooks
+  - repo: local
+    hooks:
+      - id: beads-export
+        name: Export Beads issues to JSONL
+        entry: >
+          bash -c 'if command -v bd &> /dev/null && [[ -d .beads ]]; then
+            echo "🔗 Exporting beads issues to JSONL..." &&
+            bd export --format=jsonl -o .beads/issues.jsonl &&
+            git add .beads/issues.jsonl &&
+            echo "✓ Beads issues exported and staged";
+          else
+            echo "Warning: bd not found or .beads directory missing, skipping export";
+          fi'
+        language: system
+        always_run: true
+        pass_filenames: false
+
 # Configuration
 ci:
   autofix_commit_msg: |
