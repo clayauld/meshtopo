@@ -49,6 +49,8 @@ def create_app(config_path: str = "config/config.yaml") -> Flask:
         PERMANENT_SESSION_LIFETIME=config.web_ui.session.timeout,
         WTF_CSRF_ENABLED=True,
         WTF_CSRF_TIME_LIMIT=None,
+        DEBUG=False,
+        TEMPLATES_AUTO_RELOAD=False,
     )
 
     # Configure logging
@@ -62,10 +64,10 @@ def create_app(config_path: str = "config/config.yaml") -> Flask:
     # Configure rate limiting
     if config.web_ui.rate_limit.enabled:
         limiter = Limiter(
-            app,
             key_func=get_remote_address,
             default_limits=[f"{config.web_ui.rate_limit.requests_per_minute} per minute"],
         )
+        limiter.init_app(app)
 
         # Add specific rate limits for authentication endpoints
         limiter.limit("5 per minute")(app.route("/auth/login", methods=["POST"]))

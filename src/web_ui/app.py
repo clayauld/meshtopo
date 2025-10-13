@@ -6,11 +6,12 @@ import logging
 import sys
 from pathlib import Path
 
-from . import create_app
-
 # Add src directory to Python path
 src_path = Path(__file__).parent.parent
 sys.path.insert(0, str(src_path))
+
+# Now import after path modification
+from web_ui import create_app
 
 # Configure logging
 logging.basicConfig(

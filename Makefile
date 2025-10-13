@@ -111,7 +111,7 @@ run:
 
 # Run the web UI
 web-ui:
-	python3 src/web_ui/app.py
+	PYTHONPATH=. python3 src/web_ui/app.py
 
 # Interactive user management
 users:
