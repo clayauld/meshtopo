@@ -147,7 +147,16 @@ mqtt:
     port: 1883
     username: "your_username"
     password: "your_password"
-    topic: "msh/2/json/+/+"
+    topic: "msh/REGION/2/json/+/+"
+
+**Region Codes**: Replace `REGION` with the appropriate LoRa region code for your country. Common region codes:
+- `US` - United States
+- `EU_868` - European Union (868 MHz)
+- `ANZ` - Australia/New Zealand
+- `CN` - China
+- `JP` - Japan
+
+See the [Meshtastic LoRa Region by Country documentation](https://meshtastic.org/docs/configuration/region-by-country/) for the complete list of region codes.
 ```
 
 ### CalTopo Configuration
@@ -177,6 +186,19 @@ users:
 
 ### Node Mapping
 
+The gateway uses an intelligent mapping system to handle Meshtastic messages:
+
+#### Automatic Node ID Discovery
+
+The gateway automatically builds mappings between numeric node IDs and hardware IDs using two methods:
+
+1. **Primary Method (Nodeinfo Messages)**: When `nodeinfo` messages are received, the gateway extracts the hardware ID from the payload
+2. **Fallback Method (Position Messages)**: When position messages arrive first, the gateway uses the `sender` field as a fallback
+
+#### Configuration Mapping
+
+You only need to configure the final mapping from hardware IDs to CalTopo device names:
+
 ```yaml
 nodes:
     "!12345678": # Meshtastic hardware ID
@@ -184,6 +206,14 @@ nodes:
         description: "Device description"
         enabled: true
 ```
+
+#### Complete Mapping Chain
+
+The gateway creates this mapping chain automatically:
+
+-   **Numeric Node ID** (from `from` field) → **Hardware ID** (from `sender` field or nodeinfo payload) → **CalTopo Device Name** (from configuration)
+
+This ensures position updates are never missed, even when nodeinfo messages are delayed or unavailable.
 
 ## Security Best Practices
 

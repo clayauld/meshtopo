@@ -7,7 +7,7 @@ mqtt:
     port: 8883                         # SSL-enabled MQTT port
     username: "meshtopo_prod"          # Production MQTT username
     password: "STRONG_MQTT_PASSWORD"   # Strong MQTT password
-    topic: "msh/2/json/+/+"            # Meshtastic topic pattern
+    topic: "msh/REGION/2/json/+/+"            # Meshtastic topic pattern
     ssl: true                          # Enable SSL for MQTT
     keepalive: 60
 

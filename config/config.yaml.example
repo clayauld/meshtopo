@@ -7,7 +7,7 @@ mqtt:
     port: 8883                          # MQTT broker port (8883 for SSL, 1883 for non-SSL)
     username: "meshtopo_user"           # MQTT broker username
     password: "your_mqtt_password"      # MQTT broker password
-    topic: "msh/2/json/+/+"             # MQTT topic pattern for Meshtastic messages
+    topic: "msh/REGION/2/json/+/+"             # MQTT topic pattern for Meshtastic messages
     ssl: true                           # Enable SSL/TLS for MQTT connection
     keepalive: 60                       # MQTT keepalive interval in seconds
 

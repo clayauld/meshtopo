@@ -7,7 +7,7 @@ mqtt:
     port: 1883                         # Internal Docker port
     username: "meshtopo"               # MQTT username
     password: "docker_mqtt_password"   # MQTT password
-    topic: "msh/2/json/+/+"            # Meshtastic topic pattern
+    topic: "msh/REGION/2/json/+/+"            # Meshtastic topic pattern
     ssl: false                         # Internal Docker communication
     keepalive: 60
 

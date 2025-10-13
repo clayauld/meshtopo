@@ -70,7 +70,7 @@ This enhanced architecture supports three deployment modes:
 -   **FR-1**: The system **shall** connect to an MQTT broker using credentials provided in a configuration file.
 -   **FR-2**: The system **shall** subscribe to a configurable MQTT topic pattern to capture Meshtastic JSON packets.
 -   **FR-3**: The system **shall** parse incoming JSON payloads to extract node ID, latitude, longitude, and timestamp.
--   **FR-4**: The system **shall** maintain a mapping of Meshtastic Node IDs to CalTopo Device IDs, as defined in the configuration file.
+-   **FR-4**: The system **shall** maintain a mapping of Meshtastic Node IDs to CalTopo Device IDs, as defined in the configuration file. The system **shall** support automatic mapping discovery using fallback mechanisms when nodeinfo messages are not available.
 -   **FR-5**: The system **shall** construct a valid CalTopo Position Report API URL.
 -   **FR-6**: The system **shall** send an HTTP GET request to the constructed URL for each valid position packet received from a mapped node.
 
@@ -248,11 +248,46 @@ The web UI implements several security measures:
 
 ### 5.1 Input: Meshtastic MQTT JSON
 
-The gateway will process JSON objects from the `msh/.../json/position/#` topic. It will primarily extract `fromId` and the `payload` object.
+The gateway will process JSON objects from the `msh/REGION/2/json/+/+` topic. It will primarily extract `from` and the `payload` object.
+
+**Note**: Replace `REGION` with the appropriate LoRa region code for your country. See the [Meshtastic LoRa Region by Country documentation](https://meshtastic.org/docs/configuration/region-by-country/) for the correct region code. Common region codes include:
+
+-   `US` - United States
+-   `EU_868` - European Union (868 MHz)
+-   `ANZ` - Australia/New Zealand
+-   `CN` - China
+-   `JP` - Japan
+
+### 5.1.1 Node ID Mapping Mechanism
+
+The gateway uses a two-tier mapping system to handle different types of Meshtastic messages:
+
+#### Primary Mapping (Nodeinfo Messages)
+
+When `nodeinfo` messages are received, the gateway builds a mapping from numeric node IDs to hardware IDs:
 
 ```json
 {
-    "fromId": "!823a4edc",
+    "from": 862485920,
+    "type": "nodeinfo",
+    "payload": {
+        "id": "!33687da0",
+        "longname": "AMRG3-Heltec",
+        "shortname": "AMR3"
+    }
+}
+```
+
+This creates the mapping: `862485920` → `!33687da0`
+
+#### Fallback Mapping (Position Messages)
+
+When position messages arrive before nodeinfo messages, the gateway uses the `sender` field as a fallback:
+
+```json
+{
+    "from": 862485920,
+    "sender": "!33687da0",
     "type": "position",
     "payload": {
         "latitude_i": 612188460,
@@ -260,6 +295,20 @@ The gateway will process JSON objects from the `msh/.../json/position/#` topic. 
     }
 }
 ```
+
+The gateway automatically maps `862485920` → `!33687da0` using the `sender` field, ensuring position updates are never missed due to missing nodeinfo messages.
+
+#### Configuration Mapping
+
+The final step maps hardware IDs to CalTopo device names using the configuration:
+
+```yaml
+nodes:
+    "!33687da0":
+        device_id: "AMRG3"
+```
+
+This creates the complete mapping chain: `862485920` → `!33687da0` → `AMRG3`
 
 _Note: `latitude_i` and `longitude_i` must be divided by `1e7` to get decimal degrees._
 
@@ -293,7 +342,7 @@ mqtt:
     port: 1883 # MQTT broker port
     username: "your_mqtt_user"
     password: "your_mqtt_password"
-    topic: "msh/+/+/json/position/#"
+    topic: "msh/REGION/2/json/+/+"
 
 # Configuration for the CalTopo API
 caltopo:

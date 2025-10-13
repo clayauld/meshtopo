@@ -7,7 +7,7 @@ mqtt:
     port: 1883                         # Standard MQTT port
     username: ""                        # Leave empty if no authentication
     password: ""                        # Leave empty if no authentication
-    topic: "msh/2/json/+/+"            # Standard Meshtastic topic pattern
+    topic: "msh/REGION/2/json/+/+"            # Standard Meshtastic topic pattern
 
 # CalTopo API Configuration
 caltopo:

@@ -159,7 +159,7 @@ mqtt:
     port: 1883
     username: ""
     password: ""
-    topic: "msh/2/json/+/+"
+    topic: "msh/REGION/2/json/+/+"
 
 caltopo:
     group: "TEST-GROUP"
@@ -278,7 +278,7 @@ mqtt:
     port: 1883
     username: ""
     password: ""
-    topic: "msh/2/json/+/+"
+    topic: "msh/REGION/2/json/+/+"
 
 caltopo:
     group: "TEST-GROUP"
@@ -438,7 +438,7 @@ mqtt:
     port: 1883
     username: ""
     password: ""
-    topic: "msh/2/json/+/+"
+    topic: "msh/REGION/2/json/+/+"
 
 caltopo:
     group: "TEST-GROUP"

@@ -92,6 +92,9 @@ class GatewayApp:
             "start_time": 0.0,
         }
 
+        # Node ID mapping: numeric ID -> hardware ID
+        self.node_id_mapping: Dict[str, str] = {}
+
     def initialize(self) -> bool:
         """
         Initialize the application components.
@@ -248,65 +251,189 @@ class GatewayApp:
 
         try:
             # Extract node ID
-            node_id = data.get("fromId")
+            node_id = data.get("from")
             if not node_id:
-                self.logger.warning("Received message without fromId field")
+                self.logger.warning("Received message without from field")
                 return
 
-            # Check if this is a position message
+            # Check message type and process accordingly
             message_type = data.get("type")
-            if message_type != "position":
+            if message_type == "position":
+                self._process_position_message(data, node_id)
+            elif message_type == "nodeinfo":
+                self._process_nodeinfo_message(data, node_id)
+            elif message_type == "telemetry":
+                self._process_telemetry_message(data, node_id)
+            elif message_type == "traceroute":
+                self._process_traceroute_message(data, node_id)
+            elif message_type == "":
                 self.logger.debug(
-                    f"Received non-position message from {node_id}: {message_type}"
+                    f"Received message with empty type from {node_id}, skipping"
                 )
                 return
-
-            # Extract payload
-            payload = data.get("payload")
-            if not payload:
-                self.logger.warning(
-                    f"Received position message from {node_id} without payload"
-                )
-                return
-
-            # Extract coordinates
-            latitude_i = payload.get("latitude_i")
-            longitude_i = payload.get("longitude_i")
-
-            if latitude_i is None or longitude_i is None:
-                self.logger.warning(
-                    f"Received position message from {node_id} without coordinates"
-                )
-                return
-
-            # Convert to decimal degrees
-            latitude = latitude_i / 1e7
-            longitude = longitude_i / 1e7
-
-            self.logger.debug(
-                f"Processing position from {node_id}: {latitude}, {longitude}"
-            )
-
-            # Send to CalTopo
-            if self.caltopo_reporter is None:
-                self.logger.error("CalTopo reporter not initialized")
-                self.stats["errors"] += 1
-                return
-
-            success = self.caltopo_reporter.send_position_update(
-                node_id, latitude, longitude
-            )
-
-            if success:
-                self.stats["position_updates_sent"] += 1
             else:
-                self.stats["errors"] += 1
+                self.logger.debug(
+                    f"Received unsupported message type from {node_id}: {message_type}"
+                )
+                return
 
             self.stats["messages_processed"] += 1
 
         except Exception as e:
             self.logger.error(f"Error processing message: {e}")
             self.stats["errors"] += 1
+
+    def _process_position_message(self, data: Dict[str, Any], node_id: str) -> None:
+        """
+        Process a position message.
+
+        Args:
+            data: JSON data from Meshtastic
+            node_id: Node ID from the message
+        """
+        # Extract payload
+        payload = data.get("payload")
+        if not payload:
+            self.logger.warning(
+                f"Received position message from {node_id} without payload"
+            )
+            return
+
+        # Extract coordinates
+        latitude_i = payload.get("latitude_i")
+        longitude_i = payload.get("longitude_i")
+
+        if latitude_i is None or longitude_i is None:
+            self.logger.warning(
+                f"Received position message from {node_id} without coordinates"
+            )
+            return
+
+        # Convert to decimal degrees
+        latitude = latitude_i / 1e7
+        longitude = longitude_i / 1e7
+
+        self.logger.debug(
+            f"Processing position from {node_id}: {latitude}, {longitude}"
+        )
+
+        # Send to CalTopo
+        if self.caltopo_reporter is None:
+            self.logger.error("CalTopo reporter not initialized")
+            self.stats["errors"] += 1
+            return
+
+        # Get the hardware ID for this numeric node ID
+        hardware_id = self.node_id_mapping.get(str(node_id))
+        if not hardware_id:
+            # Try to use sender field as fallback (contains hardware ID)
+            sender = data.get("sender")
+            if sender and sender.startswith("!"):
+                hardware_id = sender
+                # Build the mapping for future use
+                self.node_id_mapping[str(node_id)] = hardware_id
+                self.logger.debug(
+                    f"Built mapping from sender field: {node_id} -> {hardware_id}"
+                )
+            else:
+                self.logger.warning(
+                    f"No hardware ID mapping found for numeric node ID {node_id}. "
+                    f"Position update will be skipped until nodeinfo message is received."
+                )
+                return
+
+        success = self.caltopo_reporter.send_position_update(
+            hardware_id, latitude, longitude
+        )
+
+        if success:
+            self.stats["position_updates_sent"] += 1
+        else:
+            self.stats["errors"] += 1
+
+    def _process_nodeinfo_message(self, data: Dict[str, Any], node_id: str) -> None:
+        """
+        Process a nodeinfo message.
+
+        Args:
+            data: JSON data from Meshtastic
+            node_id: Node ID from the message
+        """
+        payload = data.get("payload")
+        if not payload:
+            self.logger.warning(
+                f"Received nodeinfo message from {node_id} without payload"
+            )
+            return
+
+        # Extract node information
+        node_id_from_payload = payload.get("id")
+        longname = payload.get("longname")
+        shortname = payload.get("shortname")
+        hardware = payload.get("hardware")
+        role = payload.get("role")
+
+        # Build mapping from numeric node ID to hardware ID
+        if node_id_from_payload:
+            self.node_id_mapping[str(node_id)] = node_id_from_payload
+            self.logger.debug(
+                f"Mapped numeric node ID {node_id} to hardware ID {node_id_from_payload}"
+            )
+
+        self.logger.info(
+            f"Node info from {node_id}: ID={node_id_from_payload}, "
+            f"Name={longname} ({shortname}), Hardware={hardware}, Role={role}"
+        )
+
+    def _process_telemetry_message(self, data: Dict[str, Any], node_id: str) -> None:
+        """
+        Process a telemetry message.
+
+        Args:
+            data: JSON data from Meshtastic
+            node_id: Node ID from the message
+        """
+        payload = data.get("payload")
+        if not payload:
+            self.logger.warning(
+                f"Received telemetry message from {node_id} without payload"
+            )
+            return
+
+        # Extract telemetry data
+        battery_level = payload.get("battery_level")
+        voltage = payload.get("voltage")
+        uptime_seconds = payload.get("uptime_seconds")
+        air_util_tx = payload.get("air_util_tx")
+        channel_utilization = payload.get("channel_utilization")
+
+        self.logger.info(
+            f"Telemetry from {node_id}: Battery={battery_level}%, "
+            f"Voltage={voltage}V, Uptime={uptime_seconds}s, "
+            f"Air util TX={air_util_tx}, Channel util={channel_utilization}%"
+        )
+
+    def _process_traceroute_message(self, data: Dict[str, Any], node_id: str) -> None:
+        """
+        Process a traceroute message.
+
+        Args:
+            data: JSON data from Meshtastic
+            node_id: Node ID from the message
+        """
+        payload = data.get("payload")
+        if not payload:
+            self.logger.warning(
+                f"Received traceroute message from {node_id} without payload"
+            )
+            return
+
+        # Extract route information
+        route = payload.get("route", [])
+
+        self.logger.info(
+            f"Traceroute from {node_id}: Route={route}"
+        )
 
     def _signal_handler(self, signum: int, frame: Any) -> None:
         """

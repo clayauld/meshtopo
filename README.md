@@ -8,12 +8,12 @@ A lightweight Python gateway service that bridges Meshtastic LoRa mesh networks 
 
 ## Features
 
-- **Real-time Position Forwarding**: Automatically forwards Meshtastic position packets to CalTopo
-- **Configurable Node Mapping**: Maps Meshtastic hardware IDs to CalTopo device IDs
-- **Robust Error Handling**: Graceful handling of network issues and API failures
-- **Docker Deployment**: Easy deployment with Docker and Docker Compose
-- **Comprehensive Logging**: Detailed logging for monitoring and debugging
-- **Lightweight Design**: Minimal resource footprint for edge deployment
+-   **Real-time Position Forwarding**: Automatically forwards Meshtastic position packets to CalTopo
+-   **Intelligent Node Mapping**: Automatically maps Meshtastic numeric node IDs to hardware IDs using fallback mechanisms, then to CalTopo device IDs
+-   **Robust Error Handling**: Graceful handling of network issues and API failures
+-   **Docker Deployment**: Easy deployment with Docker and Docker Compose
+-   **Comprehensive Logging**: Detailed logging for monitoring and debugging
+-   **Lightweight Design**: Minimal resource footprint for edge deployment
 
 ## Architecture
 
@@ -28,9 +28,9 @@ The system follows a simple linear data flow:
 
 ### Prerequisites
 
-- Python 3.9+ or Docker
-- Access to an MQTT broker with Meshtastic data
-- CalTopo account with API access
+-   Python 3.9+ or Docker
+-   Access to an MQTT broker with Meshtastic data
+-   CalTopo account with API access
 
 ### Docker Deployment (Recommended)
 
@@ -87,7 +87,9 @@ mqtt:
     port: 1883
     username: "your_mqtt_user"
     password: "your_mqtt_password"
-    topic: "msh/+/+/json/position/#"
+    topic: "msh/REGION/2/json/+/+"
+
+**Note**: Replace `REGION` with your LoRa region code. See [Meshtastic LoRa Region by Country](https://meshtastic.org/docs/configuration/region-by-country/) for the correct region code for your country.
 
 # CalTopo API Configuration
 caltopo:
@@ -101,14 +103,83 @@ nodes:
         device_id: "COMMS"
 ```
 
+### Node Mapping Mechanism
+
+Meshtopo uses an intelligent two-tier mapping system to handle different Meshtastic message types:
+
+#### 1. Primary Mapping (Nodeinfo Messages)
+
+When `nodeinfo` messages are received, the gateway builds a mapping from numeric node IDs to hardware IDs:
+
+```json
+{
+    "from": 862485920,
+    "type": "nodeinfo",
+    "payload": {
+        "id": "!33687da0",
+        "longname": "AMRG3-Heltec"
+    }
+}
+```
+
+This creates: `862485920` → `!33687da0`
+
+#### 2. Fallback Mapping (Position Messages)
+
+When position messages arrive before nodeinfo messages, the gateway uses the `sender` field as a fallback:
+
+```json
+{
+    "from": 862485920,
+    "sender": "!33687da0",
+    "type": "position",
+    "payload": {
+        "latitude_i": 612188460,
+        "longitude_i": -1499001320
+    }
+}
+```
+
+This automatically maps: `862485920` → `!33687da0`
+
+#### 3. Configuration Mapping
+
+The final step maps hardware IDs to CalTopo device names using your configuration:
+
+```yaml
+nodes:
+    "!33687da0":
+        device_id: "AMRG3"
+```
+
+**Complete mapping chain**: `862485920` → `!33687da0` → `AMRG3`
+
+This ensures position updates are never missed, even when nodeinfo messages are delayed or unavailable.
+
 ### Configuration Parameters
 
-- **mqtt.broker**: IP address or hostname of your MQTT broker
-- **mqtt.port**: MQTT broker port (default: 1883)
-- **mqtt.username/password**: MQTT authentication credentials
-- **mqtt.topic**: MQTT topic pattern for Meshtastic position packets
-- **caltopo.group**: Your CalTopo group identifier
-- **nodes**: Mapping of Meshtastic hardware IDs to CalTopo device IDs
+-   **mqtt.broker**: IP address or hostname of your MQTT broker
+-   **mqtt.port**: MQTT broker port (default: 1883)
+-   **mqtt.username/password**: MQTT authentication credentials
+-   **mqtt.topic**: MQTT topic pattern for Meshtastic position packets (replace `REGION` with your LoRa region code)
+-   **caltopo.group**: Your CalTopo group identifier
+-   **nodes**: Mapping of Meshtastic hardware IDs to CalTopo device IDs
+
+### LoRa Region Codes
+
+The `REGION` in the MQTT topic must be replaced with the appropriate LoRa region code for your country. Common region codes include:
+
+-   **US** - United States
+-   **EU_868** - European Union (868 MHz)
+-   **ANZ** - Australia/New Zealand
+-   **CN** - China
+-   **JP** - Japan
+-   **KR** - Korea
+-   **IN** - India
+-   **BR_902** - Brazil
+-   **RU** - Russia
+
+For the complete list of region codes by country, see the [Meshtastic LoRa Region by Country documentation](https://meshtastic.org/docs/configuration/region-by-country/).
 
 ## Data Flow
 
@@ -127,7 +198,7 @@ The service processes JSON position packets from Meshtastic:
 
 ```json
 {
-    "fromId": "!823a4edc",
+    "from": "!823a4edc",
     "type": "position",
     "payload": {
         "latitude_i": 612188460,
@@ -148,20 +219,20 @@ https://caltopo.com/api/v1/position/report/{GROUP}?id={DEVICE_ID}&lat={LAT}&lng=
 
 The service includes comprehensive error handling:
 
-- **MQTT Disconnection**: Automatic reconnection with exponential backoff
-- **Invalid JSON**: Malformed packets are logged and discarded
-- **Unmapped Nodes**: Unknown node IDs are logged at DEBUG level
-- **API Failures**: CalTopo API errors are logged with full details
-- **Network Issues**: Graceful handling of connectivity problems
+-   **MQTT Disconnection**: Automatic reconnection with exponential backoff
+-   **Invalid JSON**: Malformed packets are logged and discarded
+-   **Unmapped Nodes**: Unknown node IDs are logged at DEBUG level
+-   **API Failures**: CalTopo API errors are logged with full details
+-   **Network Issues**: Graceful handling of connectivity problems
 
 ## Logging
 
 The service provides detailed logging at multiple levels:
 
-- **INFO**: Successful operations and status updates
-- **WARN**: Recoverable errors and reconnection attempts
-- **ERROR**: API failures and critical errors
-- **DEBUG**: Detailed debugging information
+-   **INFO**: Successful operations and status updates
+-   **WARN**: Recoverable errors and reconnection attempts
+-   **ERROR**: API failures and critical errors
+-   **DEBUG**: Detailed debugging information
 
 ## Development
 
@@ -244,19 +315,19 @@ sudo systemctl start meshtopo
 
 The service provides several monitoring endpoints:
 
-- **Log monitoring**: `docker-compose logs -f`
-- **Process status**: `docker-compose ps`
-- **Resource usage**: `docker stats meshtopo`
+-   **Log monitoring**: `docker-compose logs -f`
+-   **Process status**: `docker-compose ps`
+-   **Resource usage**: `docker stats meshtopo`
 
 ### Metrics
 
 Key metrics to monitor:
 
-- MQTT connection status
-- Position packets processed per minute
-- CalTopo API success rate
-- Error rates by type
-- Memory and CPU usage
+-   MQTT connection status
+-   Position packets processed per minute
+-   CalTopo API success rate
+-   Error rates by type
+-   Memory and CPU usage
 
 ## Troubleshooting
 
@@ -304,14 +375,14 @@ This project is licensed under the GNU Affero General Public License v3 (AGPLv3)
 
 For support and questions:
 
-- Create an issue on GitHub
-- Check the troubleshooting section
-- Review the configuration examples
+-   Create an issue on GitHub
+-   Check the troubleshooting section
+-   Review the configuration examples
 
 ## Future Enhancements
 
-- Two-way messaging from CalTopo to Meshtastic
-- Additional telemetry forwarding (battery, signal strength)
-- Web-based status dashboard
-- Multiple CalTopo group support
-- Position history and analytics
+-   Two-way messaging from CalTopo to Meshtastic
+-   Additional telemetry forwarding (battery, signal strength)
+-   Web-based status dashboard
+-   Multiple CalTopo group support
+-   Position history and analytics
