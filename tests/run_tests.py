@@ -5,7 +5,6 @@ Test runner for Meshtopo Gateway Service.
 This script runs all tests in the tests directory.
 """
 
-import os
 import sys
 import unittest
 from pathlib import Path
@@ -15,7 +14,7 @@ PROJECT_ROOT = Path(__file__).parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 
-def run_tests():
+def run_tests() -> int:
     """Run all tests."""
     # Discover and run tests
     loader = unittest.TestLoader()

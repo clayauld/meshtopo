@@ -8,14 +8,16 @@ A lightweight Python gateway service that bridges Meshtastic LoRa mesh networks 
 
 ## Features
 
--   **Real-time Position Forwarding**: Automatically forwards Meshtastic position packets to CalTopo
--   **Automatic Device Registration**: Devices automatically appear in CalTopo Team Account using their callsigns
--   **Intelligent Node Mapping**: Maps Meshtastic numeric node IDs to hardware IDs, then to callsigns
--   **Internal MQTT Broker**: Optional integrated Mosquitto broker with configurable users and ACL
--   **Robust Error Handling**: Graceful handling of network issues and API failures
--   **Docker Deployment**: Easy deployment with Docker and Docker Compose
--   **Comprehensive Logging**: Detailed logging for monitoring and debugging
--   **Lightweight Design**: Minimal resource footprint for edge deployment
+- **Real-time Position Forwarding**: Automatically forwards Meshtastic position packets to CalTopo
+- **Automatic Device Registration**: Devices automatically appear in CalTopo Team Account using their callsigns
+- **Intelligent Node Mapping**: Maps Meshtastic numeric node IDs to hardware IDs, then to callsigns
+- **Flexible API Support**: Supports both CalTopo Team Account (connect_key) and custom integration (GROUP-based) APIs
+- **Device Access Control**: Configurable control over unknown device position updates
+- **Internal MQTT Broker**: Optional integrated Mosquitto broker with configurable users and ACL
+- **Robust Error Handling**: Graceful handling of network issues and API failures
+- **Docker Deployment**: Easy deployment with Docker and Docker Compose
+- **Comprehensive Logging**: Detailed logging for monitoring and debugging
+- **Lightweight Design**: Minimal resource footprint for edge deployment
 
 ## Architecture
 
@@ -30,9 +32,9 @@ The system follows a simple linear data flow:
 
 ### Prerequisites
 
--   Python 3.9+ or Docker
--   Access to an MQTT broker with Meshtastic data
--   CalTopo Team Account with access URL
+- Python 3.9+ or Docker
+- Access to an MQTT broker with Meshtastic data
+- CalTopo Team Account with access URL
 
 ### Obtaining CalTopo Connect Key
 
@@ -48,7 +50,7 @@ The system follows a simple linear data flow:
     ```bash
     git clone https://github.com/clayauld/meshtopo.git
     cd meshtopo
-    cp config/config.yaml.example config/config.yaml
+    cp config/config.yaml.docker config/config.yaml
     # Edit config/config.yaml with your settings
     ```
 
@@ -122,7 +124,7 @@ Meshtopo can optionally run its own Mosquitto MQTT broker:
 2. **Configure the service**:
 
     ```bash
-    cp config/config.yaml.example config/config.yaml
+    cp config/config.yaml.basic config/config.yaml
     # Edit config/config.yaml with your MQTT and CalTopo settings
     ```
 
@@ -133,6 +135,35 @@ Meshtopo can optionally run its own Mosquitto MQTT broker:
     ```
 
 ## Configuration
+
+The service is configured via `config/config.yaml`. Multiple configuration templates are available for different deployment scenarios:
+
+### Configuration Templates
+
+- **`config.yaml.example`** - Complete reference with all options documented
+- **`config.yaml.basic`** - Simple setup for getting started
+- **`config.yaml.minimal`** - Bare minimum for testing and development
+- **`config.yaml.docker`** - Optimized for Docker/containerized deployments
+- **`config.yaml.production`** - Production-ready with enhanced security and logging
+
+### Quick Setup
+
+1. **Choose a template** based on your deployment needs:
+
+   ```bash
+   # For basic setup
+   cp config/config.yaml.basic config/config.yaml
+
+   # For Docker deployment
+   cp config/config.yaml.docker config/config.yaml
+
+   # For production
+   cp config/config.yaml.production config/config.yaml
+   ```
+
+2. **Edit the configuration** with your specific settings
+
+### Configuration Structure
 
 The service is configured via `config/config.yaml`:
 
@@ -148,16 +179,41 @@ mqtt:
 # CalTopo Team Account Configuration
 caltopo:
     connect_key: "G3rvYRwG3TtrQVyUIB3WKfbyzFqSfUldGDxC4blVzrkte"
+    api_mode: "connect_key" # or "group"
+    group: "SARTEAM" # required if api_mode is "group"
 
 # Optional: Node display name overrides
 nodes:
     "!823a4edc":
         device_id: "TEAM-LEAD"
+        group: "LEADERSHIP" # optional per-device GROUP override
     "!a4b8c2f0":
         device_id: "COMMS-1"
+
+# Device Management
+devices:
+    allow_unknown_devices: true # Allow unknown devices to send position updates
 ```
 
 **Note**: Replace `US` in the topic with your LoRa region code. See [Meshtastic LoRa Region by Country](https://meshtastic.org/docs/configuration/region-by-country/) for the correct region code for your country.
+
+### CalTopo API Modes
+
+Meshtopo supports two CalTopo API authentication methods:
+
+#### Team Account Mode (connect_key)
+
+- Uses CalTopo Team Account connect key
+- Format: `https://caltopo.com/api/v1/position/report/{CONNECT_KEY}?id={DEVICE_ID}&lat={LAT}&lng={LNG}`
+- Automatic device registration in Team Account
+- Default mode for backward compatibility
+
+#### Custom Integration Mode (group)
+
+- Uses GROUP-based authentication for custom integrations
+- Format: `https://caltopo.com/api/v1/position/report/{GROUP}?id={DEVICE_ID}&lat={LAT}&lng={LNG}`
+- Supports global GROUP with optional per-device GROUP overrides
+- Requires manual device setup in CalTopo
 
 ### Device Registration
 
@@ -219,28 +275,45 @@ The final step determines the callsign for CalTopo:
 
 This ensures position updates are never missed, even when nodeinfo messages are delayed or unavailable.
 
+### Device Access Control
+
+Meshtopo provides configurable control over unknown device behavior:
+
+- **`allow_unknown_devices: true`** (default): Unknown devices are tracked and can send position updates
+- **`allow_unknown_devices: false`**: Unknown devices are tracked but position updates are blocked
+
+When `allow_unknown_devices` is `false`, unknown devices will:
+
+1. Still be tracked and logged (nodeinfo messages processed)
+2. Have their position updates blocked with a warning logged
+3. Not appear in CalTopo until explicitly added to the `nodes` configuration
+
 ### Configuration Parameters
 
--   **mqtt.broker**: IP address or hostname of your MQTT broker
--   **mqtt.port**: MQTT broker port (default: 1883)
--   **mqtt.username/password**: MQTT authentication credentials
--   **mqtt.topic**: MQTT topic pattern for Meshtastic position packets (replace `US` with your LoRa region code)
--   **caltopo.connect_key**: Your CalTopo Team Account connect key
--   **nodes**: Optional mapping of Meshtastic hardware IDs to custom display names
+- **mqtt.broker**: IP address or hostname of your MQTT broker
+- **mqtt.port**: MQTT broker port (default: 1883)
+- **mqtt.username/password**: MQTT authentication credentials
+- **mqtt.topic**: MQTT topic pattern for Meshtastic position packets (replace `US` with your LoRa region code)
+- **caltopo.connect_key**: Your CalTopo Team Account connect key
+- **caltopo.api_mode**: API mode - "connect_key" (default) or "group"
+- **caltopo.group**: Global GROUP for group-based API mode
+- **nodes**: Optional mapping of Meshtastic hardware IDs to custom display names
+- **nodes[].group**: Optional per-device GROUP override for group-based API mode
+- **devices.allow_unknown_devices**: Allow unknown devices to send position updates (default: true)
 
 ### LoRa Region Codes
 
 The region code in the MQTT topic must be replaced with the appropriate LoRa region code for your country. Common region codes include:
 
--   **US** - United States
--   **EU_868** - European Union (868 MHz)
--   **ANZ** - Australia/New Zealand
--   **CN** - China
--   **JP** - Japan
--   **KR** - Korea
--   **IN** - India
--   **BR_902** - Brazil
--   **RU** - Russia
+- **US** - United States
+- **EU_868** - European Union (868 MHz)
+- **ANZ** - Australia/New Zealand
+- **CN** - China
+- **JP** - Japan
+- **KR** - Korea
+- **IN** - India
+- **BR_902** - Brazil
+- **RU** - Russia
 
 For the complete list of region codes by country, see the [Meshtastic LoRa Region by Country documentation](https://meshtastic.org/docs/configuration/region-by-country/).
 
@@ -272,30 +345,38 @@ The service processes JSON position packets from Meshtastic:
 
 ### CalTopo Output Format
 
-Position data is forwarded to CalTopo via HTTP GET using the Team Account access URL:
+Position data is forwarded to CalTopo via HTTP GET using the configured API mode:
+
+**Team Account Mode (connect_key)**:
 
 ```
 https://caltopo.com/api/v1/position/report/{CONNECT_KEY}?id={CALLSIGN}&lat={LAT}&lng={LNG}
+```
+
+**Custom Integration Mode (group)**:
+
+```
+https://caltopo.com/api/v1/position/report/{GROUP}?id={DEVICE_ID}&lat={LAT}&lng={LNG}
 ```
 
 ## Error Handling
 
 The service includes comprehensive error handling:
 
--   **MQTT Disconnection**: Automatic reconnection with exponential backoff
--   **Invalid JSON**: Malformed packets are logged and discarded
--   **Unmapped Nodes**: Unknown node IDs are logged at DEBUG level
--   **API Failures**: CalTopo API errors are logged with full details
--   **Network Issues**: Graceful handling of connectivity problems
+- **MQTT Disconnection**: Automatic reconnection with exponential backoff
+- **Invalid JSON**: Malformed packets are logged and discarded
+- **Unmapped Nodes**: Unknown node IDs are logged at DEBUG level
+- **API Failures**: CalTopo API errors are logged with full details
+- **Network Issues**: Graceful handling of connectivity problems
 
 ## Logging
 
 The service provides detailed logging at multiple levels:
 
--   **INFO**: Successful operations and status updates
--   **WARN**: Recoverable errors and reconnection attempts
--   **ERROR**: API failures and critical errors
--   **DEBUG**: Detailed debugging information
+- **INFO**: Successful operations and status updates
+- **WARN**: Recoverable errors and reconnection attempts
+- **ERROR**: API failures and critical errors
+- **DEBUG**: Detailed debugging information
 
 ## Development
 
@@ -305,7 +386,12 @@ The service provides detailed logging at multiple levels:
 meshtopo/
 ├── config/             # Configuration files
 │   ├── config.py       # Configuration management
-│   └── config.yaml.example # Configuration template
+│   ├── config.yaml.example # Complete configuration reference
+│   ├── config.yaml.basic # Simple setup template
+│   ├── config.yaml.minimal # Testing template
+│   ├── config.yaml.docker # Docker deployment template
+│   ├── config.yaml.production # Production template
+│   └── README.md       # Configuration documentation
 ├── deploy/             # Deployment files
 │   ├── Dockerfile      # Container definition
 │   ├── docker-compose.yml # Docker Compose configuration
@@ -341,6 +427,15 @@ black .
 ```
 
 ## Deployment
+
+### Configuration File Selection
+
+Choose the appropriate configuration template for your deployment:
+
+- **Development/Testing**: `config.yaml.minimal` - Internal MQTT broker, debug logging
+- **Basic Setup**: `config.yaml.basic` - External MQTT broker, simple configuration
+- **Docker Deployment**: `config.yaml.docker` - Container-optimized settings
+- **Production**: `config.yaml.production` - Enhanced security, external broker, unknown devices blocked
 
 ### Docker
 
@@ -378,19 +473,19 @@ sudo systemctl start meshtopo
 
 The service provides several monitoring endpoints:
 
--   **Log monitoring**: `docker-compose logs -f`
--   **Process status**: `docker-compose ps`
--   **Resource usage**: `docker stats meshtopo`
+- **Log monitoring**: `docker-compose logs -f`
+- **Process status**: `docker-compose ps`
+- **Resource usage**: `docker stats meshtopo`
 
 ### Metrics
 
 Key metrics to monitor:
 
--   MQTT connection status
--   Position packets processed per minute
--   CalTopo API success rate
--   Error rates by type
--   Memory and CPU usage
+- MQTT connection status
+- Position packets processed per minute
+- CalTopo API success rate
+- Error rates by type
+- Memory and CPU usage
 
 ## Troubleshooting
 
@@ -419,6 +514,13 @@ Key metrics to monitor:
     - Check that nodes are sending position data
     - Verify callsign extraction from nodeinfo messages
 
+5. **Configuration Issues**
+    - Use appropriate config template for your deployment:
+      - `config.yaml.basic` for simple setups
+      - `config.yaml.docker` for containerized deployments
+      - `config.yaml.production` for production environments
+    - Validate configuration: `python -c "from config.config import Config; Config.from_file('config/config.yaml')"`
+
 ### Debug Mode
 
 Enable debug logging:
@@ -444,13 +546,14 @@ This project is licensed under the GNU Affero General Public License v3 (AGPLv3)
 
 For support and questions:
 
--   Create an issue on GitHub
--   Check the troubleshooting section
--   Review the configuration examples
+- Create an issue on GitHub
+- Check the troubleshooting section
+- Review the configuration examples in `config/` directory
+- See `config/README.md` for detailed configuration documentation
 
 ## Future Enhancements
 
--   Two-way messaging from CalTopo to Meshtastic
--   Additional telemetry forwarding (battery, signal strength)
--   Position history and analytics
--   Multiple CalTopo team support
+- Two-way messaging from CalTopo to Meshtastic
+- Additional telemetry forwarding (battery, signal strength)
+- Position history and analytics
+- Multiple CalTopo team support

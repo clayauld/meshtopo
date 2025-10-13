@@ -13,7 +13,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 
-def create_test_config():
+def create_test_config() -> str:
     """Create a temporary test configuration file."""
     config_content = """
 mqtt:
@@ -47,7 +47,7 @@ logging:
     return temp_file.name
 
 
-def cleanup_test_config(config_path):
+def cleanup_test_config(config_path: str) -> None:
     """Clean up temporary test configuration file."""
     try:
         os.unlink(config_path)
@@ -58,10 +58,10 @@ def cleanup_test_config(config_path):
 class TestCase(unittest.TestCase):
     """Base test case with common utilities."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         self.test_config_path = create_test_config()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Clean up test fixtures."""
         cleanup_test_config(self.test_config_path)

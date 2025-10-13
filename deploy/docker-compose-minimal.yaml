@@ -25,7 +25,7 @@ services:
                     memory: 64M
                     cpus: "0.1"
         healthcheck:
-            test: ["CMD", "python", "-c", "import requests; requests.get('https://caltopo.com/api/v1/position/report/test', timeout=5)"]
+            test: ["CMD", "python", "-c", "import requests; requests.get('https://caltopo.com', timeout=5)"]
             interval: 30s
             timeout: 10s
             retries: 3

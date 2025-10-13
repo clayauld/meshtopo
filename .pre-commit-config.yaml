@@ -49,7 +49,7 @@ repos:
     rev: v1.5.1
     hooks:
       - id: mypy
-        additional_dependencies: [types-PyYAML, types-requests, types-bcrypt, types-WTForms]
+        additional_dependencies: [types-PyYAML, types-requests, types-WTForms]
         args: [--ignore-missing-imports]
 
   # Security checks (disabled due to pre-commit environment issues)

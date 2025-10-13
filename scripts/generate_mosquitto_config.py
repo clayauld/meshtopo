@@ -4,17 +4,19 @@ Generate Mosquitto MQTT broker configuration from config.yaml.
 """
 
 import argparse
+import base64
 import hashlib
 import logging
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 # Add project root to path for imports
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from config.config import Config
+from config.config import Config  # noqa: E402
 
 
 def generate_mosquitto_password(password: str) -> str:
@@ -28,8 +30,6 @@ def generate_mosquitto_password(password: str) -> str:
         str: Hashed password in Mosquitto format
     """
     # Mosquitto uses PBKDF2 with SHA512
-    import base64
-    import hashlib
 
     # Generate salt (8 bytes)
     salt = os.urandom(8)
@@ -44,7 +44,9 @@ def generate_mosquitto_password(password: str) -> str:
     return base64.b64encode(combined).decode("ascii")
 
 
-def generate_mosquitto_config(config_path: str, output_dir: str = None) -> bool:
+def generate_mosquitto_config(
+    config_path: str, output_dir: Optional[str] = None
+) -> bool:
     """
     Generate Mosquitto configuration files from config.yaml.
 
@@ -56,9 +58,9 @@ def generate_mosquitto_config(config_path: str, output_dir: str = None) -> bool:
         bool: True if successful, False otherwise
     """
     if output_dir is None:
-        output_dir = PROJECT_ROOT / "deploy"
+        output_dir_path = PROJECT_ROOT / "deploy"
     else:
-        output_dir = Path(output_dir)
+        output_dir_path = Path(output_dir)
 
     try:
         # Load configuration
@@ -102,14 +104,14 @@ def generate_mosquitto_config(config_path: str, output_dir: str = None) -> bool:
         )
 
         # Write mosquitto.conf
-        mosquitto_conf_path = output_dir / "mosquitto.conf"
+        mosquitto_conf_path = output_dir_path / "mosquitto.conf"
         with open(mosquitto_conf_path, "w") as f:
             f.write(mosquitto_conf)
         print(f"Generated mosquitto.conf: {mosquitto_conf_path}")
 
         # Generate password file if not allowing anonymous access
         if not broker_config.allow_anonymous and broker_config.users:
-            passwd_path = output_dir / "passwd"
+            passwd_path = output_dir_path / "passwd"
             with open(passwd_path, "w") as f:
                 for user in broker_config.users:
                     if user.username and user.password:
@@ -119,7 +121,7 @@ def generate_mosquitto_config(config_path: str, output_dir: str = None) -> bool:
 
             # Generate ACL file if enabled
             if broker_config.acl_enabled:
-                acl_path = output_dir / "aclfile"
+                acl_path = output_dir_path / "aclfile"
                 with open(acl_path, "w") as f:
                     f.write("# Mosquitto ACL file\n")
                     f.write("# Generated from config.yaml\n\n")
@@ -135,13 +137,14 @@ def generate_mosquitto_config(config_path: str, output_dir: str = None) -> bool:
                             )
                         elif user.acl == "readwrite":
                             f.write(
-                                f"user {user.username}\ntopic readwrite msh/+/+/+/+/+\n\n"
+                                f"user {user.username}\n"
+                                f"topic readwrite msh/+/+/+/+/+\n\n"
                             )
 
                 print(f"Generated ACL file: {acl_path}")
 
         # Generate docker-compose override if needed
-        override_path = output_dir / "docker-compose.override.yml"
+        override_path = output_dir_path / "docker-compose.override.yml"
         if broker_config.enabled:
             override_content = f"""# Docker Compose override for internal MQTT broker
 # Generated from config.yaml - DO NOT EDIT MANUALLY
@@ -167,7 +170,9 @@ services:
 
             override_content += """
     healthcheck:
-      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "test", "-m", "healthcheck"]
+      test: [
+          "CMD", "mosquitto_pub", "-h", "localhost", "-t", "test", "-m", "healthcheck"
+      ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -189,7 +194,7 @@ volumes:
         return False
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(
         description="Generate Mosquitto MQTT broker configuration"

@@ -18,7 +18,7 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from gateway_app import GatewayApp
+from gateway_app import GatewayApp  # noqa: E402
 
 
 def main() -> None:

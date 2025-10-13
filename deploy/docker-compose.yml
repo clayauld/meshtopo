@@ -20,21 +20,38 @@ services:
             - --providers.docker.exposedbydefault=false
             - --entrypoints.web.address=:80
             - --entrypoints.websecure.address=:443
+            # HTTP Challenge (default)
             - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
             - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
             - --certificatesresolvers.letsencrypt.acme.email=${SSL_EMAIL}
             - --certificatesresolvers.letsencrypt.acme.storage=/certs/acme.json
+            # DNS Challenge (if DNS_PROVIDER is set)
+            - --certificatesresolvers.letsencrypt.acme.dnschallenge=true
+            - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=${DNS_PROVIDER:-}
+            - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
             - --log.level=INFO
             - --accesslog=true
         ports:
             - "80:80"
             - "443:443"
+            - "8080:8080"  # Traefik dashboard
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock:ro
             - traefik_certs:/certs
             - traefik_logs:/logs
+        environment:
+            - TZ=UTC
+            - CF_API_EMAIL=${DNS_EMAIL:-}
+            - CF_API_KEY=${DNS_API_TOKEN:-}
+            - CF_ZONE_API_TOKEN=${DNS_ZONE_API_TOKEN:-}
         networks:
             - meshtopo
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.traefik.rule=Host(`traefik.${SSL_DOMAIN}`)"
+            - "traefik.http.routers.traefik.entrypoints=websecure"
+            - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+            - "traefik.http.routers.traefik.service=api@internal"
         profiles:
             - ssl
 
@@ -62,6 +79,13 @@ services:
             timeout: 10s
             retries: 3
             start_period: 10s
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.mosquitto-ws.rule=Host(`mqtt.${SSL_DOMAIN}`)"
+            - "traefik.http.routers.mosquitto-ws.entrypoints=websecure"
+            - "traefik.http.routers.mosquitto-ws.tls.certresolver=letsencrypt"
+            - "traefik.http.routers.mosquitto-ws.service=mosquitto-ws"
+            - "traefik.http.services.mosquitto-ws.loadbalancer.server.port=9001"
 
     # Core Meshtopo gateway service
     meshtopo-gateway:
@@ -82,7 +106,7 @@ services:
                     memory: 64M
                     cpus: "0.1"
         healthcheck:
-            test: ["CMD", "python", "-c", "import requests; requests.get('https://caltopo.com/api/v1/position/report/test', timeout=5)"]
+            test: ["CMD", "python", "-c", "import requests; requests.get('https://caltopo.com', timeout=5)"]
             interval: 30s
             timeout: 10s
             retries: 3

@@ -30,7 +30,7 @@ EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('https://caltopo.com/api/v1/position/report/test', timeout=5)" || exit 1
+    CMD python -c "import requests; requests.get('https://caltopo.com', timeout=5)" || exit 1
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1

@@ -3,9 +3,7 @@
 Test MQTT topic format and region code handling.
 """
 
-import os
 import sys
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -17,7 +15,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 class TestMQTTTopicFormat(unittest.TestCase):
     """Test MQTT topic format and region code handling."""
 
-    def test_region_code_topic_format(self):
+    def test_region_code_topic_format(self) -> None:
         """Test that MQTT topic format uses proper region codes."""
         # Test that config files contain proper region codes
         config_files = [
@@ -42,7 +40,8 @@ class TestMQTTTopicFormat(unittest.TestCase):
                     self.assertIn(
                         "/2/json/+/+",
                         content,
-                        f"Config file {config_file} should contain /2/json/+/+ topic suffix",
+                        f"Config file {config_file} should contain "
+                        f"/2/json/+/+ topic suffix",
                     )
                     # Check that it uses a specific region code, not placeholder
                     self.assertRegex(
@@ -51,7 +50,7 @@ class TestMQTTTopicFormat(unittest.TestCase):
                         f"Config file {config_file} should use specific region code",
                     )
 
-    def test_common_region_codes(self):
+    def test_common_region_codes(self) -> None:
         """Test that documentation includes common region codes."""
         readme_path = PROJECT_ROOT / "README.md"
         with open(readme_path, "r") as f:
@@ -64,7 +63,7 @@ class TestMQTTTopicFormat(unittest.TestCase):
         self.assertIn("ANZ", content)
         self.assertIn("meshtastic.org/docs/configuration/region-by-country/", content)
 
-    def test_design_documentation(self):
+    def test_design_documentation(self) -> None:
         """Test that design document includes region code information."""
         design_path = PROJECT_ROOT / "docs" / "design.md"
         with open(design_path, "r") as f:

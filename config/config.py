@@ -20,6 +20,19 @@ class MqttUser:
 
 
 @dataclass
+class MqttConfig:
+    """MQTT broker configuration."""
+
+    broker: str
+    port: int = 1883
+    username: str = ""
+    password: str = ""
+    topic: str = "msh/US/2/json/+/+"
+    keepalive: int = 60
+    use_internal_broker: bool = False
+
+
+@dataclass
 class MqttBrokerConfig:
     """Internal MQTT broker configuration."""
 
@@ -38,6 +51,8 @@ class CalTopoConfig:
     """CalTopo API configuration."""
 
     connect_key: str
+    api_mode: str = "connect_key"  # "connect_key" or "group"
+    group: Optional[str] = None
 
 
 @dataclass
@@ -64,6 +79,14 @@ class NodeMapping:
     """Node mapping configuration."""
 
     device_id: str
+    group: Optional[str] = None
+
+
+@dataclass
+class DeviceConfig:
+    """Device management configuration."""
+
+    allow_unknown_devices: bool = True
 
 
 @dataclass
@@ -75,6 +98,7 @@ class Config:
     nodes: Dict[str, NodeMapping]
     logging: LoggingConfig
     mqtt_broker: MqttBrokerConfig = field(default_factory=MqttBrokerConfig)
+    devices: DeviceConfig = field(default_factory=DeviceConfig)
 
     @classmethod
     def from_file(cls, config_path: str) -> "Config":
@@ -138,6 +162,7 @@ class Config:
             username=mqtt_data["username"],
             password=mqtt_data["password"],
             topic=mqtt_data["topic"],
+            keepalive=int(mqtt_data.get("keepalive", 60)),
             use_internal_broker=mqtt_data.get("use_internal_broker", False),
         )
 
@@ -146,9 +171,26 @@ class Config:
         if "connect_key" not in caltopo_data:
             raise ValueError("Missing required CalTopo configuration: connect_key")
 
-        caltopo_config = CalTopoConfig(
-            connect_key=caltopo_data["connect_key"],
-        )
+        api_mode = caltopo_data.get("api_mode", "connect_key")
+        if api_mode not in ["connect_key", "group"]:
+            raise ValueError("CalTopo api_mode must be 'connect_key' or 'group'")
+
+        if api_mode == "connect_key":
+            # connect_key mode - connect_key is required
+            caltopo_config = CalTopoConfig(
+                connect_key=caltopo_data["connect_key"],
+                api_mode=api_mode,
+                group=caltopo_data.get("group"),
+            )
+        else:
+            # group mode - group is required
+            if "group" not in caltopo_data:
+                raise ValueError("CalTopo group is required when api_mode is 'group'")
+            caltopo_config = CalTopoConfig(
+                connect_key=caltopo_data["connect_key"],
+                api_mode=api_mode,
+                group=caltopo_data["group"],
+            )
 
         # Validate and process node mappings
         nodes_data = data["nodes"]
@@ -162,7 +204,10 @@ class Config:
                     f"Invalid node configuration for {node_id}: missing device_id"
                 )
 
-            nodes[node_id] = NodeMapping(device_id=node_config["device_id"])
+            nodes[node_id] = NodeMapping(
+                device_id=node_config["device_id"],
+                group=node_config.get("group"),
+            )
 
         # Process logging configuration (optional)
         logging_data = data.get("logging", {})
@@ -205,12 +250,19 @@ class Config:
             acl_enabled=mqtt_broker_data.get("acl_enabled", False),
         )
 
+        # Process device configuration (optional)
+        devices_data = data.get("devices", {})
+        device_config = DeviceConfig(
+            allow_unknown_devices=devices_data.get("allow_unknown_devices", True),
+        )
+
         return cls(
             mqtt=mqtt_config,
             caltopo=caltopo_config,
             nodes=nodes,
             logging=logging_config,
             mqtt_broker=mqtt_broker_config,
+            devices=device_config,
         )
 
     def get_node_device_id(self, node_id: str) -> Optional[str]:
@@ -225,6 +277,26 @@ class Config:
         """
         node_mapping = self.nodes.get(node_id)
         return node_mapping.device_id if node_mapping else None
+
+    def get_node_group(self, node_id: str) -> Optional[str]:
+        """
+        Get the GROUP for a given Meshtastic node ID.
+
+        Checks for per-device GROUP override first, then falls back to global GROUP.
+
+        Args:
+            node_id: Meshtastic hardware node ID
+
+        Returns:
+            str: GROUP if configured (per-device or global), None otherwise
+        """
+        # Check for per-device GROUP override
+        node_mapping = self.nodes.get(node_id)
+        if node_mapping and node_mapping.group:
+            return node_mapping.group
+
+        # Fall back to global GROUP
+        return self.caltopo.group
 
     def setup_logging(self) -> None:
         """

@@ -3,7 +3,7 @@ CalTopo API integration for sending position reports.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 from urllib.parse import urlencode
 
 import requests
@@ -31,7 +31,11 @@ class CalTopoReporter:
         self.timeout = 10  # seconds
 
     def send_position_update(
-        self, callsign: str, latitude: float, longitude: float
+        self,
+        callsign: str,
+        latitude: float,
+        longitude: float,
+        group: Optional[str] = None,
     ) -> bool:
         """
         Send a position update to CalTopo.
@@ -40,12 +44,13 @@ class CalTopoReporter:
             callsign: Device callsign/identifier
             latitude: Latitude in decimal degrees
             longitude: Longitude in decimal degrees
+            group: Optional GROUP for group-based API mode
 
         Returns:
             bool: True if successful, False otherwise
         """
         # Build the API URL
-        url = self._build_api_url(callsign, latitude, longitude)
+        url = self._build_api_url(callsign, latitude, longitude, group)
 
         try:
             self.logger.debug(
@@ -80,7 +85,13 @@ class CalTopoReporter:
             )
             return False
 
-    def _build_api_url(self, callsign: str, latitude: float, longitude: float) -> str:
+    def _build_api_url(
+        self,
+        callsign: str,
+        latitude: float,
+        longitude: float,
+        group: Optional[str] = None,
+    ) -> str:
         """
         Build the CalTopo API URL with query parameters.
 
@@ -88,12 +99,20 @@ class CalTopoReporter:
             callsign: Device callsign/identifier
             latitude: Latitude in decimal degrees
             longitude: Longitude in decimal degrees
+            group: Optional GROUP for group-based API mode
 
         Returns:
             str: Complete API URL
         """
-        # Construct the base URL with connect key
-        url = f"{self.BASE_URL}/{self.config.caltopo.connect_key}"
+        # Determine API mode and construct URL accordingly
+        if self.config.caltopo.api_mode == "group":
+            # Group-based API mode
+            if not group:
+                raise ValueError("GROUP is required for group-based API mode")
+            url = f"{self.BASE_URL}/{group}"
+        else:
+            # Connect key API mode (default)
+            url = f"{self.BASE_URL}/{self.config.caltopo.connect_key}"
 
         # Build query parameters
         params = {"id": callsign, "lat": latitude, "lng": longitude}
@@ -113,10 +132,23 @@ class CalTopoReporter:
             # Try to make a simple request to test connectivity
             # We'll use a dummy position that should be rejected but still
             # test connectivity
-            test_url = (
-                f"{self.BASE_URL}/{self.config.caltopo.connect_key}"
-                f"?id=TEST&lat=0&lng=0"
-            )
+            if self.config.caltopo.api_mode == "group":
+                # Group-based API mode - use global group
+                if not self.config.caltopo.group:
+                    self.logger.error(
+                        "Cannot test group-based API without global group configured"
+                    )
+                    return False
+                test_url = (
+                    f"{self.BASE_URL}/{self.config.caltopo.group}"
+                    f"?id=MESHTOPO_SYSTEM_TEST&lat=0&lng=0"
+                )
+            else:
+                # Connect key API mode
+                test_url = (
+                    f"{self.BASE_URL}/{self.config.caltopo.connect_key}"
+                    f"?id=MESHTOPO_SYSTEM_TEST&lat=0&lng=0"
+                )
 
             response = self.session.get(test_url, timeout=self.timeout)
 

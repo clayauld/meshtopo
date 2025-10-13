@@ -2,7 +2,6 @@
 Main gateway application that orchestrates MQTT and CalTopo communication.
 """
 
-import json
 import logging
 import signal
 import sys
@@ -45,6 +44,9 @@ class GatewayApp:
         # Node ID mapping: numeric ID -> hardware ID -> callsign
         self.node_id_mapping: Dict[str, str] = {}
         self.callsign_mapping: Dict[str, str] = {}  # hardware_id -> callsign
+        self.configured_devices: set = (
+            set()
+        )  # Track which devices are in the nodes config
 
     def initialize(self) -> bool:
         """
@@ -82,6 +84,9 @@ class GatewayApp:
             self.logger.info("Initializing MQTT client...")
             self.mqtt_client = MqttClient(self.config, self._process_message)
 
+            # Build set of configured devices for tracking
+            self.configured_devices = set(self.config.nodes.keys())
+            self.logger.info(f"Configured devices: {self.configured_devices}")
 
             self.logger.info("Application initialized successfully")
             return True
@@ -89,7 +94,6 @@ class GatewayApp:
         except Exception as e:
             self.logger.error(f"Failed to initialize application: {e}")
             return False
-
 
     def start(self) -> None:
         """
@@ -144,7 +148,6 @@ class GatewayApp:
 
         self.logger.info("Stopping gateway service...")
         self.running = False
-
 
         # Disconnect MQTT client
         if self.mqtt_client:
@@ -247,6 +250,8 @@ class GatewayApp:
             # Try to use sender field as fallback (contains hardware ID)
             sender = data.get("sender")
             if sender and sender.startswith("!"):
+                # At this point, sender is guaranteed to be a string
+                assert isinstance(sender, str), "sender should be a string here"
                 hardware_id = sender
                 # Build the mapping for future use
                 self.node_id_mapping[str(node_id)] = hardware_id
@@ -256,30 +261,55 @@ class GatewayApp:
             else:
                 self.logger.warning(
                     f"No hardware ID mapping found for numeric node ID {node_id}. "
-                    f"Position update will be skipped until nodeinfo message is received."
+                    f"Position update will be skipped until nodeinfo message is "
+                    f"received."
                 )
                 return
+
+        # At this point, hardware_id is guaranteed to be a string
+        assert hardware_id is not None, "hardware_id should not be None at this point"
 
         # Get callsign for this hardware ID
         callsign = self.callsign_mapping.get(hardware_id)
         if not callsign:
             # Check if we have a configured device_id for this hardware ID
+            if self.config is None:
+                self.logger.error("Configuration not loaded")
+                self.stats["errors"] += 1
+                return
             configured_device_id = self.config.get_node_device_id(hardware_id)
             if configured_device_id:
                 callsign = configured_device_id
                 self.callsign_mapping[hardware_id] = callsign
                 self.logger.debug(
-                    f"Using configured device_id as callsign: {hardware_id} -> {callsign}"
+                    f"Using configured device_id as callsign: "
+                    f"{hardware_id} -> {callsign}"
                 )
             else:
-                self.logger.warning(
-                    f"No callsign mapping found for hardware ID {hardware_id}. "
-                    f"Position update will be skipped until nodeinfo message is received."
-                )
-                return
+                # Check if this is an unknown device and if we should allow it
+                is_unknown_device = hardware_id not in self.configured_devices
+                if is_unknown_device and not self.config.devices.allow_unknown_devices:
+                    self.logger.warning(
+                        f"Unknown device {hardware_id} position update blocked "
+                        f"(allow_unknown_devices=False). Device is tracked but no "
+                        f"position sent."
+                    )
+                    return
+                else:
+                    self.logger.warning(
+                        f"No callsign mapping found for hardware ID {hardware_id}. "
+                        f"Position update will be skipped until nodeinfo message is "
+                        f"received."
+                    )
+                    return
+
+        # Get GROUP for this device (if using group-based API)
+        group = None
+        if self.config is not None and self.config.caltopo.api_mode == "group":
+            group = self.config.get_node_group(hardware_id)
 
         success = self.caltopo_reporter.send_position_update(
-            callsign, latitude, longitude
+            callsign, latitude, longitude, group
         )
 
         if success:
@@ -313,20 +343,36 @@ class GatewayApp:
         if node_id_from_payload:
             self.node_id_mapping[str(node_id)] = node_id_from_payload
             self.logger.debug(
-                f"Mapped numeric node ID {node_id} to hardware ID {node_id_from_payload}"
+                f"Mapped numeric node ID {node_id} to hardware ID "
+                f"{node_id_from_payload}"
             )
 
-            # Extract and store callsign from longname
-            if longname:
+            # Extract and store callsign - prioritize configured device_id over
+            # Meshtastic longname
+            if self.config is None:
+                self.logger.error("Configuration not loaded")
+                return
+            configured_device_id = self.config.get_node_device_id(node_id_from_payload)
+            if configured_device_id:
+                # Use configured device_id as callsign
+                self.callsign_mapping[node_id_from_payload] = configured_device_id
+                self.logger.debug(
+                    f"Mapped hardware ID {node_id_from_payload} to configured "
+                    f"callsign {configured_device_id}"
+                )
+            elif longname:
+                # Fallback to Meshtastic longname if no configured device_id
                 self.callsign_mapping[node_id_from_payload] = longname
                 self.logger.debug(
-                    f"Mapped hardware ID {node_id_from_payload} to callsign {longname}"
+                    f"Mapped hardware ID {node_id_from_payload} to callsign "
+                    f"{longname} (from longname)"
                 )
             elif shortname:
-                # Fallback to shortname if longname not available
+                # Final fallback to shortname if longname not available
                 self.callsign_mapping[node_id_from_payload] = shortname
                 self.logger.debug(
-                    f"Mapped hardware ID {node_id_from_payload} to callsign {shortname} (from shortname)"
+                    f"Mapped hardware ID {node_id_from_payload} to callsign "
+                    f"{shortname} (from shortname)"
                 )
 
         self.logger.info(

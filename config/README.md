@@ -6,12 +6,12 @@ This directory contains configuration files and examples for the Meshtopo gatewa
 
 ### Main Configuration
 
--   **`config.yaml`** - Your active configuration file (not tracked in git)
--   **`config.yaml.example`** - Complete example with all options documented
--   **`config.yaml.basic`** - Minimal configuration for basic setup
--   **`config.yaml.minimal`** - Bare minimum configuration for testing
--   **`config.yaml.production`** - Production-ready configuration
--   **`config.yaml.docker`** - Docker-optimized configuration
+- **`config.yaml`** - Your active configuration file (not tracked in git)
+- **`config.yaml.example`** - Complete example with all options documented
+- **`config.yaml.basic`** - Minimal configuration for basic setup
+- **`config.yaml.minimal`** - Bare minimum configuration for testing
+- **`config.yaml.production`** - Production-ready configuration
+- **`config.yaml.docker`** - Docker-optimized configuration
 
 ## Quick Setup
 
@@ -50,7 +50,14 @@ mqtt:
 ```yaml
 caltopo:
     connect_key: "YOUR_CONNECT_KEY_HERE" # From Team Account access URL
+    api_mode: "connect_key" # API mode: "connect_key" or "group"
+    group: "SARTEAM" # Global GROUP (required if api_mode is "group")
 ```
+
+**API Mode Options:**
+
+- **connect_key** (default): Uses CalTopo Team Account connect key
+- **group**: Uses GROUP-based custom integration with optional per-device GROUP overrides
 
 ### Optional Node Overrides
 
@@ -58,7 +65,20 @@ caltopo:
 nodes:
     "!823a4edc": # Meshtastic hardware ID
         device_id: "TEAM-LEAD" # Custom display name in CalTopo
+        group: "LEADERSHIP" # Optional per-device GROUP override
 ```
+
+### Device Management Configuration
+
+```yaml
+devices:
+    allow_unknown_devices: true # Allow unknown devices to send position updates
+```
+
+**Device Access Control:**
+
+- **true** (default): Unknown devices are tracked and can send position updates
+- **false**: Unknown devices are tracked but position updates are blocked
 
 ### Internal MQTT Broker Configuration
 
@@ -91,15 +111,15 @@ mqtt_broker:
 
 Replace `US` in the MQTT topic with your LoRa region code:
 
--   **US** - United States
--   **EU_868** - European Union (868 MHz)
--   **ANZ** - Australia/New Zealand
--   **CN** - China
--   **JP** - Japan
--   **KR** - Korea
--   **IN** - India
--   **BR_902** - Brazil
--   **RU** - Russia
+- **US** - United States
+- **EU_868** - European Union (868 MHz)
+- **ANZ** - Australia/New Zealand
+- **CN** - China
+- **JP** - Japan
+- **KR** - Korea
+- **IN** - India
+- **BR_902** - Brazil
+- **RU** - Russia
 
 For the complete list, see [Meshtastic LoRa Region by Country](https://meshtastic.org/docs/configuration/region-by-country/).
 
@@ -114,7 +134,7 @@ Devices automatically register in CalTopo using their Meshtastic callsigns:
 
 ## Internal MQTT Broker Setup
 
-### Quick Setup
+### Broker Quick Setup
 
 1. **Enable broker in config.yaml**:
 
@@ -134,24 +154,25 @@ Devices automatically register in CalTopo using their Meshtastic callsigns:
     ```
 
 3. **Start broker**:
+
     ```bash
     docker-compose up -d mosquitto
     ```
 
 ### User Management
 
--   **Username/Password**: Define MQTT users in `mqtt_broker.users`
--   **ACL Levels**: `read`, `write`, or `readwrite`
--   **Password Security**: Passwords are hashed using Mosquitto's PBKDF2 method
--   **Anonymous Access**: Disabled by default for security
+- **Username/Password**: Define MQTT users in `mqtt_broker.users`
+- **ACL Levels**: `read`, `write`, or `readwrite`
+- **Password Security**: Passwords are hashed using Mosquitto's PBKDF2 method
+- **Anonymous Access**: Disabled by default for security
 
 ### Security Features
 
--   **No Anonymous Access**: All connections require authentication
--   **Password Hashing**: Uses PBKDF2 with SHA512
--   **ACL Support**: Fine-grained access control (optional)
--   **Connection Limits**: Configurable max connections
--   **WebSocket Support**: Secure WebSocket connections on separate port
+- **No Anonymous Access**: All connections require authentication
+- **Password Hashing**: Uses PBKDF2 with SHA512
+- **ACL Support**: Fine-grained access control (optional)
+- **Connection Limits**: Configurable max connections
+- **WebSocket Support**: Secure WebSocket connections on separate port
 
 ## Logging Configuration
 
@@ -169,22 +190,22 @@ logging:
 
 ### Development
 
--   Use `config.yaml.minimal` for testing
--   Set logging level to `DEBUG`
--   Use local MQTT broker
+- Use `config.yaml.minimal` for testing
+- Set logging level to `DEBUG`
+- Use local MQTT broker
 
 ### Production
 
--   Use `config.yaml.production` as template
--   Set logging level to `WARNING`
--   Configure proper log rotation
--   Use secure MQTT credentials
+- Use `config.yaml.production` as template
+- Set logging level to `WARNING`
+- Configure proper log rotation
+- Use secure MQTT credentials
 
 ### Docker
 
--   Use `config.yaml.docker` as template
--   Set MQTT broker to service name (e.g., `mosquitto`)
--   Configure log paths for container
+- Use `config.yaml.docker` as template
+- Set MQTT broker to service name (e.g., `mosquitto`)
+- Configure log paths for container
 
 ## Troubleshooting
 
@@ -203,7 +224,7 @@ python -c "from config.config import Config; Config.from_file('config.yaml')"
 
 ## Security Notes
 
--   Never commit `config.yaml` to version control (contains sensitive data)
--   Use strong MQTT passwords
--   Keep CalTopo connect key secure
--   Consider using environment variables for sensitive data in production
+- Never commit `config.yaml` to version control (contains sensitive data)
+- Use strong MQTT passwords
+- Keep CalTopo connect key secure
+- Consider using environment variables for sensitive data in production

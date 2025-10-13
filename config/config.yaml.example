@@ -13,14 +13,32 @@ mqtt:
 # CalTopo API Configuration
 caltopo:
     connect_key: "YOUR_CONNECT_KEY_HERE"  # From CalTopo Team Account access URL
+    api_mode: "connect_key"               # API mode: "connect_key" or "group"
+    group: "SARTEAM"                      # Global GROUP (required if api_mode is "group")
+
+# API Mode Options:
+# - "connect_key": Uses CalTopo Team Account connect key (default)
+#   Format: https://caltopo.com/api/v1/position/report/{CONNECT_KEY}?id={DEVICE_ID}&lat={LAT}&lng={LNG}
+# - "group": Uses GROUP-based custom integration
+#   Format: https://caltopo.com/api/v1/position/report/{GROUP}?id={DEVICE_ID}&lat={LAT}&lng={LNG}
 
 # Optional: Node display name overrides
 # If not specified, devices will use their Meshtastic longname as callsign
 nodes:
     "!823a4edc":                        # Meshtastic hardware ID
         device_id: "TEAM-LEAD"          # Custom display name in CalTopo
+        group: "LEADERSHIP"             # Optional per-device GROUP override
     "!a4b8c2f0":                        # Meshtastic hardware ID
         device_id: "COMMS-1"            # Custom display name in CalTopo
+        # group: "COMMS"                # Optional per-device GROUP override
+
+# Device Management Configuration
+devices:
+    allow_unknown_devices: true          # Allow devices not in nodes list to send position updates
+
+# Device Management Options:
+# - allow_unknown_devices: true  (default) - Unknown devices are tracked and can send position updates
+# - allow_unknown_devices: false - Unknown devices are tracked but position updates are blocked
 
 # Internal MQTT Broker Configuration (optional)
 mqtt_broker:
