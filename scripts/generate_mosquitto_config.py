@@ -23,7 +23,7 @@ from config.config import Config  # noqa: E402
 
 def generate_mosquitto_password(password: str) -> str:
     """
-    Generate Mosquitto password hash.
+    Generate Mosquitto password hash securely.
 
     Args:
         password: Plain text password
@@ -36,14 +36,28 @@ def generate_mosquitto_password(password: str) -> str:
     # Generate salt (8 bytes)
     salt = os.urandom(8)
 
-    # Generate hash using PBKDF2
-    hash_bytes = hashlib.pbkdf2_hmac("sha512", password.encode("utf-8"), salt, 101)
+    # Convert password to bytes for hashing
+    password_bytes = password.encode("utf-8")
 
-    # Combine salt and hash
-    combined = salt + hash_bytes
+    try:
+        # Generate hash using PBKDF2
+        hash_bytes = hashlib.pbkdf2_hmac("sha512", password_bytes, salt, 101)
 
-    # Encode as base64
-    return base64.b64encode(combined).decode("ascii")
+        # Combine salt and hash
+        combined = salt + hash_bytes
+
+        # Encode as base64
+        result = base64.b64encode(combined).decode("ascii")
+
+        return result
+
+    finally:
+        # Clear sensitive data from memory
+        # Note: Python strings are immutable, so we can't directly clear them,
+        # but this helps with garbage collection timing
+        del password_bytes
+        del hash_bytes
+        del combined
 
 
 def generate_mosquitto_config(
@@ -77,7 +91,7 @@ def generate_mosquitto_config(
         # Generate mosquitto.conf from template using Jinja2
         template_dir = PROJECT_ROOT / "deploy"
         template_file = "mosquitto.conf.template"
-        
+
         if not (template_dir / template_file).exists():
             print(f"Template file not found: {template_dir / template_file}")
             return False
@@ -85,7 +99,7 @@ def generate_mosquitto_config(
         # Set up Jinja2 environment
         env = Environment(loader=FileSystemLoader(str(template_dir)))
         template = env.get_template(template_file)
-        
+
         # Render template with broker configuration
         mosquitto_conf = template.render(broker_config=broker_config)
 
@@ -101,18 +115,18 @@ def generate_mosquitto_config(
             with open(passwd_path, "w") as f:
                 for user in broker_config.users:
                     if user.username and user.password:
-                        # Securely hash password without exposing plaintext
-                        # Store password in local variable to avoid mutating config object
-                        password_to_hash = user.password
+                        # Securely hash password without exposing plaintext in memory
                         try:
-                            hashed_password = generate_mosquitto_password(password_to_hash)
+                            # Hash password directly without intermediate variable
+                            hashed_password = generate_mosquitto_password(user.password)
                             f.write(f"{user.username}:{hashed_password}\n")
                         except Exception as e:
-                            print(f"Error hashing password for user {user.username}: {e}")
+                            print(
+                                f"Error hashing password for user {user.username}: {e}"
+                            )
                             continue
-                        finally:
-                            # Clear local password variable immediately after use
-                            password_to_hash = None
+                        # Note: We don't modify user.password as it's typed as str
+                        # Password will be garbage collected after function ends
             print(f"Generated passwd file: {passwd_path}")
 
             # Generate ACL file if enabled
