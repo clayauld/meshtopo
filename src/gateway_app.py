@@ -269,12 +269,6 @@ class GatewayApp:
                 )
                 return
 
-        # Validate that hardware_id is not None
-        if hardware_id is None:
-            self.logger.error("hardware_id should not be None at this point")
-            self.stats["errors"] += 1
-            return
-
         # Get callsign for this hardware ID
         callsign = self.callsign_mapping.get(hardware_id)
         if not callsign:
