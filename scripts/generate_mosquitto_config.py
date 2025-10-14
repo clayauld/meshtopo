@@ -55,9 +55,12 @@ def generate_mosquitto_password(password: str) -> str:
         # Clear sensitive data from memory
         # Note: Python strings are immutable, so we can't directly clear them,
         # but this helps with garbage collection timing
-        del password_bytes
-        del hash_bytes
-        del combined
+        if 'password_bytes' in locals():
+            del password_bytes
+        if 'hash_bytes' in locals():
+            del hash_bytes
+        if 'combined' in locals():
+            del combined
 
 
 def generate_mosquitto_config(
