@@ -159,7 +159,7 @@ def generate_mosquitto_config(
         # Generate docker-compose override if needed
         override_path = output_dir_path / "docker-compose.override.yml"
         if broker_config.enabled:
-            override_content = f"""# Docker Compose override for internal MQTT broker
+            override_content = """# Docker Compose override for internal MQTT broker
 # Generated from config.yaml - DO NOT EDIT MANUALLY
 
 version: '3.8'
@@ -167,13 +167,18 @@ version: '3.8'
 services:
   mosquitto:
     ports:
-      - "{broker_config.port}:{broker_config.port}"
-      - "{broker_config.websocket_port}:{broker_config.websocket_port}"
+      - "{}:{}"
+      - "{}:{}"
     volumes:
       - mosquitto_data:/mosquitto/data
       - mosquitto_data:/mosquitto/log
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf: ro
-"""
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+""".format(
+                broker_config.port,
+                broker_config.port,
+                broker_config.websocket_port,
+                broker_config.websocket_port,
+            )
 
             if not broker_config.allow_anonymous and broker_config.users:
                 override_content += "      - ./passwd:/mosquitto/config/passwd:ro\n"
