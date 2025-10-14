@@ -107,13 +107,12 @@ def generate_mosquitto_config(
                         try:
                             hashed_password = generate_mosquitto_password(password_to_hash)
                             f.write(f"{user.username}:{hashed_password}\n")
-                            # Clear local password variable immediately after hashing
-                            password_to_hash = None
                         except Exception as e:
                             print(f"Error hashing password for user {user.username}: {e}")
-                            # Clear local password variable even on error
-                            password_to_hash = None
                             continue
+                        finally:
+                            # Clear local password variable immediately after use
+                            password_to_hash = None
             print(f"Generated passwd file: {passwd_path}")
 
             # Generate ACL file if enabled
