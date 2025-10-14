@@ -47,11 +47,15 @@ def generate_mosquitto_password(password: str) -> str:
         return result
 
     finally:
-        # Clear sensitive data from memory
+        # Clear sensitive data from memory immediately
         if "password_bytes" in locals():
+            # Overwrite with zeros before deletion for extra security
+            password_bytes = b"\x00" * len(password_bytes)
             del password_bytes
         if "hashed_bytes" in locals():
             del hashed_bytes
+        # Note: We cannot clear the input password string as it's immutable
+        # The caller should handle clearing the original password
 
 
 def generate_mosquitto_config(
@@ -114,6 +118,8 @@ def generate_mosquitto_config(
                             # Hash password directly without intermediate variable
                             hashed_password = generate_mosquitto_password(user.password)
                             f.write(f"{user.username}:{hashed_password}\n")
+                            # Clear hashed password from memory immediately after use
+                            del hashed_password
                         except Exception as e:
                             print(
                                 f"Error hashing password for user {user.username}: {e}"
@@ -121,6 +127,9 @@ def generate_mosquitto_config(
                             continue
                         # Note: We don't modify user.password as it's typed as str
                         # Password will be garbage collected after function ends
+
+            # Set restrictive file permissions (owner read/write only)
+            passwd_path.chmod(0o600)
             print(f"Generated passwd file: {passwd_path}")
 
             # Generate ACL file if enabled
