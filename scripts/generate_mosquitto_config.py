@@ -117,7 +117,7 @@ def generate_mosquitto_config(
                         try:
                             # Hash password directly without intermediate variable
                             hashed_password = generate_mosquitto_password(user.password)
-                            f.write(f"{user.username}:{hashed_password}\n")
+                            f.write(f"{user.username}: {hashed_password}\n")
                             # Clear hashed password from memory immediately after use
                             del hashed_password
                         except Exception as e:
