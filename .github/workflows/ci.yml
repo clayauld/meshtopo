@@ -54,7 +54,7 @@ jobs:
 
     - name: Test with pytest
       run: |
-        python tests/run_tests.py
+        python -m pytest tests/ -v --tb=short
 
   security:
     runs-on: ubuntu-latest
@@ -78,7 +78,7 @@ jobs:
 
     - name: Security scan with safety
       run: |
-        safety check --json --output safety-report.json || true
+        safety scan --output json > safety-report.json || true
 
   docker:
     runs-on: ubuntu-latest
@@ -130,4 +130,4 @@ jobs:
 
     - name: Test Docker images
       run: |
-        docker run --rm ghcr.io/${{ github.repository }}:${{ github.sha }} python tests/run_tests.py
+        docker run --rm ghcr.io/${{ github.repository }}:${{ github.sha }} python -m pytest tests/ -v --tb=short

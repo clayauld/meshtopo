@@ -54,17 +54,17 @@ dev-setup: install
 
 # Run tests
 test:
-	python3 -m pytest tests/ -v
+	python3 -m pytest tests/ -v --tb=short
 
 # Run specific test modules
 test-config:
-	python3 tests/test_config.py
+	python3 -m pytest tests/test_config.py -v
 
 test-gateway:
-	python3 tests/test_gateway_app.py
+	python3 -m pytest tests/test_gateway_app.py -v
 
 test-mqtt:
-	python3 tests/test_mqtt_topic_format.py
+	python3 -m pytest tests/test_mqtt_topic_format.py -v
 
 # Run linting
 lint:
