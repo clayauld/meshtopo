@@ -194,7 +194,8 @@ class GatewayApp:
                 return
             else:
                 self.logger.debug(
-                    f"Received unsupported message type from {numeric_node_id}: {message_type}"
+                    f"Received unsupported message type from {numeric_node_id}: "
+                    f"{message_type}"
                 )
                 return
 
@@ -204,7 +205,9 @@ class GatewayApp:
             self.logger.error(f"Error processing message: {e}")
             self.stats["errors"] += 1
 
-    def _process_position_message(self, data: Dict[str, Any], numeric_node_id: str) -> None:
+    def _process_position_message(
+        self, data: Dict[str, Any], numeric_node_id: str
+    ) -> None:
         """
         Process a position message.
 
@@ -252,20 +255,23 @@ class GatewayApp:
             if sender and sender.startswith("!"):
                 # Validate that sender is a string
                 if not isinstance(sender, str):
-                    self.logger.error(f"Invalid sender type: expected string, got {type(sender)}")
+                    self.logger.error(
+                        f"Invalid sender type: expected string, got {type(sender)}"
+                    )
                     self.stats["errors"] += 1
                     return
                 hardware_id = sender
                 # Build the mapping for future use
                 self.node_id_mapping[str(numeric_node_id)] = hardware_id
                 self.logger.debug(
-                    f"Built mapping from sender field: {numeric_node_id} -> {hardware_id}"
+                    f"Built mapping from sender field: {numeric_node_id} -> "
+                    f"{hardware_id}"
                 )
             else:
                 self.logger.warning(
-                    f"No hardware ID mapping found for numeric node ID {numeric_node_id}. "
-                    f"Position update will be skipped until nodeinfo message is "
-                    f"received."
+                    f"No hardware ID mapping found for numeric node ID "
+                    f"{numeric_node_id}. Position update will be skipped until "
+                    f"nodeinfo message is received."
                 )
                 return
 
@@ -300,15 +306,15 @@ class GatewayApp:
                     callsign = hardware_id
                     self.callsign_mapping[hardware_id] = callsign
                     self.logger.info(
-                        f"Allowing unknown device {hardware_id} (allow_unknown_devices=True). "
-                        f"Using hardware_id as callsign."
+                        f"Allowing unknown device {hardware_id} "
+                        f"(allow_unknown_devices=True). Using hardware_id as callsign."
                     )
                 else:
                     # Known device but no callsign mapping - this shouldn't happen
                     self.logger.warning(
-                        f"No callsign mapping found for known hardware ID {hardware_id}. "
-                        f"Position update will be skipped until nodeinfo message is "
-                        f"received."
+                        f"No callsign mapping found for known hardware ID "
+                        f"{hardware_id}. Position update will be skipped until "
+                        f"nodeinfo message is received."
                     )
                     return
 
@@ -326,7 +332,9 @@ class GatewayApp:
         else:
             self.stats["errors"] += 1
 
-    def _process_nodeinfo_message(self, data: Dict[str, Any], numeric_node_id: str) -> None:
+    def _process_nodeinfo_message(
+        self, data: Dict[str, Any], numeric_node_id: str
+    ) -> None:
         """
         Process a nodeinfo message.
 
@@ -389,7 +397,9 @@ class GatewayApp:
             f"Name={longname} ({shortname}), Hardware={hardware}, Role={role}"
         )
 
-    def _process_telemetry_message(self, data: Dict[str, Any], numeric_node_id: str) -> None:
+    def _process_telemetry_message(
+        self, data: Dict[str, Any], numeric_node_id: str
+    ) -> None:
         """
         Process a telemetry message.
 
@@ -417,7 +427,9 @@ class GatewayApp:
             f"Air util TX={air_util_tx}, Channel util={channel_utilization}%"
         )
 
-    def _process_traceroute_message(self, data: Dict[str, Any], numeric_node_id: str) -> None:
+    def _process_traceroute_message(
+        self, data: Dict[str, Any], numeric_node_id: str
+    ) -> None:
         """
         Process a traceroute message.
 
