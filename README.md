@@ -169,8 +169,6 @@ The service is configured via `config/config.yaml`. Multiple configuration templ
 
 ### Configuration Structure
 
-The service is configured via `config/config.yaml`:
-
 ```yaml
 # MQTT Broker Configuration
 mqtt:
