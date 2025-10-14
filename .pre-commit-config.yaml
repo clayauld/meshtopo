@@ -52,6 +52,16 @@ repos:
         additional_dependencies: [types-PyYAML, types-requests, types-WTForms]
         args: [--ignore-missing-imports]
 
+  # Python testing
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: python -m pytest tests/ -v --tb=short
+        language: system
+        pass_filenames: false
+        always_run: true
+
   # Security checks (disabled due to pre-commit environment issues)
   # - repo: https://github.com/PyCQA/bandit
   #   rev: 1.7.5

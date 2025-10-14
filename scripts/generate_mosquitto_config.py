@@ -172,7 +172,7 @@ services:
     volumes:
       - mosquitto_data:/mosquitto/data
       - mosquitto_data:/mosquitto/log
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf: ro
 """
 
             if not broker_config.allow_anonymous and broker_config.users:

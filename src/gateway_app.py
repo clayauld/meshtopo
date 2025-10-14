@@ -471,7 +471,7 @@ class GatewayApp:
 
         uptime = time.time() - self.stats["start_time"]
         self.logger.info(
-            f"Statistics - Uptime: {uptime:.0f}s, "
+            f"Statistics - Uptime: {uptime: .0f}s, "
             f"Messages received: {self.stats['messages_received']}, "
             f"Messages processed: {self.stats['messages_processed']}, "
             f"Position updates sent: {self.stats['position_updates_sent']}, "
