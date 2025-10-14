@@ -4,14 +4,12 @@ Generate Mosquitto MQTT broker configuration from config.yaml.
 """
 
 import argparse
-import base64
-import hashlib
 import logging
-import os
 import sys
 from pathlib import Path
 from typing import Optional
 
+import bcrypt
 from jinja2 import Environment, FileSystemLoader
 
 # Add project root to path for imports
@@ -23,44 +21,37 @@ from config.config import Config  # noqa: E402
 
 def generate_mosquitto_password(password: str) -> str:
     """
-    Generate Mosquitto password hash securely.
+    Generate Mosquitto password hash using bcrypt for secure storage.
 
     Args:
         password: Plain text password
 
     Returns:
-        str: Hashed password in Mosquitto format
+        str: bcrypt hashed password in Mosquitto format ($2b$...)
     """
-    # Mosquitto uses PBKDF2 with SHA512
+    # Use bcrypt for secure password hashing
+    # Mosquitto supports bcrypt hashes in the format $2b$...
 
-    # Generate salt (8 bytes)
-    salt = os.urandom(8)
-
-    # Convert password to bytes for hashing
+    # Convert password to bytes for bcrypt
     password_bytes = password.encode("utf-8")
 
     try:
-        # Generate hash using PBKDF2
-        hash_bytes = hashlib.pbkdf2_hmac("sha512", password_bytes, salt, 101)
+        # Generate bcrypt hash with appropriate cost factor
+        # Cost factor 12 provides good security vs performance balance
+        salt = bcrypt.gensalt(rounds=12)
+        hashed_bytes = bcrypt.hashpw(password_bytes, salt)
 
-        # Combine salt and hash
-        combined = salt + hash_bytes
-
-        # Encode as base64
-        result = base64.b64encode(combined).decode("ascii")
+        # Convert to string for storage
+        result: str = hashed_bytes.decode("utf-8")
 
         return result
 
     finally:
         # Clear sensitive data from memory
-        # Note: Python strings are immutable, so we can't directly clear them,
-        # but this helps with garbage collection timing
-        if 'password_bytes' in locals():
+        if "password_bytes" in locals():
             del password_bytes
-        if 'hash_bytes' in locals():
-            del hash_bytes
-        if 'combined' in locals():
-            del combined
+        if "hashed_bytes" in locals():
+            del hashed_bytes
 
 
 def generate_mosquitto_config(
@@ -118,7 +109,7 @@ def generate_mosquitto_config(
             with open(passwd_path, "w") as f:
                 for user in broker_config.users:
                     if user.username and user.password:
-                        # Securely hash password without exposing plaintext in memory
+                        # Securely hash password using bcrypt
                         try:
                             # Hash password directly without intermediate variable
                             hashed_password = generate_mosquitto_password(user.password)
