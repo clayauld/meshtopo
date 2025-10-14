@@ -171,30 +171,30 @@ class GatewayApp:
         self.stats["messages_received"] += 1
 
         try:
-            # Extract node ID
-            node_id = data.get("from")
-            if not node_id:
+            # Extract numeric node ID
+            numeric_node_id = data.get("from")
+            if not numeric_node_id:
                 self.logger.warning("Received message without from field")
                 return
 
             # Check message type and process accordingly
             message_type = data.get("type")
             if message_type == "position":
-                self._process_position_message(data, node_id)
+                self._process_position_message(data, numeric_node_id)
             elif message_type == "nodeinfo":
-                self._process_nodeinfo_message(data, node_id)
+                self._process_nodeinfo_message(data, numeric_node_id)
             elif message_type == "telemetry":
-                self._process_telemetry_message(data, node_id)
+                self._process_telemetry_message(data, numeric_node_id)
             elif message_type == "traceroute":
-                self._process_traceroute_message(data, node_id)
+                self._process_traceroute_message(data, numeric_node_id)
             elif message_type == "":
                 self.logger.debug(
-                    f"Received message with empty type from {node_id}, skipping"
+                    f"Received message with empty type from {numeric_node_id}, skipping"
                 )
                 return
             else:
                 self.logger.debug(
-                    f"Received unsupported message type from {node_id}: {message_type}"
+                    f"Received unsupported message type from {numeric_node_id}: {message_type}"
                 )
                 return
 
@@ -204,19 +204,19 @@ class GatewayApp:
             self.logger.error(f"Error processing message: {e}")
             self.stats["errors"] += 1
 
-    def _process_position_message(self, data: Dict[str, Any], node_id: str) -> None:
+    def _process_position_message(self, data: Dict[str, Any], numeric_node_id: str) -> None:
         """
         Process a position message.
 
         Args:
             data: JSON data from Meshtastic
-            node_id: Node ID from the message
+            numeric_node_id: Numeric node ID from the message
         """
         # Extract payload
         payload = data.get("payload")
         if not payload:
             self.logger.warning(
-                f"Received position message from {node_id} without payload"
+                f"Received position message from {numeric_node_id} without payload"
             )
             return
 
@@ -226,7 +226,7 @@ class GatewayApp:
 
         if latitude_i is None or longitude_i is None:
             self.logger.warning(
-                f"Received position message from {node_id} without coordinates"
+                f"Received position message from {numeric_node_id} without coordinates"
             )
             return
 
@@ -235,7 +235,7 @@ class GatewayApp:
         longitude = longitude_i / 1e7
 
         self.logger.debug(
-            f"Processing position from {node_id}: {latitude}, {longitude}"
+            f"Processing position from {numeric_node_id}: {latitude}, {longitude}"
         )
 
         # Send to CalTopo
@@ -245,29 +245,35 @@ class GatewayApp:
             return
 
         # Get the hardware ID for this numeric node ID
-        hardware_id = self.node_id_mapping.get(str(node_id))
+        hardware_id = self.node_id_mapping.get(str(numeric_node_id))
         if not hardware_id:
             # Try to use sender field as fallback (contains hardware ID)
             sender = data.get("sender")
             if sender and sender.startswith("!"):
-                # At this point, sender is guaranteed to be a string
-                assert isinstance(sender, str), "sender should be a string here"
+                # Validate that sender is a string
+                if not isinstance(sender, str):
+                    self.logger.error(f"Invalid sender type: expected string, got {type(sender)}")
+                    self.stats["errors"] += 1
+                    return
                 hardware_id = sender
                 # Build the mapping for future use
-                self.node_id_mapping[str(node_id)] = hardware_id
+                self.node_id_mapping[str(numeric_node_id)] = hardware_id
                 self.logger.debug(
-                    f"Built mapping from sender field: {node_id} -> {hardware_id}"
+                    f"Built mapping from sender field: {numeric_node_id} -> {hardware_id}"
                 )
             else:
                 self.logger.warning(
-                    f"No hardware ID mapping found for numeric node ID {node_id}. "
+                    f"No hardware ID mapping found for numeric node ID {numeric_node_id}. "
                     f"Position update will be skipped until nodeinfo message is "
                     f"received."
                 )
                 return
 
-        # At this point, hardware_id is guaranteed to be a string
-        assert hardware_id is not None, "hardware_id should not be None at this point"
+        # Validate that hardware_id is not None
+        if hardware_id is None:
+            self.logger.error("hardware_id should not be None at this point")
+            self.stats["errors"] += 1
+            return
 
         # Get callsign for this hardware ID
         callsign = self.callsign_mapping.get(hardware_id)
@@ -295,9 +301,18 @@ class GatewayApp:
                         f"position sent."
                     )
                     return
+                elif is_unknown_device and self.config.devices.allow_unknown_devices:
+                    # Allow unknown device but use hardware_id as callsign
+                    callsign = hardware_id
+                    self.callsign_mapping[hardware_id] = callsign
+                    self.logger.info(
+                        f"Allowing unknown device {hardware_id} (allow_unknown_devices=True). "
+                        f"Using hardware_id as callsign."
+                    )
                 else:
+                    # Known device but no callsign mapping - this shouldn't happen
                     self.logger.warning(
-                        f"No callsign mapping found for hardware ID {hardware_id}. "
+                        f"No callsign mapping found for known hardware ID {hardware_id}. "
                         f"Position update will be skipped until nodeinfo message is "
                         f"received."
                     )
@@ -317,18 +332,18 @@ class GatewayApp:
         else:
             self.stats["errors"] += 1
 
-    def _process_nodeinfo_message(self, data: Dict[str, Any], node_id: str) -> None:
+    def _process_nodeinfo_message(self, data: Dict[str, Any], numeric_node_id: str) -> None:
         """
         Process a nodeinfo message.
 
         Args:
             data: JSON data from Meshtastic
-            node_id: Node ID from the message
+            numeric_node_id: Numeric node ID from the message
         """
         payload = data.get("payload")
         if not payload:
             self.logger.warning(
-                f"Received nodeinfo message from {node_id} without payload"
+                f"Received nodeinfo message from {numeric_node_id} without payload"
             )
             return
 
@@ -341,9 +356,9 @@ class GatewayApp:
 
         # Build mapping from numeric node ID to hardware ID
         if node_id_from_payload:
-            self.node_id_mapping[str(node_id)] = node_id_from_payload
+            self.node_id_mapping[str(numeric_node_id)] = node_id_from_payload
             self.logger.debug(
-                f"Mapped numeric node ID {node_id} to hardware ID "
+                f"Mapped numeric node ID {numeric_node_id} to hardware ID "
                 f"{node_id_from_payload}"
             )
 
@@ -376,22 +391,22 @@ class GatewayApp:
                 )
 
         self.logger.info(
-            f"Node info from {node_id}: ID={node_id_from_payload}, "
+            f"Node info from {numeric_node_id}: ID={node_id_from_payload}, "
             f"Name={longname} ({shortname}), Hardware={hardware}, Role={role}"
         )
 
-    def _process_telemetry_message(self, data: Dict[str, Any], node_id: str) -> None:
+    def _process_telemetry_message(self, data: Dict[str, Any], numeric_node_id: str) -> None:
         """
         Process a telemetry message.
 
         Args:
             data: JSON data from Meshtastic
-            node_id: Node ID from the message
+            numeric_node_id: Numeric node ID from the message
         """
         payload = data.get("payload")
         if not payload:
             self.logger.warning(
-                f"Received telemetry message from {node_id} without payload"
+                f"Received telemetry message from {numeric_node_id} without payload"
             )
             return
 
@@ -403,30 +418,30 @@ class GatewayApp:
         channel_utilization = payload.get("channel_utilization")
 
         self.logger.info(
-            f"Telemetry from {node_id}: Battery={battery_level}%, "
+            f"Telemetry from {numeric_node_id}: Battery={battery_level}%, "
             f"Voltage={voltage}V, Uptime={uptime_seconds}s, "
             f"Air util TX={air_util_tx}, Channel util={channel_utilization}%"
         )
 
-    def _process_traceroute_message(self, data: Dict[str, Any], node_id: str) -> None:
+    def _process_traceroute_message(self, data: Dict[str, Any], numeric_node_id: str) -> None:
         """
         Process a traceroute message.
 
         Args:
             data: JSON data from Meshtastic
-            node_id: Node ID from the message
+            numeric_node_id: Numeric node ID from the message
         """
         payload = data.get("payload")
         if not payload:
             self.logger.warning(
-                f"Received traceroute message from {node_id} without payload"
+                f"Received traceroute message from {numeric_node_id} without payload"
             )
             return
 
         # Extract route information
         route = payload.get("route", [])
 
-        self.logger.info(f"Traceroute from {node_id}: Route={route}")
+        self.logger.info(f"Traceroute from {numeric_node_id}: Route={route}")
 
     def _signal_handler(self, signum: int, frame: Any) -> None:
         """

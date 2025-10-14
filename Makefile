@@ -1,5 +1,8 @@
 # Meshtopo Gateway Service - Development Makefile
 
+# Determine repository name from GITHUB_REPOSITORY environment variable
+REPO := $(if $(GITHUB_REPOSITORY),$(GITHUB_REPOSITORY),clayauld/meshtopo)
+
 .PHONY: help install test lint format clean docker-build docker-pull docker-run docker-run-minimal docker-run-ssl docker-stop docker-status docker-logs docker-clean docker-login docker-push docker-push-default dev-setup setup-broker generate-broker-config
 
 # Default target
@@ -92,12 +95,8 @@ docker-build:
 	@echo "Building Docker image for ghcr.io..."
 	@if [ -z "$(GITHUB_REPOSITORY)" ]; then \
 		echo "Warning: GITHUB_REPOSITORY not set, using default: clayauld/meshtopo"; \
-		REPO="clayauld/meshtopo"; \
-	else \
-		REPO="$(GITHUB_REPOSITORY)"; \
 	fi; \
-	docker build -t ghcr.io/$$REPO:latest -f deploy/Dockerfile .; \
-	docker build -t ghcr.io/$$REPO:$(shell git rev-parse --short HEAD) -f deploy/Dockerfile .
+	docker build -t ghcr.io/$(REPO):latest -t ghcr.io/$(REPO):$(shell git rev-parse --short HEAD) -f deploy/Dockerfile .
 	@echo "Docker images built successfully!"
 	@echo "To push to registry, run: make docker-push"
 
@@ -106,11 +105,8 @@ docker-pull:
 	@echo "Pulling Docker image from ghcr.io..."
 	@if [ -z "$(GITHUB_REPOSITORY)" ]; then \
 		echo "Warning: GITHUB_REPOSITORY not set, using default: clayauld/meshtopo"; \
-		REPO="clayauld/meshtopo"; \
-	else \
-		REPO="$(GITHUB_REPOSITORY)"; \
 	fi; \
-	docker pull ghcr.io/$$REPO:latest
+	docker pull ghcr.io/$(REPO):latest
 
 # Run with Docker Compose (full stack)
 docker-run:

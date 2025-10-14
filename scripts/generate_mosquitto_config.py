@@ -12,6 +12,8 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from jinja2 import Environment, FileSystemLoader
+
 # Add project root to path for imports
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -72,36 +74,20 @@ def generate_mosquitto_config(
 
         broker_config = config.mqtt_broker
 
-        # Generate mosquitto.conf from template
-        template_path = PROJECT_ROOT / "deploy" / "mosquitto.conf.template"
-        if not template_path.exists():
-            print(f"Template file not found: {template_path}")
+        # Generate mosquitto.conf from template using Jinja2
+        template_dir = PROJECT_ROOT / "deploy"
+        template_file = "mosquitto.conf.template"
+        
+        if not (template_dir / template_file).exists():
+            print(f"Template file not found: {template_dir / template_file}")
             return False
 
-        with open(template_path, "r") as f:
-            template_content = f.read()
-
-        # Simple template substitution (replace {{ broker_config.field }} with values)
-        mosquitto_conf = template_content
-        mosquitto_conf = mosquitto_conf.replace(
-            "{{ broker_config.port }}", str(broker_config.port)
-        )
-        mosquitto_conf = mosquitto_conf.replace(
-            "{{ broker_config.websocket_port }}", str(broker_config.websocket_port)
-        )
-        mosquitto_conf = mosquitto_conf.replace(
-            "{{ broker_config.max_connections }}", str(broker_config.max_connections)
-        )
-        mosquitto_conf = mosquitto_conf.replace(
-            "{{ broker_config.allow_anonymous }}",
-            str(broker_config.allow_anonymous).lower(),
-        )
-        mosquitto_conf = mosquitto_conf.replace(
-            "{{ broker_config.persistence }}", str(broker_config.persistence).lower()
-        )
-        mosquitto_conf = mosquitto_conf.replace(
-            "{{ broker_config.acl_enabled }}", str(broker_config.acl_enabled).lower()
-        )
+        # Set up Jinja2 environment
+        env = Environment(loader=FileSystemLoader(str(template_dir)))
+        template = env.get_template(template_file)
+        
+        # Render template with broker configuration
+        mosquitto_conf = template.render(broker_config=broker_config)
 
         # Write mosquitto.conf
         mosquitto_conf_path = output_dir_path / "mosquitto.conf"
@@ -115,8 +101,15 @@ def generate_mosquitto_config(
             with open(passwd_path, "w") as f:
                 for user in broker_config.users:
                     if user.username and user.password:
-                        hashed_password = generate_mosquitto_password(user.password)
-                        f.write(f"{user.username}:{hashed_password}\n")
+                        # Securely hash password without exposing plaintext
+                        try:
+                            hashed_password = generate_mosquitto_password(user.password)
+                            f.write(f"{user.username}:{hashed_password}\n")
+                        except Exception as e:
+                            print(f"Error hashing password for user {user.username}: {e}")
+                            continue
+                        # Clear password from memory immediately after hashing
+                        user.password = None
             print(f"Generated passwd file: {passwd_path}")
 
             # Generate ACL file if enabled
