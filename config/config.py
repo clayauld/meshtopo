@@ -155,6 +155,9 @@ class Config:
         for key in required_mqtt_keys:
             if key not in mqtt_data:
                 raise ValueError(f"Missing required MQTT configuration: {key}")
+            # Check that string values are not empty
+            if key in ["broker", "username", "password", "topic"] and (not mqtt_data[key] or not str(mqtt_data[key]).strip()):
+                raise ValueError(f"MQTT {key} cannot be empty")
 
         mqtt_config = MqttConfig(
             broker=mqtt_data["broker"],
@@ -170,6 +173,10 @@ class Config:
         caltopo_data = data["caltopo"]
         if "connect_key" not in caltopo_data:
             raise ValueError("Missing required CalTopo configuration: connect_key")
+        
+        # Check that connect_key is not empty
+        if not caltopo_data["connect_key"] or not caltopo_data["connect_key"].strip():
+            raise ValueError("CalTopo connect_key cannot be empty")
 
         api_mode = caltopo_data.get("api_mode", "connect_key")
         if api_mode not in ["connect_key", "group"]:
@@ -186,6 +193,11 @@ class Config:
             # group mode - group is required
             if "group" not in caltopo_data:
                 raise ValueError("CalTopo group is required when api_mode is 'group'")
+            
+            # Check that group is not empty
+            if not caltopo_data["group"] or not caltopo_data["group"].strip():
+                raise ValueError("CalTopo group cannot be empty when api_mode is 'group'")
+            
             caltopo_config = CalTopoConfig(
                 connect_key=caltopo_data["connect_key"],
                 api_mode=api_mode,
@@ -203,6 +215,10 @@ class Config:
                 raise ValueError(
                     f"Invalid node configuration for {node_id}: missing device_id"
                 )
+            
+            # Check that device_id is not empty
+            if not node_config["device_id"] or not str(node_config["device_id"]).strip():
+                raise ValueError(f"Node {node_id} device_id cannot be empty")
 
             nodes[node_id] = NodeMapping(
                 device_id=node_config["device_id"],
