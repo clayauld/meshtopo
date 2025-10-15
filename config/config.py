@@ -52,37 +52,37 @@ class CalTopoConfig:
 
     connect_key: Optional[str] = None
     group: Optional[str] = None
-    
-    def __post_init__(self):
-        """Validate that at least one mode is configured and both are valid if provided."""
+
+    def __post_init__(self) -> None:
+        """Validate that at least one mode is configured and both are valid."""
         # Normalize None values to empty strings for easier checking
         connect_key = self.connect_key or ""
         group = self.group or ""
-        
+
         # Check for empty values first
         if self.connect_key is not None and not connect_key.strip():
             raise ValueError("connect_key cannot be empty if provided")
-        
+
         if self.group is not None and not group.strip():
             raise ValueError("group cannot be empty if provided")
-        
+
         # Check that at least one mode is configured with non-empty values
         has_valid_connect_key = bool(connect_key.strip())
         has_valid_group = bool(group.strip())
-        
+
         if not has_valid_connect_key and not has_valid_group:
             raise ValueError("At least one of connect_key or group must be configured")
-    
+
     @property
     def has_connect_key(self) -> bool:
         """Check if connect_key mode is configured."""
         return self.connect_key is not None and bool(self.connect_key.strip())
-    
+
     @property
     def has_group(self) -> bool:
         """Check if group mode is configured."""
         return self.group is not None and bool(self.group.strip())
-    
+
     @property
     def has_both_modes(self) -> bool:
         """Check if both modes are configured."""
@@ -190,7 +190,9 @@ class Config:
             if key not in mqtt_data:
                 raise ValueError(f"Missing required MQTT configuration: {key}")
             # Check that string values are not empty
-            if key in ["broker", "username", "password", "topic"] and (not mqtt_data[key] or not str(mqtt_data[key]).strip()):
+            if key in ["broker", "username", "password", "topic"] and (
+                not mqtt_data[key] or not str(mqtt_data[key]).strip()
+            ):
                 raise ValueError(f"MQTT {key} cannot be empty")
 
         mqtt_config = MqttConfig(
@@ -205,8 +207,8 @@ class Config:
 
         # Validate CalTopo configuration
         caltopo_data = data["caltopo"]
-        
-        # Create the config object - the dataclass __post_init__ will validate the values
+
+        # Create the config object - dataclass __post_init__ will validate values
         caltopo_config = CalTopoConfig(
             connect_key=caltopo_data.get("connect_key"),
             group=caltopo_data.get("group"),
@@ -223,9 +225,11 @@ class Config:
                 raise ValueError(
                     f"Invalid node configuration for {node_id}: missing device_id"
                 )
-            
+
             # Check that device_id is not empty
-            if not node_config["device_id"] or not str(node_config["device_id"]).strip():
+            if not node_config["device_id"] or not str(
+                node_config["device_id"]
+            ).strip():
                 raise ValueError(f"Node {node_id} device_id cannot be empty")
 
             nodes[node_id] = NodeMapping(

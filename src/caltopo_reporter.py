@@ -51,20 +51,20 @@ class CalTopoReporter:
         """
         success_count = 0
         total_attempts = 0
-        
+
         # Send to connect_key endpoint if configured
         if self.config.caltopo.has_connect_key:
             total_attempts += 1
             if self._send_to_connect_key(callsign, latitude, longitude):
                 success_count += 1
-        
+
         # Send to group endpoint if configured
         if self.config.caltopo.has_group:
             total_attempts += 1
             group_to_use = group or self.config.caltopo.group
             if self._send_to_group(callsign, latitude, longitude, group_to_use):
                 success_count += 1
-        
+
         # Return True if at least one endpoint was successful
         return success_count > 0
 
@@ -79,7 +79,7 @@ class CalTopoReporter:
         params = {"id": callsign, "lat": latitude, "lng": longitude}
         query_string = urlencode(params)
         full_url = f"{url}?{query_string}"
-        
+
         return self._make_api_request(full_url, callsign, "connect_key")
 
     def _send_to_group(
@@ -94,7 +94,7 @@ class CalTopoReporter:
         params = {"id": callsign, "lat": latitude, "lng": longitude}
         query_string = urlencode(params)
         full_url = f"{url}?{query_string}"
-        
+
         return self._make_api_request(full_url, callsign, "group")
 
     def _make_api_request(self, url: str, callsign: str, endpoint_type: str) -> bool:
@@ -109,7 +109,10 @@ class CalTopoReporter:
             response = self.session.get(url, timeout=self.timeout)
 
             if response.status_code == 200:
-                self.logger.info(f"Successfully sent position update for {callsign} to {endpoint_type}")
+                self.logger.info(
+                    f"Successfully sent position update for {callsign} to "
+                    f"{endpoint_type}"
+                )
                 return True
             else:
                 self.logger.error(
@@ -119,17 +122,24 @@ class CalTopoReporter:
                 return False
 
         except requests.exceptions.Timeout:
-            self.logger.error(f"CalTopo API timeout for {callsign} ({endpoint_type})")
+            self.logger.error(
+                f"CalTopo API timeout for {callsign} ({endpoint_type})"
+            )
             return False
         except requests.exceptions.ConnectionError:
-            self.logger.error(f"CalTopo API connection error for {callsign} ({endpoint_type})")
+            self.logger.error(
+                f"CalTopo API connection error for {callsign} ({endpoint_type})"
+            )
             return False
         except requests.exceptions.RequestException as e:
-            self.logger.error(f"CalTopo API request error for {callsign} ({endpoint_type}): {e}")
+            self.logger.error(
+                f"CalTopo API request error for {callsign} ({endpoint_type}): {e}"
+            )
             return False
         except Exception as e:
             self.logger.error(
-                f"Unexpected error sending position update for {callsign} ({endpoint_type}): {e}"
+                f"Unexpected error sending position update for {callsign} "
+                f"({endpoint_type}): {e}"
             )
             return False
 
@@ -142,7 +152,7 @@ class CalTopoReporter:
     ) -> str:
         """
         Build the CalTopo API URL with query parameters.
-        
+
         This method is kept for backward compatibility but is deprecated.
         Use the new _send_to_connect_key and _send_to_group methods instead.
 
@@ -178,23 +188,24 @@ class CalTopoReporter:
         Test the connection to CalTopo API.
 
         Returns:
-            bool: True if at least one endpoint connection test successful, False otherwise
+            bool: True if at least one endpoint connection test successful,
+                False otherwise
         """
         success_count = 0
         total_attempts = 0
-        
+
         # Test connect_key endpoint if configured
         if self.config.caltopo.has_connect_key:
             total_attempts += 1
             if self._test_connect_key_endpoint():
                 success_count += 1
-        
+
         # Test group endpoint if configured
         if self.config.caltopo.has_group:
             total_attempts += 1
             if self._test_group_endpoint():
                 success_count += 1
-        
+
         if success_count > 0:
             self.logger.info(
                 f"CalTopo API connectivity test successful "
@@ -213,7 +224,7 @@ class CalTopoReporter:
                 f"?id=MESHTOPO_SYSTEM_TEST&lat=0&lng=0"
             )
             response = self.session.get(test_url, timeout=self.timeout)
-            
+
             # Any response (even 4xx/5xx) means we can reach the API
             self.logger.info(
                 f"CalTopo connect_key endpoint test successful "
@@ -232,7 +243,7 @@ class CalTopoReporter:
                 f"?id=MESHTOPO_SYSTEM_TEST&lat=0&lng=0"
             )
             response = self.session.get(test_url, timeout=self.timeout)
-            
+
             # Any response (even 4xx/5xx) means we can reach the API
             self.logger.info(
                 f"CalTopo group endpoint test successful "
