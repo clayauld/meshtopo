@@ -190,10 +190,9 @@ class Config:
             if key not in mqtt_data:
                 raise ValueError(f"Missing required MQTT configuration: {key}")
             # Check that string values are not empty
-            if key in ["broker", "username", "password", "topic"] and (
+            if key in ["broker", "topic"] and (
                 not mqtt_data[key] or not str(mqtt_data[key]).strip()
             ):
-                raise ValueError(f"MQTT {key} cannot be empty")
 
         mqtt_config = MqttConfig(
             broker=mqtt_data["broker"],
