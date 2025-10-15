@@ -19,6 +19,28 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from config.config import Config  # noqa: E402
 
 
+def validate_env_file(env_path: Path) -> bool:
+    """
+    Validate that the .env file exists and is readable.
+    
+    Args:
+        env_path: Path to the .env file
+        
+    Returns:
+        bool: True if valid, False otherwise
+    """
+    try:
+        if not env_path.exists():
+            return False
+        
+        # Try to read the file to ensure it's accessible
+        with open(env_path, "r") as f:
+            f.read()
+        return True
+    except (OSError, IOError, PermissionError):
+        return False
+
+
 def generate_mosquitto_password(password: str) -> str:
     """
     Generate Mosquitto password hash using bcrypt for secure storage.
@@ -156,18 +178,23 @@ def generate_mosquitto_config(
 
                 print(f"Generated ACL file: {acl_path}")
 
-        # Update environment file for Docker Compose
+        # Generate environment variables for Docker Compose
         env_path = output_dir_path / ".env"
         if broker_config.enabled:
-            # Read existing .env file if it exists
-            env_content = ""
-            if env_path.exists():
-                with open(env_path, "r") as f:
-                    env_content = f.read()
-
-            # Update or add MQTT configuration
+            # Generate MQTT configuration variables
             mqtt_config = f"""# MQTT Broker Configuration
 # Generated from config.yaml - DO NOT EDIT MANUALLY
+# 
+# Environment Variables Documentation:
+# MQTT_PORT: Port for MQTT broker (default: 1883)
+# MQTT_WS_PORT: Port for MQTT WebSocket (default: 9001)
+# MQTT_AUTH_ENABLED: Enable/disable authentication (true/false)
+# MQTT_ACL_ENABLED: Enable/disable Access Control Lists (true/false)
+# MQTT_PASSWD_MOUNT: Mount password file in Docker (true/false)
+# MQTT_ACL_MOUNT: Mount ACL file in Docker (true/false)
+#
+# These variables are used by docker-compose.yml to configure the MQTT broker.
+# Modify the values in config.yaml and re-run this script to update them.
 
 MQTT_PORT={broker_config.port}
 MQTT_WS_PORT={broker_config.websocket_port}
@@ -177,36 +204,42 @@ MQTT_PASSWD_MOUNT={'true' if not broker_config.allow_anonymous and broker_config
 MQTT_ACL_MOUNT={'true' if broker_config.acl_enabled else 'false'}
 """
 
-            # If .env exists, update only MQTT section
-            if env_path.exists():
-                # Remove existing MQTT configuration section
-                lines = env_content.split("\n")
-                new_lines = []
-                skip_mqtt = False
-
-                for line in lines:
-                    if line.startswith(
-                        "# MQTT Broker Configuration"
-                    ) or line.startswith("MQTT_"):
-                        skip_mqtt = True
-                        continue
-                    elif skip_mqtt and line.strip() == "":
-                        continue
-                    elif skip_mqtt and not line.startswith("#"):
-                        skip_mqtt = False
-                        new_lines.append(line)
+            # Handle .env file creation/update more robustly
+            if env_path.exists() and validate_env_file(env_path):
+                # Check if MQTT config already exists in the file
+                try:
+                    with open(env_path, "r") as f:
+                        existing_content = f.read()
+                    
+                    # If MQTT config already exists, warn user and skip update
+                    if "MQTT_PORT=" in existing_content:
+                        print(f"Warning: MQTT configuration already exists in {env_path}")
+                        print("To update MQTT settings, please manually edit the .env file or remove it and re-run this script.")
+                        print("\nRequired MQTT environment variables:")
+                        print(mqtt_config.strip())
                     else:
-                        new_lines.append(line)
-
-                env_content = "\n".join(new_lines)
-                # Add new MQTT configuration
-                env_content += "\n" + mqtt_config
+                        # Append MQTT config to existing file
+                        with open(env_path, "a") as f:
+                            f.write("\n" + mqtt_config)
+                        print(f"Appended MQTT configuration to existing .env file: {env_path}")
+                        
+                except Exception as e:
+                    print(f"Error: Could not read existing .env file: {e}")
+                    print("Please check file permissions and try again.")
+                    return False
             else:
-                env_content = mqtt_config
-
-            with open(env_path, "w") as f:
-                f.write(env_content)
-            print(f"Updated environment file: {env_path}")
+                # Create new .env file with MQTT configuration
+                try:
+                    with open(env_path, "w") as f:
+                        f.write(mqtt_config)
+                    print(f"Created new environment file: {env_path}")
+                except Exception as e:
+                    print(f"Error: Could not create .env file: {e}")
+                    print("Please check directory permissions and try again.")
+                    return False
+            
+            # Set restrictive file permissions (owner read/write only)
+            env_path.chmod(0o600)
             print("Use 'docker compose --profile mqtt up -d' to start with MQTT broker")
 
         print("Mosquitto configuration generated successfully!")
