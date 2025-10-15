@@ -22,17 +22,13 @@ class TestCalTopoModes:
                 "port": 1883,
                 "username": "test",
                 "password": "test",
-                "topic": "test/topic"
+                "topic": "test/topic",
             },
             "caltopo": caltopo_config,
-            "nodes": {
-                "node1": {
-                    "device_id": "device123"
-                }
-            }
+            "nodes": {"node1": {"device_id": "device123"}},
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             yaml.dump(config_data, f)
             return f.name
 
@@ -66,10 +62,9 @@ class TestCalTopoModes:
 
     def test_both_modes_valid(self) -> None:
         """Test valid configuration with both connect_key and group."""
-        config_path = self.create_config_file({
-            "connect_key": "valid_key",
-            "group": "valid_group"
-        })
+        config_path = self.create_config_file(
+            {"connect_key": "valid_key", "group": "valid_group"}
+        )
         try:
             config = Config.from_file(config_path)
 
@@ -87,7 +82,7 @@ class TestCalTopoModes:
         try:
             with pytest.raises(
                 ValueError,
-                match="At least one of connect_key or group must be configured"
+                match="At least one of connect_key or group must be configured",
             ):
                 Config.from_file(config_path)
         finally:
@@ -108,9 +103,7 @@ class TestCalTopoModes:
         """Test that empty group fails."""
         config_path = self.create_config_file({"group": ""})
         try:
-            with pytest.raises(
-                ValueError, match="group cannot be empty if provided"
-            ):
+            with pytest.raises(ValueError, match="group cannot be empty if provided"):
                 Config.from_file(config_path)
         finally:
             Path(config_path).unlink()
@@ -130,23 +123,18 @@ class TestCalTopoModes:
         """Test that whitespace-only group fails."""
         config_path = self.create_config_file({"group": "  \t  "})
         try:
-            with pytest.raises(
-                ValueError, match="group cannot be empty if provided"
-            ):
+            with pytest.raises(ValueError, match="group cannot be empty if provided"):
                 Config.from_file(config_path)
         finally:
             Path(config_path).unlink()
 
     def test_none_values_fail(self) -> None:
         """Test that None values for both fields fail."""
-        config_path = self.create_config_file({
-            "connect_key": None,
-            "group": None
-        })
+        config_path = self.create_config_file({"connect_key": None, "group": None})
         try:
             with pytest.raises(
                 ValueError,
-                match="At least one of connect_key or group must be configured"
+                match="At least one of connect_key or group must be configured",
             ):
                 Config.from_file(config_path)
         finally:
@@ -160,16 +148,12 @@ class TestCalTopoModes:
                 "port": 1883,
                 "username": "test",
                 "password": "test",
-                "topic": "test/topic"
+                "topic": "test/topic",
             },
-            "nodes": {
-                "node1": {
-                    "device_id": "device123"
-                }
-            }
+            "nodes": {"node1": {"device_id": "device123"}},
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             yaml.dump(config_data, f)
             config_path = f.name
 
@@ -207,10 +191,9 @@ class TestCalTopoModes:
 
     def test_both_modes_with_whitespace_valid(self) -> None:
         """Test that both modes with whitespace are valid."""
-        config_path = self.create_config_file({
-            "connect_key": "  valid_key  ",
-            "group": "  valid_group  "
-        })
+        config_path = self.create_config_file(
+            {"connect_key": "  valid_key  ", "group": "  valid_group  "}
+        )
         try:
             config = Config.from_file(config_path)
 
@@ -222,10 +205,9 @@ class TestCalTopoModes:
 
     def test_connect_key_only_with_empty_group_valid(self) -> None:
         """Test that connect_key with empty group (None) is valid."""
-        config_path = self.create_config_file({
-            "connect_key": "valid_key",
-            "group": None
-        })
+        config_path = self.create_config_file(
+            {"connect_key": "valid_key", "group": None}
+        )
         try:
             config = Config.from_file(config_path)
 
@@ -237,10 +219,9 @@ class TestCalTopoModes:
 
     def test_group_only_with_empty_connect_key_valid(self) -> None:
         """Test that group with empty connect_key (None) is valid."""
-        config_path = self.create_config_file({
-            "connect_key": None,
-            "group": "valid_group"
-        })
+        config_path = self.create_config_file(
+            {"connect_key": None, "group": "valid_group"}
+        )
         try:
             config = Config.from_file(config_path)
 

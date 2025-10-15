@@ -227,9 +227,10 @@ class Config:
                 )
 
             # Check that device_id is not empty
-            if not node_config["device_id"] or not str(
-                node_config["device_id"]
-            ).strip():
+            if (
+                not node_config["device_id"]
+                or not str(node_config["device_id"]).strip()
+            ):
                 raise ValueError(f"Node {node_id} device_id cannot be empty")
 
             nodes[node_id] = NodeMapping(

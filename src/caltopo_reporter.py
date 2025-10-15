@@ -101,8 +101,7 @@ class CalTopoReporter:
         """Make an API request and handle the response."""
         try:
             self.logger.debug(
-                f"Sending position update for {callsign} to {endpoint_type}: "
-                f"{url}"
+                f"Sending position update for {callsign} to {endpoint_type}: " f"{url}"
             )
 
             # Make the HTTP GET request
@@ -122,9 +121,7 @@ class CalTopoReporter:
                 return False
 
         except requests.exceptions.Timeout:
-            self.logger.error(
-                f"CalTopo API timeout for {callsign} ({endpoint_type})"
-            )
+            self.logger.error(f"CalTopo API timeout for {callsign} ({endpoint_type})")
             return False
         except requests.exceptions.ConnectionError:
             self.logger.error(
