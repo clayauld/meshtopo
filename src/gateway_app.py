@@ -320,7 +320,7 @@ class GatewayApp:
 
         # Get GROUP for this device (if using group-based API)
         group = None
-        if self.config is not None and self.config.caltopo.api_mode == "group":
+        if self.config is not None and self.config.caltopo.has_group:
             group = self.config.get_node_group(hardware_id)
 
         success = self.caltopo_reporter.send_position_update(

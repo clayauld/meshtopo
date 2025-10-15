@@ -50,24 +50,43 @@ class MqttBrokerConfig:
 class CalTopoConfig:
     """CalTopo API configuration."""
 
-    api_mode: str = "connect_key"  # "connect_key" or "group"
     connect_key: Optional[str] = None
     group: Optional[str] = None
     
     def __post_init__(self):
-        """Validate that only one mode is configured."""
-        if self.api_mode == "connect_key":
-            if not self.connect_key or not self.connect_key.strip():
-                raise ValueError("connect_key is required when api_mode is 'connect_key'")
-            if self.group:
-                raise ValueError("group cannot be specified when api_mode is 'connect_key'")
-        elif self.api_mode == "group":
-            if not self.group or not self.group.strip():
-                raise ValueError("group is required when api_mode is 'group'")
-            if self.connect_key:
-                raise ValueError("connect_key cannot be specified when api_mode is 'group'")
-        else:
-            raise ValueError("api_mode must be 'connect_key' or 'group'")
+        """Validate that at least one mode is configured and both are valid if provided."""
+        # Normalize None values to empty strings for easier checking
+        connect_key = self.connect_key or ""
+        group = self.group or ""
+        
+        # Check for empty values first
+        if self.connect_key is not None and not connect_key.strip():
+            raise ValueError("connect_key cannot be empty if provided")
+        
+        if self.group is not None and not group.strip():
+            raise ValueError("group cannot be empty if provided")
+        
+        # Check that at least one mode is configured with non-empty values
+        has_valid_connect_key = bool(connect_key.strip())
+        has_valid_group = bool(group.strip())
+        
+        if not has_valid_connect_key and not has_valid_group:
+            raise ValueError("At least one of connect_key or group must be configured")
+    
+    @property
+    def has_connect_key(self) -> bool:
+        """Check if connect_key mode is configured."""
+        return self.connect_key is not None and bool(self.connect_key.strip())
+    
+    @property
+    def has_group(self) -> bool:
+        """Check if group mode is configured."""
+        return self.group is not None and bool(self.group.strip())
+    
+    @property
+    def has_both_modes(self) -> bool:
+        """Check if both modes are configured."""
+        return self.has_connect_key and self.has_group
 
 
 @dataclass
@@ -186,25 +205,9 @@ class Config:
 
         # Validate CalTopo configuration
         caltopo_data = data["caltopo"]
-        api_mode = caltopo_data.get("api_mode", "connect_key")
-        
-        # Validate that only the appropriate field is provided for the selected mode
-        if api_mode == "connect_key":
-            if "group" in caltopo_data and caltopo_data["group"]:
-                raise ValueError("group cannot be specified when api_mode is 'connect_key'")
-            if "connect_key" not in caltopo_data:
-                raise ValueError("connect_key is required when api_mode is 'connect_key'")
-        elif api_mode == "group":
-            if "connect_key" in caltopo_data and caltopo_data["connect_key"]:
-                raise ValueError("connect_key cannot be specified when api_mode is 'group'")
-            if "group" not in caltopo_data:
-                raise ValueError("group is required when api_mode is 'group'")
-        else:
-            raise ValueError("CalTopo api_mode must be 'connect_key' or 'group'")
         
         # Create the config object - the dataclass __post_init__ will validate the values
         caltopo_config = CalTopoConfig(
-            api_mode=api_mode,
             connect_key=caltopo_data.get("connect_key"),
             group=caltopo_data.get("group"),
         )
