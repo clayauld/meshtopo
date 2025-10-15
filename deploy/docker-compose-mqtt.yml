@@ -55,7 +55,7 @@ services:
         profiles:
             - ssl
 
-    # Mosquitto MQTT broker (conditional)
+    # Mosquitto MQTT broker with configurable authentication
     mosquitto:
         image: eclipse-mosquitto:2.0
         container_name: mosquitto

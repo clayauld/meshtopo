@@ -3,7 +3,7 @@
 # Determine repository name from GITHUB_REPOSITORY environment variable
 REPO := $(if $(GITHUB_REPOSITORY),$(GITHUB_REPOSITORY),clayauld/meshtopo)
 
-.PHONY: help install test lint format clean docker-build docker-pull docker-run docker-run-minimal docker-run-ssl docker-stop docker-status docker-logs docker-clean docker-login docker-push docker-push-default dev-setup setup-broker generate-broker-config
+.PHONY: help install test lint format clean docker-setup docker-build docker-pull docker-run docker-run-minimal docker-run-ssl docker-stop docker-status docker-logs docker-clean docker-login docker-push docker-push-default dev-setup setup-broker generate-broker-config
 
 # Default target
 help:
@@ -21,6 +21,7 @@ help:
 	@echo "  clean        Clean up temporary files"
 	@echo ""
 	@echo "Docker:"
+	@echo "  docker-setup        Set up Docker environment (.env file)"
 	@echo "  docker-build        Build Docker images for ghcr.io"
 	@echo "  docker-pull         Pull Docker images from ghcr.io"
 	@echo "  docker-run          Run full stack with Docker Compose"
@@ -90,6 +91,17 @@ clean:
 	rm -f bandit-report.json
 	@echo "Cleanup complete!"
 
+# Docker environment setup
+docker-setup:
+	@echo "Setting up Docker environment..."
+	@if [ ! -f deploy/.env ]; then \
+		cp deploy/.env.example deploy/.env; \
+		echo "Created .env file from template. Please edit deploy/.env with your configuration."; \
+	else \
+		echo ".env file already exists. Skipping creation."; \
+	fi
+	@echo "Docker environment setup complete!"
+
 # Build and push Docker images to GitHub Container Registry
 docker-build:
 	@echo "Building Docker image for ghcr.io..."
@@ -111,6 +123,9 @@ docker-pull:
 # Run with Docker Compose (full stack)
 docker-run:
 	@echo "Starting Meshtopo services with Docker Compose..."
+	@if [ ! -f deploy/.env ]; then \
+		echo "Warning: No .env file found. Using defaults. Run 'make docker-setup' to configure."; \
+	fi
 	cd deploy && docker compose --profile core --profile mqtt up -d
 	@echo "Services started! Check status with: make docker-status"
 

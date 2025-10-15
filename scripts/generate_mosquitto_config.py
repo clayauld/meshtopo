@@ -156,53 +156,58 @@ def generate_mosquitto_config(
 
                 print(f"Generated ACL file: {acl_path}")
 
-        # Generate docker-compose override if needed
-        override_path = output_dir_path / "docker-compose.override.yml"
+        # Update environment file for Docker Compose
+        env_path = output_dir_path / ".env"
         if broker_config.enabled:
-            override_content = """# Docker Compose override for internal MQTT broker
+            # Read existing .env file if it exists
+            env_content = ""
+            if env_path.exists():
+                with open(env_path, "r") as f:
+                    env_content = f.read()
+
+            # Update or add MQTT configuration
+            mqtt_config = f"""# MQTT Broker Configuration
 # Generated from config.yaml - DO NOT EDIT MANUALLY
 
-version: '3.8'
-
-services:
-  mosquitto:
-    ports:
-      - "{}:{}"
-      - "{}:{}"
-    volumes:
-      - mosquitto_data:/mosquitto/data
-      - mosquitto_data:/mosquitto/log
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
-""".format(
-                broker_config.port,
-                broker_config.port,
-                broker_config.websocket_port,
-                broker_config.websocket_port,
-            )
-
-            if not broker_config.allow_anonymous and broker_config.users:
-                override_content += "      - ./passwd:/mosquitto/config/passwd:ro\n"
-
-            if broker_config.acl_enabled:
-                override_content += "      - ./aclfile:/mosquitto/config/aclfile:ro\n"
-
-            override_content += """
-    healthcheck:
-      test: [
-          "CMD", "mosquitto_pub", "-h", "localhost", "-t", "test", "-m", "healthcheck"
-      ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
-volumes:
-  mosquitto_data:
+MQTT_PORT={broker_config.port}
+MQTT_WS_PORT={broker_config.websocket_port}
+MQTT_AUTH_ENABLED={'true' if not broker_config.allow_anonymous and broker_config.users else 'false'}
+MQTT_ACL_ENABLED={'true' if broker_config.acl_enabled else 'false'}
+MQTT_PASSWD_MOUNT={'true' if not broker_config.allow_anonymous and broker_config.users else 'false'}
+MQTT_ACL_MOUNT={'true' if broker_config.acl_enabled else 'false'}
 """
 
-            with open(override_path, "w") as f:
-                f.write(override_content)
-            print(f"Generated docker-compose override: {override_path}")
+            # If .env exists, update only MQTT section
+            if env_path.exists():
+                # Remove existing MQTT configuration section
+                lines = env_content.split("\n")
+                new_lines = []
+                skip_mqtt = False
+
+                for line in lines:
+                    if line.startswith(
+                        "# MQTT Broker Configuration"
+                    ) or line.startswith("MQTT_"):
+                        skip_mqtt = True
+                        continue
+                    elif skip_mqtt and line.strip() == "":
+                        continue
+                    elif skip_mqtt and not line.startswith("#"):
+                        skip_mqtt = False
+                        new_lines.append(line)
+                    else:
+                        new_lines.append(line)
+
+                env_content = "\n".join(new_lines)
+                # Add new MQTT configuration
+                env_content += "\n" + mqtt_config
+            else:
+                env_content = mqtt_config
+
+            with open(env_path, "w") as f:
+                f.write(env_content)
+            print(f"Updated environment file: {env_path}")
+            print("Use 'docker compose --profile mqtt up -d' to start with MQTT broker")
 
         print("Mosquitto configuration generated successfully!")
         return True

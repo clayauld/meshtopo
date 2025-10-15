@@ -1,169 +1,141 @@
-# Meshtopo Docker Deployment
+# Docker Deployment Guide
 
-<p align="center">
-  <img src="../assets/images/Meshtopo-logo.png" alt="Meshtopo Logo" width="150">
-</p>
-
-This directory contains Docker Compose configurations for deploying Meshtopo using pre-built container images from GitHub Container Registry.
-
-## Available Configurations
-
-### Full Configuration (`docker-compose.yml`)
-
-Complete Meshtopo deployment with all features:
-
-- Core gateway service
-- Integrated MQTT broker (Mosquitto)
-- SSL/TLS termination with Traefik
-
-### Minimal Configuration (`docker-compose-minimal.yaml`)
-
-Minimal deployment with core functionality only:
-
-- Core gateway service
-- External MQTT broker connection
-- No SSL or integrated MQTT broker
+This directory contains Docker Compose configurations for deploying the Meshtopo Gateway Service.
 
 ## Quick Start
 
-1. **Copy environment configuration:**
+1. **Set up environment:**
 
-    ```bash
-    cp deploy/env.example deploy/.env
-    ```
+   ```bash
+   make docker-setup
+   ```
 
-2. **Update configuration:**
-   Edit `deploy/.env` and set your GitHub repository:
+2. **Edit configuration:**
 
-    ```bash
-    GITHUB_REPOSITORY=your-username/meshtopo
-    ```
+   ```bash
+   nano deploy/.env
+   ```
 
-3. **Choose your deployment:**
+3. **Start services:**
 
-    **Full deployment:**
+   ```bash
+   make docker-run
+   ```
 
-    ```bash
-    cd deploy
-    docker-compose --profile core --profile mqtt up -d
-    ```
+## Configuration
 
-    **Minimal deployment:**
+### Environment Variables
 
-    ```bash
-    cd deploy
-    docker-compose -f docker-compose-minimal.yaml up -d
-    ```
+The deployment uses environment variables to control configuration. Copy `.env.example` to `.env` and customize:
 
-## Container Images
+```bash
+cp deploy/.env.example deploy/.env
+```
 
-The deployment uses pre-built images from GitHub Container Registry:
+#### Required Variables
 
-- **Gateway Service:** `ghcr.io/your-username/meshtopo:latest`
+- `SSL_DOMAIN`: Your domain name for SSL certificates
+- `SSL_EMAIL`: Email for Let's Encrypt certificates
 
-### Image Tags Available
+#### Optional Variables
 
-- `latest` - Latest stable release
-- `main` - Latest from main branch
-- `develop` - Latest from develop branch
-- `{commit-sha}` - Specific commit builds
+- `MQTT_PORT`: MQTT broker port (default: 1883)
+- `MQTT_WS_PORT`: MQTT WebSocket port (default: 9001)
+- `MQTT_AUTH_ENABLED`: Enable MQTT authentication (default: false)
+- `MQTT_ACL_ENABLED`: Enable MQTT ACL (default: false)
 
-## Configuration Files
+### Profiles
 
-- `config/config.yaml` - Full configuration (for docker-compose.yml)
-- `config/config.yaml.minimal` - Minimal configuration (for docker-compose-minimal.yaml)
+Docker Compose uses profiles to control which services start:
 
-**Note:** Make sure to copy the appropriate configuration template and update it with your specific settings before deployment.
+- `core`: Meshtopo gateway service
+- `mqtt`: MQTT broker service
+- `ssl`: Traefik reverse proxy with SSL
 
-## Environment Variables
+## Deployment Options
 
-| Variable             | Description                    | Default             |
-| -------------------- | ------------------------------ | ------------------- |
-| `GITHUB_REPOSITORY`  | GitHub repository (owner/repo) | `clayauld/meshtopo` |
-| `SSL_EMAIL`          | Email for SSL certificate      | Required for SSL    |
-| `SSL_DOMAIN`         | Domain for SSL certificate     | Required for SSL    |
-| `DNS_PROVIDER`       | DNS provider for challenge     | Optional            |
-| `DNS_EMAIL`          | DNS provider email             | Required for DNS    |
-| `DNS_API_TOKEN`      | DNS provider API token         | Required for DNS    |
-| `DNS_ZONE_API_TOKEN` | DNS provider zone API token    | Optional for DNS    |
+### Minimal Deployment
 
-**SSL Challenge Methods:**
+```bash
+make docker-run-minimal
+```
 
-- **HTTP Challenge** (default): Requires port 80 open, works with any domain
-- **DNS Challenge** (optional): No port 80 needed, requires DNS provider credentials
+Runs only the core gateway service without MQTT broker.
 
-## Profiles (Full Configuration Only)
+### Full Stack with MQTT
 
-- `core` - Core gateway service
-- `mqtt` - Integrated MQTT broker
-- `ssl` - SSL/TLS termination
+```bash
+make docker-run
+```
 
-## SSL Configuration
+Runs core gateway + MQTT broker.
 
-When using the `ssl` profile, Traefik provides:
+### Full Stack with SSL
 
-- **Traefik Dashboard**: `https://traefik.yourdomain.com` (port 8080)
-- **MQTT WebSocket**: `wss://mqtt.yourdomain.com` (secure WebSocket connection)
-- **Automatic SSL**: Let's Encrypt certificates with HTTP or DNS challenge
-- **HTTP Redirect**: Automatic redirect from HTTP to HTTPS
+```bash
+SSL_DOMAIN=yourdomain.com make docker-run-ssl
+```
 
-**Requirements for SSL:**
+Runs all services with SSL/TLS termination.
 
-- Domain name pointing to your server
-- Ports 80 and 443 open
-- Valid `SSL_EMAIL` and `SSL_DOMAIN` in `.env` file
+## MQTT Broker Configuration
 
-## DNS Challenge Setup (Cloudflare)
+The MQTT broker configuration is managed through environment variables and the `generate_mosquitto_config.py` script:
 
-For DNS challenge with Cloudflare:
+1. **Configure in config.yaml:**
 
-1. **Get Cloudflare API Token:**
+   ```yaml
+   mqtt:
+     broker:
+       enabled: true
+       port: 1883
+       websocket_port: 9001
+       allow_anonymous: false
+       users:
+         - username: "user1"
+           password: "password1"
+       acl_enabled: true
+   ```
 
-    - Go to Cloudflare Dashboard → My Profile → API Tokens
-    - Create token with "Zone:Edit" permissions for your domain
-    - Copy the token
+2. **Generate configuration:**
 
-2. **Configure Environment Variables:**
+   ```bash
+   make generate-broker-config
+   ```
 
-    ```bash
-    # In deploy/.env
-    DNS_PROVIDER=cloudflare
-    DNS_EMAIL=your-email@example.com
-    DNS_API_TOKEN=your_cloudflare_api_token
-    ```
+3. **Start with MQTT:**
 
-3. **Deploy with DNS Challenge:**
+   ```bash
+   make docker-run
+   ```
 
-    ```bash
-    docker-compose --profile core --profile mqtt --profile ssl up -d
-    ```
+## Troubleshooting
 
-**Benefits of DNS Challenge:**
+### Check service status
 
-- No need to expose port 80
-- Works behind firewalls
-- Supports wildcard certificates
-- More secure for internal networks
+```bash
+make docker-status
+```
 
-## Multi-Architecture Support
+### View logs
 
-Container images are built for both AMD64 and ARM64 architectures, making them compatible with:
+```bash
+make docker-logs
+```
 
-- Intel/AMD x86_64 systems
-- ARM64 systems (Apple Silicon, ARM-based servers)
+### Clean up
 
-## Security
+```bash
+make docker-clean
+```
 
-- Images run as non-root user (`meshtopo`)
-- Minimal base images (python:3.9-slim)
-- Regular security updates through GitHub Actions
-- Resource limits configured for production use
+## Migration from Override Files
 
-## Monitoring
+If you were previously using `docker-compose.override.yml` files:
 
-Both configurations include:
+1. The system now uses environment variables instead
+2. Run `make docker-setup` to create a `.env` file
+3. Configure your MQTT settings in the `.env` file
+4. Use the standard `make docker-run` command
 
-- Health checks for service monitoring
-- Structured logging with rotation
-- Resource usage limits
-- Automatic restart policies
+This approach is more maintainable and follows Docker Compose best practices.
