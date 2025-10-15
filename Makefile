@@ -48,8 +48,8 @@ install:
 
 # Setup development environment
 dev-setup: install
-	pip3 install black flake8 mypy pytest pytest-cov isort pre-commit
-	pre-commit install
+	pip3 install -r requirements-dev.txt
+	python3 -m pre_commit install
 	@echo "Development environment setup complete!"
 
 # Run tests

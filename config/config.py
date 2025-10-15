@@ -193,6 +193,7 @@ class Config:
             if key in ["broker", "topic"] and (
                 not mqtt_data[key] or not str(mqtt_data[key]).strip()
             ):
+                raise ValueError(f"MQTT {key} cannot be empty")
 
         mqtt_config = MqttConfig(
             broker=mqtt_data["broker"],
