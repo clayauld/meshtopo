@@ -50,9 +50,24 @@ class MqttBrokerConfig:
 class CalTopoConfig:
     """CalTopo API configuration."""
 
-    connect_key: str
     api_mode: str = "connect_key"  # "connect_key" or "group"
+    connect_key: Optional[str] = None
     group: Optional[str] = None
+    
+    def __post_init__(self):
+        """Validate that only one mode is configured."""
+        if self.api_mode == "connect_key":
+            if not self.connect_key or not self.connect_key.strip():
+                raise ValueError("connect_key is required when api_mode is 'connect_key'")
+            if self.group:
+                raise ValueError("group cannot be specified when api_mode is 'connect_key'")
+        elif self.api_mode == "group":
+            if not self.group or not self.group.strip():
+                raise ValueError("group is required when api_mode is 'group'")
+            if self.connect_key:
+                raise ValueError("connect_key cannot be specified when api_mode is 'group'")
+        else:
+            raise ValueError("api_mode must be 'connect_key' or 'group'")
 
 
 @dataclass
@@ -171,38 +186,28 @@ class Config:
 
         # Validate CalTopo configuration
         caltopo_data = data["caltopo"]
-        if "connect_key" not in caltopo_data:
-            raise ValueError("Missing required CalTopo configuration: connect_key")
-        
-        # Check that connect_key is not empty
-        if not caltopo_data["connect_key"] or not caltopo_data["connect_key"].strip():
-            raise ValueError("CalTopo connect_key cannot be empty")
-
         api_mode = caltopo_data.get("api_mode", "connect_key")
-        if api_mode not in ["connect_key", "group"]:
-            raise ValueError("CalTopo api_mode must be 'connect_key' or 'group'")
-
+        
+        # Validate that only the appropriate field is provided for the selected mode
         if api_mode == "connect_key":
-            # connect_key mode - connect_key is required
-            caltopo_config = CalTopoConfig(
-                connect_key=caltopo_data["connect_key"],
-                api_mode=api_mode,
-                group=caltopo_data.get("group"),
-            )
-        else:
-            # group mode - group is required
+            if "group" in caltopo_data and caltopo_data["group"]:
+                raise ValueError("group cannot be specified when api_mode is 'connect_key'")
+            if "connect_key" not in caltopo_data:
+                raise ValueError("connect_key is required when api_mode is 'connect_key'")
+        elif api_mode == "group":
+            if "connect_key" in caltopo_data and caltopo_data["connect_key"]:
+                raise ValueError("connect_key cannot be specified when api_mode is 'group'")
             if "group" not in caltopo_data:
-                raise ValueError("CalTopo group is required when api_mode is 'group'")
-            
-            # Check that group is not empty
-            if not caltopo_data["group"] or not caltopo_data["group"].strip():
-                raise ValueError("CalTopo group cannot be empty when api_mode is 'group'")
-            
-            caltopo_config = CalTopoConfig(
-                connect_key=caltopo_data["connect_key"],
-                api_mode=api_mode,
-                group=caltopo_data["group"],
-            )
+                raise ValueError("group is required when api_mode is 'group'")
+        else:
+            raise ValueError("CalTopo api_mode must be 'connect_key' or 'group'")
+        
+        # Create the config object - the dataclass __post_init__ will validate the values
+        caltopo_config = CalTopoConfig(
+            api_mode=api_mode,
+            connect_key=caltopo_data.get("connect_key"),
+            group=caltopo_data.get("group"),
+        )
 
         # Validate and process node mappings
         nodes_data = data["nodes"]
