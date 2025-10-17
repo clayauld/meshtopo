@@ -44,6 +44,25 @@ class CalTopoReporter:
         # Allow alphanumeric characters and underscores
         return bool(re.match(r"^[a-zA-Z0-9_]+$", identifier))
 
+    def _validate_and_log_identifier(
+        self, identifier: str, identifier_type: str
+    ) -> bool:
+        """
+        Validate a CalTopo identifier and log an error if invalid.
+
+        Args:
+            identifier: The identifier to validate
+            identifier_type: The type of identifier (e.g., 'connect_key', 'group')
+                           for error logging
+
+        Returns:
+            bool: True if the identifier is valid, False otherwise
+        """
+        if not self._is_valid_caltopo_identifier(identifier):
+            self.logger.error(f"Invalid CalTopo {identifier_type}: {identifier}")
+            return False
+        return True
+
     def send_position_update(
         self,
         callsign: str,
@@ -90,8 +109,7 @@ class CalTopoReporter:
     ) -> bool:
         """Send position update to connect_key endpoint."""
         connect_key = self.config.caltopo.connect_key
-        if not self._is_valid_caltopo_identifier(connect_key):
-            self.logger.error(f"Invalid CalTopo connect_key: {connect_key}")
+        if not self._validate_and_log_identifier(connect_key, "connect_key"):
             return False
 
         url = f"{self.BASE_URL}/{connect_key}"
@@ -109,8 +127,7 @@ class CalTopoReporter:
         group: str,
     ) -> bool:
         """Send position update to group endpoint."""
-        if not self._is_valid_caltopo_identifier(group):
-            self.logger.error(f"Invalid CalTopo group: {group}")
+        if not self._validate_and_log_identifier(group, "group"):
             return False
 
         url = f"{self.BASE_URL}/{group}"
@@ -243,8 +260,7 @@ class CalTopoReporter:
         """Test connection to connect_key endpoint."""
         try:
             connect_key = self.config.caltopo.connect_key
-            if not self._is_valid_caltopo_identifier(connect_key):
-                self.logger.error(f"Invalid CalTopo connect_key: {connect_key}")
+            if not self._validate_and_log_identifier(connect_key, "connect_key"):
                 return False
 
             test_url = (
@@ -267,8 +283,7 @@ class CalTopoReporter:
         """Test connection to group endpoint."""
         try:
             group = self.config.caltopo.group
-            if not self._is_valid_caltopo_identifier(group):
-                self.logger.error(f"Invalid CalTopo group: {group}")
+            if not self._validate_and_log_identifier(group, "group"):
                 return False
 
             test_url = (
