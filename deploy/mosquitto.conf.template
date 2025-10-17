@@ -1,0 +1,62 @@
+# Mosquitto MQTT Broker Configuration for Meshtopo
+# Generated from config.yaml - DO NOT EDIT MANUALLY
+
+# Network listeners
+listener {{ broker_config.port }}
+{% if broker_config.allow_anonymous %}
+allow_anonymous true
+{% else %}
+allow_anonymous false
+password_file /mosquitto/config/passwd
+{% endif %}
+
+# WebSocket support for web clients
+listener {{ broker_config.websocket_port }}
+protocol websockets
+{% if broker_config.allow_anonymous %}
+allow_anonymous true
+{% else %}
+allow_anonymous false
+password_file /mosquitto/config/passwd
+{% endif %}
+
+# Persistence settings
+{% if broker_config.persistence %}
+persistence true
+persistence_location /mosquitto/data/
+autosave_interval 1800
+{% else %}
+persistence false
+{% endif %}
+
+# Logging configuration
+log_dest file /mosquitto/log/mosquitto.log
+log_type error
+log_type warning
+log_type notice
+log_type information
+log_type debug
+
+# Connection settings
+max_connections {{ broker_config.max_connections }}
+max_inflight_messages 100
+max_queued_messages 1000
+
+# Message settings
+message_size_limit 268435456
+max_inflight_bytes 0
+max_queued_bytes 0
+
+# Security settings
+allow_zero_length_clientid false
+auto_id_prefix meshtopo-
+
+{% if broker_config.acl_enabled %}
+# ACL settings
+acl_file /mosquitto/config/aclfile
+{% endif %}
+
+# Bridge settings (for future use)
+# connection bridge-01
+# address external-mqtt-broker.com:1883
+# topic msh/REGION/2/json/+/+ out 0

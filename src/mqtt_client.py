@@ -57,7 +57,7 @@ class MqttClient:
             # Connect to broker
             self.logger.info(
                 f"Connecting to MQTT broker at "
-                f"{self.config.mqtt.broker}:{self.config.mqtt.port}"
+                f"{self.config.mqtt.broker}: {self.config.mqtt.port}"
             )
             self.client.connect(
                 self.config.mqtt.broker, self.config.mqtt.port, keepalive=60

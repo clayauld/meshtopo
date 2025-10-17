@@ -1,0 +1,53 @@
+# Production Meshtopo Configuration
+# Production-ready configuration with enhanced logging and monitoring
+
+mqtt:
+    broker: "mqtt.yourdomain.com"
+    port: 8883
+    username: "meshtopo_prod"
+    password: "secure_production_password"
+    topic: "msh/US/2/json/+/+"
+    keepalive: 60
+
+caltopo:
+    connect_key: "PRODUCTION_CONNECT_KEY_FROM_CALTOPO_TEAM_ACCOUNT"
+    api_mode: "connect_key"  # or "group"
+    group: "SARTEAM"         # optional global GROUP (required if api_mode is "group")
+
+# Optional: Node display name overrides
+nodes:
+    "!823a4edc":
+        device_id: "TEAM-LEAD"
+        group: "LEADERSHIP"  # optional per-device GROUP override
+    "!a4b8c2f0":
+        device_id: "COMMS-1"
+        # group: "COMMS"    # optional per-device GROUP override
+    "!b5c9d3e1":
+        device_id: "FIELD-OP"
+        group: "FIELD"       # optional per-device GROUP override
+
+# Device Management Configuration
+devices:
+    allow_unknown_devices: false  # Block unknown devices in production
+
+# Internal MQTT broker (disabled for production - use external broker)
+mqtt_broker:
+    enabled: false
+    port: 1883
+    websocket_port: 9001
+    persistence: true
+    max_connections: 1000
+    allow_anonymous: false
+    users:
+        - username: "meshtopo"
+          password: "secure_broker_password"
+          acl: "readwrite"
+    acl_enabled: true
+
+logging:
+    level: "WARNING"
+    file:
+        enabled: true
+        path: "/var/log/meshtopo/meshtopo.log"
+        max_size: "50MB"
+        backup_count: 10

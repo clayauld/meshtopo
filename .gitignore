@@ -60,9 +60,22 @@ config.yaml
 
 # Test coverage
 .coverage
+.coverage.*
+coverage.xml
 .pytest_cache/
 htmlcov/
+
+# Security analysis reports
+bandit-report.json
 
 # Temporary files
 *.tmp
 *.temp
+config/config.yaml.bak
+
+# Archived components
+archived/
+
+# Beads database
+.beads/*.db
+.beads/*.db-*

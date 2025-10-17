@@ -1,9 +1,9 @@
 # **Software Design Document: Meshtastic-to-CalTopo Gateway**
 
--   **Project:** `meshtopo`
--   **Version:** 1.0
--   **Date:** October 9, 2025
--   **Author:** Clayton Auld
+- **Project:** `meshtopo`
+- **Version:** 1.0
+- **Date:** October 9, 2025
+- **Author:** Clayton Auld
 
 ---
 
@@ -19,8 +19,8 @@ Backcountry coordinators, event organizers, and response teams often use a mix o
 
 ### 1.3 Scope
 
--   **In-Scope:** The gateway will connect to an MQTT broker, subscribe to Meshtastic position topics, parse the data, and forward it to the CalTopo Position Report API. The application will be configurable, log its status, and be deployable as a Docker container.
--   **Out-of-Scope:** This project will not involve any modification of the Meshtastic firmware. It will not provide a user interface beyond terminal logging. Two-way communication from CalTopo back to Meshtastic is a potential future enhancement but is not part of this version.
+- **In-Scope:** The gateway will connect to an MQTT broker, subscribe to Meshtastic position topics, parse the data, and forward it to the CalTopo Position Report API. The application will be configurable, log its status, and be deployable as a Docker container.
+- **Out-of-Scope:** This project will not involve any modification of the Meshtastic firmware. It will not provide a user interface beyond terminal logging. Two-way communication from CalTopo back to Meshtastic is a potential future enhancement but is not part of this version.
 
 ### 1.4 License
 
@@ -45,20 +45,13 @@ The system can be enhanced with additional optional components to provide a comp
 
 2. **SSL/TLS Termination**: An optional Traefik reverse proxy service that provides automatic SSL certificate provisioning and renewal using Let's Encrypt, securing web-based components.
 
-3. **Web Management Interface**: An optional Flask-based web application that provides:
-
-    - OAuth 2.0 authentication for CalTopo integration
-    - Map selection interface for choosing target CalTopo maps
-    - RESTful API endpoints for programmatic access
-    - Real-time status monitoring and configuration management
-
-4. **Enhanced Configuration Management**: Centralized configuration via `config.yaml` that controls all optional components, enabling users to customize their deployment based on specific needs.
+3. **Enhanced Configuration Management**: Centralized configuration via `config.yaml` that controls all optional components, enabling users to customize their deployment based on specific needs.
 
 This enhanced architecture supports three deployment modes:
 
--   **Minimal**: Core gateway service only (existing functionality)
--   **Standard**: Gateway + integrated MQTT broker
--   **Full**: Gateway + MQTT + SSL + Web UI (complete solution)
+- **Minimal**: Core gateway service only (existing functionality)
+- **Standard**: Gateway + integrated MQTT broker
+- **Full**: Gateway + MQTT + SSL (complete solution)
 
 ---
 
@@ -66,20 +59,20 @@ This enhanced architecture supports three deployment modes:
 
 ### 3.1 Functional Requirements (FR)
 
--   **FR-1**: The system **shall** connect to an MQTT broker using credentials provided in a configuration file.
--   **FR-2**: The system **shall** subscribe to a configurable MQTT topic pattern to capture Meshtastic JSON packets.
--   **FR-3**: The system **shall** parse incoming JSON payloads to extract node ID, latitude, longitude, and timestamp.
--   **FR-4**: The system **shall** maintain a mapping of Meshtastic Node IDs to CalTopo Device IDs, as defined in the configuration file.
--   **FR-5**: The system **shall** construct a valid CalTopo Position Report API URL.
--   **FR-6**: The system **shall** send an HTTP GET request to the constructed URL for each valid position packet received from a mapped node.
+- **FR-1**: The system **shall** connect to an MQTT broker using credentials provided in a configuration file.
+- **FR-2**: The system **shall** subscribe to a configurable MQTT topic pattern to capture Meshtastic JSON packets.
+- **FR-3**: The system **shall** parse incoming JSON payloads to extract node ID, latitude, longitude, and timestamp.
+- **FR-4**: The system **shall** maintain a mapping of Meshtastic Node IDs to CalTopo callsigns, as defined in the configuration file. The system **shall** support automatic callsign discovery using Meshtastic longname/shortname fields as fallback when explicit mappings are not available. The system **shall** support configurable control over unknown device behavior (allow/block position updates).
+- **FR-5**: The system **shall** construct a valid CalTopo Position Report API URL using either Team Account connect_key or GROUP-based authentication methods.
+- **FR-6**: The system **shall** send an HTTP GET request to the constructed URL for each valid position packet received from a mapped node.
 
 ### 3.2 Non-Functional Requirements (NFR)
 
--   **NFR-1**: All operational parameters (MQTT/CalTopo details, node mappings) **shall** be externally configurable via a `config.yaml` file.
--   **NFR-2**: The application **shall** log key events, including successful connections, data processing, and API submissions.
--   **NFR-3**: The application **shall** handle and log common errors gracefully (e.g., MQTT disconnection, API unavailability, malformed data).
--   **NFR-4**: The application **shall** be deployable as a self-contained Docker container.
--   **NFR-5**: The application **shall** be lightweight, with minimal CPU and memory footprint.
+- **NFR-1**: All operational parameters (MQTT/CalTopo details, node mappings) **shall** be externally configurable via a `config.yaml` file.
+- **NFR-2**: The application **shall** log key events, including successful connections, data processing, and API submissions.
+- **NFR-3**: The application **shall** handle and log common errors gracefully (e.g., MQTT disconnection, API unavailability, malformed data).
+- **NFR-4**: The application **shall** be deployable as a self-contained Docker container.
+- **NFR-5**: The application **shall** be lightweight, with minimal CPU and memory footprint.
 
 ---
 
@@ -87,23 +80,23 @@ This enhanced architecture supports three deployment modes:
 
 ### 4.1 Software Stack
 
--   **Language**: **Python 3.9+**. Chosen for its rapid development, excellent library support, and suitability for I/O-bound tasks.
--   **Key Libraries**:
-    -   `paho-mqtt`: The de facto standard for MQTT communication in Python.
-    -   `requests`: Simplifies making HTTP requests to the CalTopo endpoint.
-    -   `PyYAML`: For safe and easy loading of the `config.yaml` file.
+- **Language**: **Python 3.9+**. Chosen for its rapid development, excellent library support, and suitability for I/O-bound tasks.
+- **Key Libraries**:
+  - `paho-mqtt`: The de facto standard for MQTT communication in Python.
+  - `requests`: Simplifies making HTTP requests to the CalTopo endpoint.
+  - `PyYAML`: For safe and easy loading of the `config.yaml` file.
 
 ### 4.2 Class Structure
 
 The application will be built using an object-oriented approach to separate concerns.
 
--   `**GatewayApp**`: The main class and entry point.
-    -   Responsibilities: Orchestrates the application lifecycle. Initializes all other components, starts the MQTT client, and handles graceful shutdown.
--   `**Config**`: A data class to hold validated configuration loaded from `config.yaml`.
--   `**MqttClient**`:
-    -   Responsibilities: Manages the entire lifecycle of the MQTT connection, including connecting, subscribing, and handling the `on_message` callback.
--   `**CalTopoReporter**`:
-    -   Responsibilities: Contains the logic for interacting with the CalTopo API. It receives parsed position data, looks up the correct Device ID, constructs the API URL, and executes the HTTP GET request.
+- `**GatewayApp**`: The main class and entry point.
+  - Responsibilities: Orchestrates the application lifecycle. Initializes all other components, starts the MQTT client, and handles graceful shutdown.
+- `**Config**`: A data class to hold validated configuration loaded from `config.yaml`.
+- `**MqttClient**`:
+  - Responsibilities: Manages the entire lifecycle of the MQTT connection, including connecting, subscribing, and handling the `on_message` callback.
+- `**CalTopoReporter**`:
+  - Responsibilities: Contains the logic for interacting with the CalTopo API. It receives parsed position data, looks up the correct Device ID, constructs the API URL using either connect_key or GROUP-based authentication, and executes the HTTP GET request. Supports both Team Account and custom integration API modes.
 
 ### 4.3 Sequence Diagram
 
@@ -126,112 +119,36 @@ sequenceDiagram
     "CalTopo API"-->>CalTopoReporter: HTTP 200 OK
 ```
 
-### 4.4 Web UI Architecture
+### 4.4 Internal MQTT Broker Architecture
 
-The optional web management interface is built using Flask and provides a modern, secure way to configure and monitor the Meshtopo gateway service.
+The optional internal MQTT broker provides a complete, self-contained MQTT infrastructure using Mosquitto.
 
-#### 4.4.1 Application Structure
+#### 4.4.1 Broker Configuration
 
-The web UI follows a modular Flask application structure:
+The internal broker is configured through the `mqtt_broker` section in `config.yaml`:
 
-```
-src/web_ui/
-├── __init__.py          # Flask app factory
-├── app.py              # Main application entry point
-├── routes/
-│   ├── __init__.py
-│   ├── auth.py         # OAuth authentication routes
-│   ├── maps.py         # Map selection and management
-│   └── api.py          # RESTful API endpoints
-├── models/
-│   ├── __init__.py
-│   ├── user.py         # User session management
-│   └── config.py       # Configuration state management
-├── services/
-│   ├── __init__.py
-│   ├── caltopo_api.py  # CalTopo Team API integration
-│   └── oauth_client.py # OAuth provider integration
-└── templates/
-    ├── base.html       # Base template
-    ├── login.html      # OAuth login page
-    ├── maps.html       # Map selection interface
-    └── status.html     # Service status dashboard
-```
+- **Dynamic Configuration**: Mosquitto configuration files are generated from `config.yaml` settings
+- **User Management**: MQTT users defined in configuration with automatic password file generation
+- **Security**: No anonymous access by default, with optional ACL support
+- **Persistence**: Configurable message persistence and logging
+- **WebSocket Support**: Built-in WebSocket support for web clients
 
-#### 4.4.2 OAuth 2.0 Authentication Flow
+#### 4.4.2 Configuration Generation
 
-The web UI implements OAuth 2.0 authentication supporting multiple providers:
+The system automatically generates Mosquitto configuration files:
 
-1. **Provider Selection**: Users choose from Google, Apple, Facebook, Microsoft, or Yahoo OAuth providers
-2. **Authorization Request**: Application redirects to provider's authorization endpoint
-3. **User Consent**: User authenticates with provider and grants permissions
-4. **Authorization Code**: Provider redirects back with authorization code
-5. **Token Exchange**: Application exchanges code for access token
-6. **Session Management**: Access token stored in secure session for API calls
+1. **mosquitto.conf**: Generated from template with user-defined settings
+2. **passwd**: MQTT user password file with hashed passwords
+3. **aclfile**: Optional access control list for fine-grained permissions
 
-**Supported OAuth Providers:**
+#### 4.4.3 Docker Integration
 
--   Google OAuth 2.0
--   Apple Sign-In
--   Facebook Login
--   Microsoft Azure AD
--   Yahoo OAuth 2.0
+The internal broker integrates seamlessly with Docker Compose:
 
-#### 4.4.3 CalTopo Integration Architecture
-
-The web UI integrates with CalTopo using a dual authentication approach:
-
-1. **OAuth Authentication**: User authentication via OAuth providers for web UI access
-2. **Team API Authentication**: Service account credentials for CalTopo API access
-
-**CalTopo Team API Integration:**
-
--   Service account authentication using credential ID and secret key
--   Map listing and retrieval via CalTopo Team API endpoints
--   Map selection and configuration updates
--   Real-time map status monitoring
-
-#### 4.4.4 RESTful API Design
-
-The web UI exposes RESTful API endpoints for programmatic access:
-
-**Authentication Endpoints:**
-
--   `GET /api/auth/login` - Initiate OAuth flow
--   `GET /api/auth/callback` - OAuth callback handler
--   `POST /api/auth/logout` - Terminate user session
--   `GET /api/auth/status` - Check authentication status
-
-**Map Management Endpoints:**
-
--   `GET /api/maps/list` - Retrieve available CalTopo maps
--   `GET /api/maps/current` - Get currently selected map
--   `POST /api/maps/select` - Select target map for position forwarding
--   `GET /api/maps/{map_id}/status` - Get map-specific status
-
-**Configuration Endpoints:**
-
--   `GET /api/config` - Retrieve current configuration
--   `POST /api/config/update` - Update configuration parameters
--   `GET /api/config/validate` - Validate configuration settings
-
-**Monitoring Endpoints:**
-
--   `GET /api/status` - Overall service status
--   `GET /api/metrics` - Performance metrics and statistics
--   `GET /api/logs` - Recent log entries
--   `GET /api/health` - Health check endpoint
-
-#### 4.4.5 Security Considerations
-
-The web UI implements several security measures:
-
-1. **Session Security**: Secure session management with configurable secret keys
-2. **CSRF Protection**: Cross-site request forgery protection for all forms
-3. **Input Validation**: Comprehensive input validation and sanitization
-4. **Rate Limiting**: API rate limiting to prevent abuse
-5. **HTTPS Enforcement**: Automatic HTTPS redirection when SSL is enabled
-6. **Secure Headers**: Security headers for XSS and clickjacking protection
+- **Service Definition**: Mosquitto service defined in docker-compose.yml
+- **Volume Mounts**: Generated configuration files mounted into container
+- **Health Checks**: Built-in health monitoring and connectivity testing
+- **Networking**: Automatic network configuration for service communication
 
 ---
 
@@ -239,11 +156,46 @@ The web UI implements several security measures:
 
 ### 5.1 Input: Meshtastic MQTT JSON
 
-The gateway will process JSON objects from the `msh/.../json/position/#` topic. It will primarily extract `fromId` and the `payload` object.
+The gateway will process JSON objects from the `msh/REGION/2/json/+/+` topic. It will primarily extract `from` and the `payload` object.
+
+**Note**: Replace `REGION` with the appropriate LoRa region code for your country. See the [Meshtastic LoRa Region by Country documentation](https://meshtastic.org/docs/configuration/region-by-country/) for the correct region code. Common region codes include:
+
+- `US` - United States
+- `EU_868` - European Union (868 MHz)
+- `ANZ` - Australia/New Zealand
+- `CN` - China
+- `JP` - Japan
+
+### 5.1.1 Node ID Mapping Mechanism
+
+The gateway uses a two-tier mapping system to handle different types of Meshtastic messages:
+
+#### Primary Mapping (Nodeinfo Messages)
+
+When `nodeinfo` messages are received, the gateway builds a mapping from numeric node IDs to hardware IDs:
 
 ```json
 {
-    "fromId": "!823a4edc",
+    "from": 862485920,
+    "type": "nodeinfo",
+    "payload": {
+        "id": "!33687da0",
+        "longname": "TEST-DEVICE",
+        "shortname": "TEST"
+    }
+}
+```
+
+This creates the mapping: `862485920` → `!33687da0`
+
+#### Fallback Mapping (Position Messages)
+
+When position messages arrive before nodeinfo messages, the gateway uses the `sender` field as a fallback:
+
+```json
+{
+    "from": 862485920,
+    "sender": "!33687da0",
     "type": "position",
     "payload": {
         "latitude_i": 612188460,
@@ -252,19 +204,33 @@ The gateway will process JSON objects from the `msh/.../json/position/#` topic. 
 }
 ```
 
+The gateway automatically maps `862485920` → `!33687da0` using the `sender` field, ensuring position updates are never missed due to missing nodeinfo messages.
+
+#### Configuration Mapping
+
+The final step maps hardware IDs to CalTopo device names using the configuration:
+
+```yaml
+nodes:
+    "!33687da0":
+        device_id: "TEST-DEVICE"
+```
+
+This creates the complete mapping chain: `862485920` → `!33687da0` → `TEST-DEVICE`
+
 _Note: `latitude_i` and `longitude_i` must be divided by `1e7` to get decimal degrees._
 
 ### 5.2 API Interface: CalTopo Position Report
 
 The service will make an HTTP GET request to the following endpoint.
 
--   **Method**: `GET`
--   **Endpoint**: `https://caltopo.com/api/v1/position/report/{GROUP}`
--   **Query Parameters**:
-    -   `id`: The `{DEVICE ID}` of the node.
-    -   `lat`: Latitude in decimal degrees.
-    -   `lng`: Longitude in decimal degrees.
--   **Example URL**: `https://caltopo.com/api/v1/position/report/MESH-TEAM-ALPHA?id=TEAM-LEAD&lat=61.2188460&lng=-149.9001320`
+- **Method**: `GET`
+- **Endpoint**: `https://caltopo.com/api/v1/position/report/{CONNECT_KEY}`
+- **Query Parameters**:
+  - `id`: The callsign of the device (from Meshtastic longname or config mapping).
+  - `lat`: Latitude in decimal degrees.
+  - `lng`: Longitude in decimal degrees.
+- **Example URL**: `https://caltopo.com/api/v1/position/report/aoJpFiwnxxgGEuaMY6W0gcqdeQ3T2bjoQfzvWbduT9LjJ?id=TEAM-LEAD&lat=61.2188460&lng=-149.9001320`
 
 ---
 
@@ -279,37 +245,50 @@ The system is configured via a single `config.yaml` file that supports both mini
 
 # Configuration for the MQTT Broker connection
 mqtt:
-    use_internal_broker: true # Use integrated Mosquitto broker
-    broker: "mosquitto" # Broker hostname (internal service name when use_internal_broker: true)
+    broker: "localhost" # Broker hostname
     port: 1883 # MQTT broker port
     username: "your_mqtt_user"
     password: "your_mqtt_password"
-    topic: "msh/+/+/json/position/#"
+    topic: "msh/US/2/json/+/+"
+    use_internal_broker: false # Use integrated Mosquitto broker
 
 # Configuration for the CalTopo API
 caltopo:
-    group: "MESH-TEAM-ALPHA"
-    map_id: "" # Selected map ID (set via web UI)
+    connect_key: "aoJpFiwnxxgGEuaMY6W0gcqdeQ3T2bjoQfzvWbduT9LjJ" # From CalTopo Team Account access URL
 
-    # CalTopo Team API configuration (for map selection feature)
-    team_api:
-        enabled: false # Enable Team API integration
-        credential_id: "" # CalTopo service account credential ID
-        secret_key: "" # CalTopo service account secret key
-
-    # OAuth configuration for web UI authentication
-    oauth:
-        provider: "google" # google, apple, facebook, microsoft, yahoo
-        client_id: "" # OAuth client ID
-        client_secret: "" # OAuth client secret
-        redirect_uri: "https://meshtopo.example.com/auth/callback"
-
-# Mapping of Meshtastic hardware IDs to CalTopo device IDs
+# Optional: Node display name overrides
+# If not specified, devices will use their Meshtastic longname as callsign
 nodes:
     "!823a4edc":
         device_id: "TEAM-LEAD"
     "!a4b8c2f0":
         device_id: "COMMS"
+
+# Internal MQTT Broker Configuration (optional)
+mqtt_broker:
+    enabled: false # Enable internal Mosquitto broker
+    port: 1883 # MQTT broker port
+    websocket_port: 9001 # WebSocket port for web clients
+    persistence: true # Enable message persistence
+    max_connections: 1000 # Maximum concurrent connections
+    allow_anonymous: false # Allow anonymous connections
+    users:
+        - username: "meshtopo"
+          password: "secure_password"
+          acl: "readwrite" # Access level: read, write, readwrite
+        - username: "readonly"
+          password: "readonly_pass"
+          acl: "read" # Read-only access
+    acl_enabled: false # Enable Access Control Lists
+
+# Logging configuration
+logging:
+    level: INFO
+    file:
+        enabled: true
+        path: logs/meshtopo.log
+        max_size: 10MB
+        backup_count: 5
 ```
 
 ### 6.2 SSL/TLS Configuration
@@ -324,34 +303,30 @@ ssl:
 
     # Per-service SSL configuration
     services:
-        web_ui:
-            enabled: true
-            subdomain: "meshtopo" # Subdomain for web UI
         mqtt:
             enabled: false # MQTT over TLS (optional)
             port: 8883
 ```
 
-### 6.3 Web UI Configuration
+### 6.3 Internal MQTT Broker Configuration
 
 ```yaml
-# Web management interface configuration
-web_ui:
-    enabled: false # Master toggle for web UI
-    host: "0.0.0.0" # Bind address
-    port: 8080 # Bind port
-    secret_key: "" # Flask session secret (generate random string)
-
-    # Session configuration
-    session:
-        timeout: 3600 # Session timeout in seconds
-        secure: true # Secure cookies (HTTPS only)
-        httponly: true # HTTP-only cookies
-
-    # Rate limiting
-    rate_limit:
-        enabled: true
-        requests_per_minute: 60
+# Internal MQTT Broker Configuration
+mqtt_broker:
+    enabled: true # Enable internal Mosquitto broker
+    port: 1883 # MQTT broker port
+    websocket_port: 9001 # WebSocket port for web clients
+    persistence: true # Enable message persistence
+    max_connections: 1000 # Maximum concurrent connections
+    allow_anonymous: false # Allow anonymous connections
+    users:
+        - username: "meshtopo"
+          password: "secure_password"
+          acl: "readwrite" # Access level: read, write, readwrite
+        - username: "readonly"
+          password: "readonly_pass"
+          acl: "read" # Read-only access
+    acl_enabled: false # Enable Access Control Lists
 ```
 
 ### 6.4 Logging Configuration
@@ -368,11 +343,6 @@ logging:
         path: "/app/logs/meshtopo.log"
         max_size: "10MB"
         backup_count: 5
-
-    # Web UI specific logging
-    web_ui:
-        level: "INFO"
-        access_log: true
 ```
 
 ### 6.5 Deployment Mode Configuration
@@ -383,11 +353,11 @@ The configuration file supports three deployment modes:
 
 ```yaml
 mqtt:
-    use_internal_broker: false
     broker: "192.168.1.100" # External broker
-ssl:
+    use_internal_broker: false
+mqtt_broker:
     enabled: false
-web_ui:
+ssl:
     enabled: false
 ```
 
@@ -395,10 +365,11 @@ web_ui:
 
 ```yaml
 mqtt:
+    broker: "mosquitto" # Internal broker
     use_internal_broker: true
+mqtt_broker:
+    enabled: true
 ssl:
-    enabled: false
-web_ui:
     enabled: false
 ```
 
@@ -406,14 +377,12 @@ web_ui:
 
 ```yaml
 mqtt:
+    broker: "mosquitto" # Internal broker
     use_internal_broker: true
+mqtt_broker:
+    enabled: true
 ssl:
     enabled: true
-web_ui:
-    enabled: true
-caltopo:
-    team_api:
-        enabled: true
 ```
 
 ---
@@ -578,51 +547,6 @@ services:
             - mosquitto
         profiles:
             - core
-
-    # Web management interface (conditional)
-    meshtopo-web:
-        build:
-            context: .
-            dockerfile: Dockerfile.web
-        container_name: meshtopo-web
-        restart: unless-stopped
-        volumes:
-            - ./config/config.yaml:/app/config/config.yaml:ro
-            - ./logs:/app/logs
-        environment:
-            - TZ=UTC
-            - FLASK_ENV=production
-        deploy:
-            resources:
-                limits:
-                    memory: 256M
-                    cpus: "0.5"
-                reservations:
-                    memory: 128M
-                    cpus: "0.1"
-        healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-            interval: 30s
-            timeout: 10s
-            retries: 3
-            start_period: 10s
-        logging:
-            driver: "json-file"
-            options:
-                max-size: "10m"
-                max-file: "3"
-        networks:
-            - meshtopo
-        depends_on:
-            - meshtopo-gateway
-        profiles:
-            - web
-        labels:
-            - "traefik.enable=true"
-            - "traefik.http.routers.meshtopo-web.rule=Host(`${SSL_DOMAIN}`)"
-            - "traefik.http.routers.meshtopo-web.entrypoints=websecure"
-            - "traefik.http.routers.meshtopo-web.tls.certresolver=letsencrypt"
-            - "traefik.http.services.meshtopo-web.loadbalancer.server.port=8080"
 ```
 
 ### 8.3 SSL/TLS Configuration with Traefik
@@ -648,10 +572,10 @@ SSL_DOMAIN=meshtopo.example.com
 
 Traefik is configured via command-line arguments in the Docker Compose file:
 
--   **HTTP Challenge**: Uses port 80 for domain validation
--   **DNS Challenge**: Uses DNS provider API for validation (supports Cloudflare, Route53, etc.)
--   **Certificate Storage**: Persistent volume for certificate storage
--   **Dashboard**: Optional web dashboard for monitoring
+- **HTTP Challenge**: Uses port 80 for domain validation
+- **DNS Challenge**: Uses DNS provider API for validation (supports Cloudflare, Route53, etc.)
+- **Certificate Storage**: Persistent volume for certificate storage
+- **Dashboard**: Optional web dashboard for monitoring
 
 #### 8.3.3 Service Labels
 
@@ -684,7 +608,7 @@ docker-compose --profile core --profile mqtt up -d
 **Full Deployment** (All features):
 
 ```bash
-docker-compose --profile core --profile mqtt --profile web --profile ssl up -d
+docker-compose --profile core --profile mqtt --profile ssl up -d
 ```
 
 ### 8.5 Mosquitto Configuration
@@ -731,7 +655,7 @@ cp config/config.yaml.example config/config.yaml
 docker-compose --profile core up -d
 
 # Full mode with SSL
-docker-compose --profile core --profile mqtt --profile web --profile ssl up -d
+docker-compose --profile core --profile mqtt --profile ssl up -d
 ```
 
 **3. View logs:**
@@ -740,14 +664,14 @@ docker-compose --profile core --profile mqtt --profile web --profile ssl up -d
 docker-compose logs -f
 ```
 
-**4. Access web interface:**
+**4. Monitor logs:**
 
 ```bash
-# HTTP (if SSL disabled)
-http://localhost:8080
+# View all logs
+docker-compose logs -f
 
-# HTTPS (if SSL enabled)
-https://meshtopo.example.com
+# View specific service logs
+docker-compose logs -f meshtopo-gateway
 ```
 
 ---
@@ -760,105 +684,104 @@ The following enhancements are planned for future releases:
 
 The following features have been implemented in the enhanced architecture:
 
--   **Map Selection UI**: Web-based interface for selecting CalTopo maps with OAuth authentication
--   **API Endpoints**: RESTful API for programmatic access to map management and configuration
--   **Integrated MQTT Broker**: Optional Mosquitto broker included in Docker Compose stack
--   **SSL/TLS Support**: Automatic SSL certificate provisioning with Traefik and Let's Encrypt
--   **Enhanced Configuration**: Comprehensive configuration management for all optional components
+- **CalTopo Connect Key Integration**: Simplified integration using CalTopo Team Account access URLs
+- **Automatic Device Registration**: Devices automatically appear in CalTopo using callsigns
+- **Integrated MQTT Broker**: Optional Mosquitto broker included in Docker Compose stack
+- **SSL/TLS Support**: Automatic SSL certificate provisioning with Traefik and Let's Encrypt
+- **Enhanced Configuration**: Comprehensive configuration management for all optional components
+- **Dynamic Broker Configuration**: Automatic generation of Mosquitto configuration files
+- **Callsign Mapping**: Automatic mapping from Meshtastic longname to CalTopo callsigns
 
-### 9.2 Planned Enhancements
+### 9.2 Planned (Potential) Enhancements
 
--   **Two-Way Messaging**: Implement a mechanism to send short text messages back to the Meshtastic network from CalTopo.
--   **Status Reporting**: Forward additional Meshtastic telemetry (e.g., battery level, signal strength) to CalTopo.
--   **Advanced Analytics**: Position history tracking, movement patterns, and performance analytics.
--   **Multiple CalTopo Group Support**: Support for multiple CalTopo groups and dynamic group switching.
--   **Mobile App**: Native mobile application for field operators to monitor and configure the system.
--   **Advanced Security**: Multi-factor authentication, role-based access control, and audit logging.
--   **High Availability**: Clustering support, load balancing, and automatic failover capabilities.
--   **Custom Integrations**: Plugin system for integrating with other mapping platforms and communication systems.
+- **Two-Way Messaging**: Implement a mechanism to send short text messages back to the Meshtastic network from CalTopo.
+- **Status Reporting**: Forward additional Meshtastic telemetry (e.g., battery level, signal strength) to CalTopo.
+- **Advanced Analytics**: Position history tracking, movement patterns, and performance analytics.
+- **Multiple CalTopo Group Support**: Support for multiple CalTopo groups and dynamic group switching.
+- **Mobile App**: Native mobile application for field operators to monitor and configure the system.
+- **Advanced Security**: Multi-factor authentication, role-based access control, and audit logging.
+- **High Availability**: Clustering support, load balancing, and automatic failover capabilities.
+- **Custom Integrations**: Plugin system for integrating with other mapping platforms and communication systems.
 
-### 9.3 API Endpoint Details
+### 9.3 Internal MQTT Broker Features
 
-The web UI provides comprehensive RESTful API endpoints for external integration:
+The internal MQTT broker provides comprehensive MQTT infrastructure:
 
-#### 9.3.1 Authentication API
+#### 9.3.1 Configuration Management
 
--   `GET /api/auth/login` - Initiate OAuth authentication flow
--   `GET /api/auth/callback` - Handle OAuth callback and token exchange
--   `POST /api/auth/logout` - Terminate user session
--   `GET /api/auth/status` - Check current authentication status
--   `GET /api/auth/user` - Get current user information
+- **Dynamic Configuration**: Mosquitto configuration generated from `config.yaml`
+- **User Management**: MQTT users defined in configuration with automatic password hashing
+- **ACL Support**: Optional access control lists for fine-grained permissions
+- **Persistence**: Configurable message persistence and retention
 
-#### 9.3.2 Map Management API
+#### 9.3.2 Security Features
 
--   `GET /api/maps/list` - Retrieve all available CalTopo maps
--   `GET /api/maps/current` - Get currently selected map configuration
--   `POST /api/maps/select` - Select target map for position forwarding
--   `GET /api/maps/{map_id}` - Get detailed information about specific map
--   `GET /api/maps/{map_id}/status` - Get real-time status of map integration
--   `POST /api/maps/{map_id}/test` - Test connection to specific map
+- **No Anonymous Access**: All connections require authentication by default
+- **Password Hashing**: MQTT passwords hashed using Mosquitto's PBKDF2/SHA512 format
+- **ACL Control**: Optional access control lists for topic-level permissions
+- **WebSocket Security**: Secure WebSocket connections with authentication
 
-#### 9.3.3 Configuration API
+#### 9.3.3 Docker Integration
 
--   `GET /api/config` - Retrieve current system configuration
--   `POST /api/config/update` - Update configuration parameters
--   `GET /api/config/validate` - Validate configuration settings
--   `POST /api/config/reset` - Reset configuration to defaults
--   `GET /api/config/backup` - Export configuration as backup
--   `POST /api/config/restore` - Restore configuration from backup
+- **Service Definition**: Mosquitto service defined in docker-compose.yml
+- **Volume Mounts**: Generated configuration files mounted into container
+- **Health Checks**: Built-in health monitoring and connectivity testing
+- **Networking**: Automatic network configuration for service communication
 
-#### 9.3.4 Monitoring API
+#### 9.3.4 Monitoring and Management
 
--   `GET /api/status` - Overall system status and health
--   `GET /api/metrics` - Performance metrics and statistics
--   `GET /api/logs` - Recent log entries with filtering
--   `GET /api/health` - Detailed health check information
--   `GET /api/nodes` - Status of all configured Meshtastic nodes
--   `GET /api/nodes/{node_id}/history` - Position history for specific node
-
-#### 9.3.5 System Management API
-
--   `POST /api/system/restart` - Restart gateway service
--   `POST /api/system/reload` - Reload configuration without restart
--   `GET /api/system/info` - System information and version details
--   `GET /api/system/resources` - Resource usage statistics
--   `POST /api/system/backup` - Create system backup
--   `POST /api/system/update` - Update system components
+- **Health Checks**: Docker health checks for broker connectivity
+- **Logging**: Comprehensive logging with configurable levels
+- **Metrics**: Connection counts, message rates, and performance metrics
+- **Configuration Validation**: Automatic validation of broker settings
 
 ### 9.4 Integration Examples
 
-The API endpoints enable various integration scenarios:
+The internal MQTT broker enables various integration scenarios:
 
-**Automation Scripts:**
+**MQTT Client Integration:**
 
 ```bash
-# Select map via API
-curl -X POST https://meshtopo.example.com/api/maps/select \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{"map_id": "team-alpha-map-123"}'
+# Connect to internal broker
+mosquitto_pub -h localhost -p 1883 -u meshtopo -P secure_password -t test/topic -m "Hello"
 
-# Get system status
-curl https://meshtopo.example.com/api/status
+# Subscribe to Meshtastic messages
+mosquitto_sub -h localhost -p 1883 -u meshtopo -P secure_password -t "msh/US/2/json/+/+"
+```
+
+**WebSocket Integration:**
+
+```javascript
+// Connect via WebSocket
+const client = mqtt.connect("ws://localhost:9001", {
+    username: "meshtopo",
+    password: "secure_password",
+});
+
+client.on("connect", () => {
+    client.subscribe("msh/US/2/json/+/+");
+});
+```
+
+**Configuration Management:**
+
+```bash
+# Generate broker configuration
+make generate-broker-config
+
+# Setup internal broker
+make setup-broker
+
+# View broker logs
+docker-compose logs -f mosquitto
 ```
 
 **Monitoring Integration:**
 
 ```bash
 # Health check for monitoring systems
-curl -f https://meshtopo.example.com/api/health || alert "Meshtopo down"
+docker-compose ps mosquitto
 
-# Metrics collection
-curl https://meshtopo.example.com/api/metrics | jq '.position_updates_per_minute'
-```
-
-**Configuration Management:**
-
-```bash
-# Backup configuration
-curl https://meshtopo.example.com/api/config/backup > config-backup.yaml
-
-# Update node mappings
-curl -X POST https://meshtopo.example.com/api/config/update \
-  -H "Content-Type: application/json" \
-  -d @updated-nodes.json
+# Monitor broker metrics
+mosquitto_sub -h localhost -t "$SYS/broker/load/messages/received"
 ```

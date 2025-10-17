@@ -1,0 +1,37 @@
+# Minimal Meshtopo Configuration
+# This is the simplest possible configuration
+
+mqtt:
+    broker: "192.168.1.100"
+    port: 1883
+    username: "user"
+    password: "pass"
+    topic: "msh/US/2/json/+/+"
+
+caltopo:
+    connect_key: "YOUR_CONNECT_KEY_HERE"
+    api_mode: "connect_key"  # or "group"
+    group: "SARTEAM"         # optional global GROUP (required if api_mode is "group")
+
+# Optional: Node display name overrides
+nodes:
+    "!823a4edc":
+        device_id: "TEAM-LEAD"
+        group: "LEADERSHIP"  # optional per-device GROUP override
+
+# Device Management Configuration
+devices:
+    allow_unknown_devices: true  # Allow unknown devices to send position updates
+
+# Optional: Internal MQTT broker
+mqtt_broker:
+    enabled: false
+    port: 1883
+    websocket_port: 9001
+    users:
+        - username: "meshtopo"
+          password: "password"
+          acl: "readwrite"
+
+logging:
+    level: "INFO"

@@ -1,30 +1,86 @@
-# Meshtopo Configuration Template
-# Copy this file to config.yaml and update with your settings
+# Meshtopo Gateway Service Configuration
+# This configuration file demonstrates the simplified setup using CalTopo Team Account connect key
 
 # MQTT Broker Configuration
 mqtt:
-  broker: "192.168.1.100"  # IP address or hostname of your MQTT broker
-  port: 1883               # MQTT broker port
-  username: "your_mqtt_user"     # MQTT username
-  password: "your_mqtt_password" # MQTT password
-  topic: "msh/+/+/json/position/#"  # MQTT topic pattern for Meshtastic position packets
+    broker: "mqtt.example.com"          # MQTT broker hostname or IP
+    port: 1883                          # MQTT broker port (8883 for SSL, 1883 for non-SSL)
+    username: "meshtopo_user"           # MQTT broker username
+    password: "your_mqtt_password"      # MQTT broker password
+    topic: "msh/US/2/json/+/+"         # MQTT topic pattern for Meshtastic messages
+    keepalive: 60                       # MQTT keepalive interval in seconds
 
 # CalTopo API Configuration
 caltopo:
-  group: "MESH-TEAM-ALPHA"  # Your CalTopo group identifier
+    connect_key: "YOUR_CONNECT_KEY_HERE"  # From CalTopo Team Account access URL
+    api_mode: "connect_key"               # API mode: "connect_key" or "group"
+    group: "SARTEAM"                      # Global GROUP (required if api_mode is "group")
 
-# Mapping of Meshtastic hardware IDs to CalTopo device IDs
-# Add your node mappings here
+# API Mode Options:
+# - "connect_key": Uses CalTopo Team Account connect key (default)
+#   Format: https://caltopo.com/api/v1/position/report/{CONNECT_KEY}?id={DEVICE_ID}&lat={LAT}&lng={LNG}
+# - "group": Uses GROUP-based custom integration
+#   Format: https://caltopo.com/api/v1/position/report/{GROUP}?id={DEVICE_ID}&lat={LAT}&lng={LNG}
+
+# Optional: Node display name overrides
+# If not specified, devices will use their Meshtastic longname as callsign
 nodes:
-  "!823a4edc":
-    device_id: "TEAM-LEAD"
-  "!a4b8c2f0":
-    device_id: "COMMS"
-  # Add more nodes as needed:
-  # "!your_node_id":
-  #   device_id: "YOUR_DEVICE_NAME"
+    "!823a4edc":                        # Meshtastic hardware ID
+        device_id: "TEAM-LEAD"          # Custom display name in CalTopo
+        group: "LEADERSHIP"             # Optional per-device GROUP override
+    "!a4b8c2f0":                        # Meshtastic hardware ID
+        device_id: "COMMS-1"            # Custom display name in CalTopo
+        # group: "COMMS"                # Optional per-device GROUP override
 
-# Logging Configuration (optional)
+# Device Management Configuration
+devices:
+    allow_unknown_devices: true          # Allow devices not in nodes list to send position updates
+
+# Device Management Options:
+# - allow_unknown_devices: true  (default) - Unknown devices are tracked and can send position updates
+# - allow_unknown_devices: false - Unknown devices are tracked but position updates are blocked
+
+# Internal MQTT Broker Configuration (optional)
+mqtt_broker:
+    enabled: false                      # Enable internal Mosquitto broker
+    port: 1883                          # MQTT broker port
+    websocket_port: 9001               # WebSocket port for web clients
+    persistence: true                   # Enable message persistence
+    max_connections: 1000               # Maximum concurrent connections
+    allow_anonymous: false              # Allow anonymous connections
+    users:
+        - username: "meshtopo"          # MQTT username
+          password: "secure_password"   # MQTT password
+          acl: "readwrite"             # Access level: read, write, readwrite
+        - username: "readonly"          # Read-only user
+          password: "readonly_pass"     # Read-only password
+          acl: "read"                  # Read-only access
+    acl_enabled: false                  # Enable Access Control Lists
+
+# Logging Configuration
 logging:
-  level: "INFO"  # DEBUG, INFO, WARN, ERROR
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level: "INFO"                       # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+    file:
+        enabled: true                   # Enable file logging
+        path: "/var/log/meshtopo/meshtopo.log"  # Log file path
+        max_size: "10MB"                # Maximum log file size
+        backup_count: 5                 # Number of backup files to keep
+
+# Environment-specific overrides
+# Uncomment and modify for different environments
+
+# Development Environment
+# logging:
+#     level: "DEBUG"
+
+# Production Environment
+# logging:
+#     level: "WARNING"
+#     file:
+#         enabled: true
+#         path: "/var/log/meshtopo/meshtopo.log"
+
+# Docker Environment
+# logging:
+#     file:
+#         path: "/app/logs/meshtopo.log"
