@@ -22,17 +22,17 @@ from config.config import Config  # noqa: E402
 def validate_env_file(env_path: Path) -> bool:
     """
     Validate that the .env file exists and is readable.
-    
+
     Args:
         env_path: Path to the .env file
-        
+
     Returns:
         bool: True if valid, False otherwise
     """
     try:
         if not env_path.exists():
             return False
-        
+
         # Try to read the file to ensure it's accessible
         with open(env_path, "r") as f:
             f.read()
@@ -137,18 +137,19 @@ def generate_mosquitto_config(
                     if user.username and user.password:
                         # Securely hash password using bcrypt
                         try:
-                            # Hash password directly without intermediate variable
+                            # Hash password directly without intermediate var
                             hashed_password = generate_mosquitto_password(user.password)
                             f.write(f"{user.username}: {hashed_password}\n")
-                            # Clear hashed password from memory immediately after use
+                            # Clear hashed password from memory after use
                             del hashed_password
                         except Exception as e:
                             print(
-                                f"Error hashing password for user {user.username}: {e}"
+                                f"Error hashing password for user "
+                                f"{user.username}: {e}"
                             )
                             continue
-                        # Note: We don't modify user.password as it's typed as str
-                        # Password will be garbage collected after function ends
+                        # Note: user.password typed as str, can't modify
+                        # Password garbage collected after function ends
 
             # Set restrictive file permissions (owner read/write only)
             passwd_path.chmod(0o600)
@@ -164,11 +165,13 @@ def generate_mosquitto_config(
                     for user in broker_config.users:
                         if user.acl == "read":
                             f.write(
-                                f"user {user.username}\ntopic read msh/+/+/+/+/+\n\n"
+                                f"user {user.username}\n"
+                                f"topic read msh/+/+/+/+/+\n\n"
                             )
                         elif user.acl == "write":
                             f.write(
-                                f"user {user.username}\ntopic write msh/+/+/+/+/+\n\n"
+                                f"user {user.username}\n"
+                                f"topic write msh/+/+/+/+/+\n\n"
                             )
                         elif user.acl == "readwrite":
                             f.write(
@@ -184,7 +187,7 @@ def generate_mosquitto_config(
             # Generate MQTT configuration variables
             mqtt_config = f"""# MQTT Broker Configuration
 # Generated from config.yaml - DO NOT EDIT MANUALLY
-# 
+#
 # Environment Variables Documentation:
 # MQTT_PORT: Port for MQTT broker (default: 1883)
 # MQTT_WS_PORT: Port for MQTT WebSocket (default: 9001)
@@ -198,9 +201,11 @@ def generate_mosquitto_config(
 
 MQTT_PORT={broker_config.port}
 MQTT_WS_PORT={broker_config.websocket_port}
-MQTT_AUTH_ENABLED={'true' if not broker_config.allow_anonymous and broker_config.users else 'false'}
+MQTT_AUTH_ENABLED={'true' if not broker_config.allow_anonymous and
+                   broker_config.users else 'false'}
 MQTT_ACL_ENABLED={'true' if broker_config.acl_enabled else 'false'}
-MQTT_PASSWD_MOUNT={'true' if not broker_config.allow_anonymous and broker_config.users else 'false'}
+MQTT_PASSWD_MOUNT={'true' if not broker_config.allow_anonymous and
+                   broker_config.users else 'false'}
 MQTT_ACL_MOUNT={'true' if broker_config.acl_enabled else 'false'}
 """
 
@@ -210,19 +215,28 @@ MQTT_ACL_MOUNT={'true' if broker_config.acl_enabled else 'false'}
                 try:
                     with open(env_path, "r") as f:
                         existing_content = f.read()
-                    
+
                     # If MQTT config already exists, warn user and skip update
                     if "MQTT_PORT=" in existing_content:
-                        print(f"Warning: MQTT configuration already exists in {env_path}")
-                        print("To update MQTT settings, please manually edit the .env file or remove it and re-run this script.")
+                        print(
+                            f"Warning: MQTT configuration already exists in "
+                            f"{env_path}"
+                        )
+                        print(
+                            "To update MQTT settings, please manually edit "
+                            "the .env file or remove it and re-run."
+                        )
                         print("\nRequired MQTT environment variables:")
                         print(mqtt_config.strip())
                     else:
                         # Append MQTT config to existing file
                         with open(env_path, "a") as f:
                             f.write("\n" + mqtt_config)
-                        print(f"Appended MQTT configuration to existing .env file: {env_path}")
-                        
+                        print(
+                            f"Appended MQTT configuration to existing .env "
+                            f"file: {env_path}"
+                        )
+
                 except Exception as e:
                     print(f"Error: Could not read existing .env file: {e}")
                     print("Please check file permissions and try again.")
@@ -237,10 +251,12 @@ MQTT_ACL_MOUNT={'true' if broker_config.acl_enabled else 'false'}
                     print(f"Error: Could not create .env file: {e}")
                     print("Please check directory permissions and try again.")
                     return False
-            
+
             # Set restrictive file permissions (owner read/write only)
             env_path.chmod(0o600)
-            print("Use 'docker compose --profile mqtt up -d' to start with MQTT broker")
+            print(
+                "Use 'docker compose --profile mqtt up -d' to start with " "MQTT broker"
+            )
 
         print("Mosquitto configuration generated successfully!")
         return True
