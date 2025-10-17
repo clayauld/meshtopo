@@ -198,7 +198,7 @@ def generate_mosquitto_config(
             )
             acl_mount = "true" if broker_config.acl_enabled else "false"
 
-            mqtt_config = f"""# MQTT Broker Configuration
+            mqtt_config = """# MQTT Broker Configuration
 # Generated from config.yaml - DO NOT EDIT MANUALLY
 #
 # Environment Variables Documentation:
@@ -212,13 +212,20 @@ def generate_mosquitto_config(
 # These variables are used by docker-compose.yml to configure the MQTT broker.
 # Modify the values in config.yaml and re-run this script to update them.
 
-MQTT_PORT={broker_config.port}
-MQTT_WS_PORT={broker_config.websocket_port}
+MQTT_PORT={port}
+MQTT_WS_PORT={ws_port}
 MQTT_AUTH_ENABLED={auth_enabled}
 MQTT_ACL_ENABLED={acl_enabled}
 MQTT_PASSWD_MOUNT={passwd_mount}
 MQTT_ACL_MOUNT={acl_mount}
-"""
+""".format(
+                port=broker_config.port,
+                ws_port=broker_config.websocket_port,
+                auth_enabled=auth_enabled,
+                acl_enabled=acl_enabled,
+                passwd_mount=passwd_mount,
+                acl_mount=acl_mount,
+            )
 
             # Handle .env file creation/update more robustly
             if env_path.exists() and validate_env_file(env_path):
