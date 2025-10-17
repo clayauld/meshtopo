@@ -1,9 +1,11 @@
 # Docker Testing Strategy
 
 ## Overview
+
 This document outlines the improved Docker testing strategy that separates test dependencies from production images while maintaining comprehensive testing coverage.
 
 ## Problems with Previous Approach
+
 - **Production Image Bloat**: Including pytest in production images increases size and attack surface
 - **Security Concerns**: Test tools in production containers create unnecessary security risks
 - **Dependency Pollution**: Production environments don't need test dependencies
@@ -11,6 +13,7 @@ This document outlines the improved Docker testing strategy that separates test 
 ## Current Multi-Stage Approach
 
 ### Dockerfile Structure
+
 ```dockerfile
 # Base stage - common dependencies
 FROM python:3.9-slim as base
@@ -28,6 +31,7 @@ CMD ["python", "src/gateway.py"]
 ```
 
 ### Benefits
+
 1. **Clean Separation**: Test and production dependencies are isolated
 2. **Smaller Production Images**: No test tools in production
 3. **Better Security**: Minimal attack surface in production
@@ -36,6 +40,7 @@ CMD ["python", "src/gateway.py"]
 ## Testing Strategy
 
 ### 1. Unit Tests (Local Development)
+
 ```bash
 # Install test dependencies
 pip install -r requirements-test.txt
@@ -44,6 +49,7 @@ python -m pytest tests/ -v
 ```
 
 ### 2. Docker Test Stage
+
 ```bash
 # Build and run test image
 docker build --target test -t meshtopo-test .
@@ -51,6 +57,7 @@ docker run --rm meshtopo-test
 ```
 
 ### 3. Production Image Smoke Test
+
 ```bash
 # Test production image can start and import modules
 docker run --rm --name smoke-test meshtopo:latest \
@@ -58,6 +65,7 @@ docker run --rm --name smoke-test meshtopo:latest \
 ```
 
 ### 4. Integration Testing
+
 - Test the actual production image in a staging environment
 - Verify health checks work
 - Test with real MQTT and CalTopo endpoints
@@ -65,12 +73,14 @@ docker run --rm --name smoke-test meshtopo:latest \
 ## GitHub Actions Integration
 
 The CI pipeline now:
+
 1. Builds both test and production images
 2. Runs comprehensive tests in the test image
 3. Performs smoke tests on the production image
 4. Only pushes the production image to registry
 
 ## File Structure
+
 ```
 ├── requirements.txt          # Production dependencies only
 ├── requirements-test.txt     # Test dependencies (includes requirements.txt)
