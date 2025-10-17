@@ -1,5 +1,5 @@
 # Meshtopo Gateway Service Dockerfile
-FROM python:3.9-slim
+FROM python:3.9-slim as base
 
 # Set working directory
 WORKDIR /app
@@ -17,6 +17,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
+
+# Test stage
+FROM base as test
+COPY requirements-test.txt .
+RUN pip install --no-cache-dir -r requirements-test.txt
+CMD ["python", "-m", "pytest", "tests/", "-v", "--tb=short"]
+
+# Production stage
+FROM base as production
 
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash meshtopo && \
