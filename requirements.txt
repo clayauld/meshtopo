@@ -3,3 +3,5 @@ requests==2.32.4
 PyYAML==6.0.1
 Jinja2==3.1.6
 bcrypt==5.0.0
+pytest==7.4.4
+pytest-cov==4.1.0
