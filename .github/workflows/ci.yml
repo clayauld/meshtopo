@@ -131,7 +131,7 @@ jobs:
     - name: Test Docker images
       run: |
         # Build test image
-        docker build --target test -t meshtopo-test:${{ github.sha }} .
+        docker build --target test -f deploy/Dockerfile -t meshtopo-test:${{ github.sha }} .
         # Run tests in test image
         docker run --rm meshtopo-test:${{ github.sha }}
         # Test production image startup (smoke test)
