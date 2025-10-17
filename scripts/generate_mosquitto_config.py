@@ -185,6 +185,19 @@ def generate_mosquitto_config(
         env_path = output_dir_path / ".env"
         if broker_config.enabled:
             # Generate MQTT configuration variables
+            auth_enabled = (
+                "true"
+                if not broker_config.allow_anonymous and broker_config.users
+                else "false"
+            )
+            acl_enabled = "true" if broker_config.acl_enabled else "false"
+            passwd_mount = (
+                "true"
+                if not broker_config.allow_anonymous and broker_config.users
+                else "false"
+            )
+            acl_mount = "true" if broker_config.acl_enabled else "false"
+
             mqtt_config = f"""# MQTT Broker Configuration
 # Generated from config.yaml - DO NOT EDIT MANUALLY
 #
@@ -201,12 +214,10 @@ def generate_mosquitto_config(
 
 MQTT_PORT={broker_config.port}
 MQTT_WS_PORT={broker_config.websocket_port}
-MQTT_AUTH_ENABLED={'true' if not broker_config.allow_anonymous and
-                   broker_config.users else 'false'}
-MQTT_ACL_ENABLED={'true' if broker_config.acl_enabled else 'false'}
-MQTT_PASSWD_MOUNT={'true' if not broker_config.allow_anonymous and
-                   broker_config.users else 'false'}
-MQTT_ACL_MOUNT={'true' if broker_config.acl_enabled else 'false'}
+MQTT_AUTH_ENABLED={auth_enabled}
+MQTT_ACL_ENABLED={acl_enabled}
+MQTT_PASSWD_MOUNT={passwd_mount}
+MQTT_ACL_MOUNT={acl_mount}
 """
 
             # Handle .env file creation/update more robustly
