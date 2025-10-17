@@ -68,6 +68,13 @@ class CalTopoReporter:
         # Return True if at least one endpoint was successful
         return success_count > 0
 
+    def _validate_endpoint(self, endpoint: Optional[str], endpoint_type: str) -> bool:
+        """Validate that an endpoint is configured."""
+        if not endpoint:
+            self.logger.error(f"CalTopo {endpoint_type} is not configured")
+            return False
+        return True
+
     def _send_to_connect_key(
         self,
         callsign: str,
@@ -75,6 +82,9 @@ class CalTopoReporter:
         longitude: float,
     ) -> bool:
         """Send position update to connect_key endpoint."""
+        if not self._validate_endpoint(self.config.caltopo.connect_key, "connect_key"):
+            return False
+
         url = f"{self.BASE_URL}/{self.config.caltopo.connect_key}"
         params = {"id": callsign, "lat": latitude, "lng": longitude}
         query_string = urlencode(params)
@@ -87,9 +97,12 @@ class CalTopoReporter:
         callsign: str,
         latitude: float,
         longitude: float,
-        group: str,
+        group: Optional[str],
     ) -> bool:
         """Send position update to group endpoint."""
+        if not self._validate_endpoint(group, "group"):
+            return False
+
         url = f"{self.BASE_URL}/{group}"
         params = {"id": callsign, "lat": latitude, "lng": longitude}
         query_string = urlencode(params)
@@ -215,6 +228,8 @@ class CalTopoReporter:
 
     def _test_connect_key_endpoint(self) -> bool:
         """Test connection to connect_key endpoint."""
+        if not self._validate_endpoint(self.config.caltopo.connect_key, "connect_key"):
+            return False
         try:
             test_url = (
                 f"{self.BASE_URL}/{self.config.caltopo.connect_key}"
@@ -234,6 +249,8 @@ class CalTopoReporter:
 
     def _test_group_endpoint(self) -> bool:
         """Test connection to group endpoint."""
+        if not self._validate_endpoint(self.config.caltopo.group, "group"):
+            return False
         try:
             test_url = (
                 f"{self.BASE_URL}/{self.config.caltopo.group}"
