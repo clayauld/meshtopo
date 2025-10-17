@@ -141,7 +141,11 @@ class CalTopoReporter:
         """Make an API request and handle the response."""
         try:
             # Redact connect_key from URL for logging
-            log_url = re.sub(f"({self.BASE_URL}/)[^?]+", r"\1<REDACTED>", url) if endpoint_type == "connect_key" else url
+            log_url = (
+                re.sub(f"({self.BASE_URL}/)[^?]+", r"\1<REDACTED>", url)
+                if endpoint_type == "connect_key"
+                else url
+            )
             self.logger.debug(
                 f"Sending position update for {callsign} to {endpoint_type}: "
                 f"{log_url}"
@@ -264,8 +268,7 @@ class CalTopoReporter:
                 return False
 
             test_url = (
-                f"{self.BASE_URL}/{connect_key}"
-                f"?id=MESHTOPO_SYSTEM_TEST&lat=0&lng=0"
+                f"{self.BASE_URL}/{connect_key}" f"?id=MESHTOPO_SYSTEM_TEST&lat=0&lng=0"
             )
             response = self.session.get(test_url, timeout=self.timeout)
 
@@ -287,8 +290,7 @@ class CalTopoReporter:
                 return False
 
             test_url = (
-                f"{self.BASE_URL}/{group}"
-                f"?id=MESHTOPO_SYSTEM_TEST&lat=0&lng=0"
+                f"{self.BASE_URL}/{group}" f"?id=MESHTOPO_SYSTEM_TEST&lat=0&lng=0"
             )
             response = self.session.get(test_url, timeout=self.timeout)
 
