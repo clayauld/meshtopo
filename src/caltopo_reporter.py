@@ -3,6 +3,7 @@ CalTopo API integration for sending position reports.
 """
 
 import logging
+import re
 from typing import Any, Optional
 from urllib.parse import urlencode
 
@@ -29,6 +30,38 @@ class CalTopoReporter:
 
         # Set a reasonable timeout for API requests
         self.timeout = 10  # seconds
+
+    def _is_valid_caltopo_identifier(self, identifier: str) -> bool:
+        """
+        Validate that a CalTopo identifier (connect_key or group) is safe.
+
+        Args:
+            identifier: The identifier to validate
+
+        Returns:
+            bool: True if the identifier is valid, False otherwise
+        """
+        # Allow alphanumeric characters and underscores
+        return bool(re.match(r"^[a-zA-Z0-9_]+$", identifier))
+
+    def _validate_and_log_identifier(
+        self, identifier: str, identifier_type: str
+    ) -> bool:
+        """
+        Validate a CalTopo identifier and log an error if invalid.
+
+        Args:
+            identifier: The identifier to validate
+            identifier_type: The type of identifier (e.g., 'connect_key', 'group')
+                           for error logging
+
+        Returns:
+            bool: True if the identifier is valid, False otherwise
+        """
+        if not self._is_valid_caltopo_identifier(identifier):
+            self.logger.error(f"Invalid CalTopo {identifier_type}: {identifier}")
+            return False
+        return True
 
     def send_position_update(
         self,
@@ -75,7 +108,11 @@ class CalTopoReporter:
         longitude: float,
     ) -> bool:
         """Send position update to connect_key endpoint."""
-        url = f"{self.BASE_URL}/{self.config.caltopo.connect_key}"
+        connect_key = self.config.caltopo.connect_key
+        if not self._validate_and_log_identifier(connect_key, "connect_key"):
+            return False
+
+        url = f"{self.BASE_URL}/{connect_key}"
         params = {"id": callsign, "lat": latitude, "lng": longitude}
         query_string = urlencode(params)
         full_url = f"{url}?{query_string}"
@@ -90,6 +127,9 @@ class CalTopoReporter:
         group: str,
     ) -> bool:
         """Send position update to group endpoint."""
+        if not self._validate_and_log_identifier(group, "group"):
+            return False
+
         url = f"{self.BASE_URL}/{group}"
         params = {"id": callsign, "lat": latitude, "lng": longitude}
         query_string = urlencode(params)
@@ -100,8 +140,15 @@ class CalTopoReporter:
     def _make_api_request(self, url: str, callsign: str, endpoint_type: str) -> bool:
         """Make an API request and handle the response."""
         try:
+            # Redact connect_key from URL for logging
+            log_url = (
+                re.sub(f"({self.BASE_URL}/)[^?]+", r"\1<REDACTED>", url)
+                if endpoint_type == "connect_key"
+                else url
+            )
             self.logger.debug(
-                f"Sending position update for {callsign} to {endpoint_type}: " f"{url}"
+                f"Sending position update for {callsign} to {endpoint_type}: "
+                f"{log_url}"
             )
 
             # Make the HTTP GET request
@@ -216,9 +263,12 @@ class CalTopoReporter:
     def _test_connect_key_endpoint(self) -> bool:
         """Test connection to connect_key endpoint."""
         try:
+            connect_key = self.config.caltopo.connect_key
+            if not self._validate_and_log_identifier(connect_key, "connect_key"):
+                return False
+
             test_url = (
-                f"{self.BASE_URL}/{self.config.caltopo.connect_key}"
-                f"?id=MESHTOPO_SYSTEM_TEST&lat=0&lng=0"
+                f"{self.BASE_URL}/{connect_key}" f"?id=MESHTOPO_SYSTEM_TEST&lat=0&lng=0"
             )
             response = self.session.get(test_url, timeout=self.timeout)
 
@@ -235,9 +285,12 @@ class CalTopoReporter:
     def _test_group_endpoint(self) -> bool:
         """Test connection to group endpoint."""
         try:
+            group = self.config.caltopo.group
+            if not self._validate_and_log_identifier(group, "group"):
+                return False
+
             test_url = (
-                f"{self.BASE_URL}/{self.config.caltopo.group}"
-                f"?id=MESHTOPO_SYSTEM_TEST&lat=0&lng=0"
+                f"{self.BASE_URL}/{group}" f"?id=MESHTOPO_SYSTEM_TEST&lat=0&lng=0"
             )
             response = self.session.get(test_url, timeout=self.timeout)
 
