@@ -68,7 +68,7 @@ services:
             - mosquitto_data:/mosquitto/log
             - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
             - ./passwd:/mosquitto/config/passwd:ro
-            - ./aclfile:/mosquitto/config/aclfile:ro
+            # - ./deploy/aclfile:/mosquitto/config/aclfile:ro
         networks:
             - meshtopo
         profiles:
@@ -93,7 +93,7 @@ services:
         container_name: meshtopo-gateway
         restart: unless-stopped
         volumes:
-            - ./config/config.yaml:/app/config/config.yaml:ro
+            - ../config/config.yaml:/app/config/config.yaml:ro
             - ./logs:/app/logs
         environment:
             - TZ=UTC

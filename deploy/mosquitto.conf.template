@@ -1,13 +1,17 @@
 # Mosquitto MQTT Broker Configuration for Meshtopo
 # Generated from config.yaml - DO NOT EDIT MANUALLY
 
+{% if not broker_config.allow_anonymous %}
+# Password file (global setting)
+password_file /mosquitto/config/passwd
+{% endif %}
+
 # Network listeners
 listener {{ broker_config.port }}
 {% if broker_config.allow_anonymous %}
 allow_anonymous true
 {% else %}
 allow_anonymous false
-password_file /mosquitto/config/passwd
 {% endif %}
 
 # WebSocket support for web clients
@@ -17,7 +21,6 @@ protocol websockets
 allow_anonymous true
 {% else %}
 allow_anonymous false
-password_file /mosquitto/config/passwd
 {% endif %}
 
 # Persistence settings
@@ -43,7 +46,7 @@ max_inflight_messages 100
 max_queued_messages 1000
 
 # Message settings
-message_size_limit 268435456
+max_packet_size 1048576
 max_inflight_bytes 0
 max_queued_bytes 0
 

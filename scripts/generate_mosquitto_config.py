@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-import bcrypt
 from jinja2 import Environment, FileSystemLoader
 
 # Add project root to path for imports
@@ -39,45 +38,6 @@ def validate_env_file(env_path: Path) -> bool:
         return True
     except (OSError, IOError, PermissionError):
         return False
-
-
-def generate_mosquitto_password(password: str) -> str:
-    """
-    Generate Mosquitto password hash using bcrypt for secure storage.
-
-    Args:
-        password: Plain text password
-
-    Returns:
-        str: bcrypt hashed password in Mosquitto format ($2b$...)
-    """
-    # Use bcrypt for secure password hashing
-    # Mosquitto supports bcrypt hashes in the format $2b$...
-
-    # Convert password to bytes for bcrypt
-    password_bytes = password.encode("utf-8")
-
-    try:
-        # Generate bcrypt hash with appropriate cost factor
-        # Cost factor 12 provides good security vs performance balance
-        salt = bcrypt.gensalt(rounds=12)
-        hashed_bytes = bcrypt.hashpw(password_bytes, salt)
-
-        # Convert to string for storage
-        result: str = hashed_bytes.decode("utf-8")
-
-        return result
-
-    finally:
-        # Clear sensitive data from memory immediately
-        if "password_bytes" in locals():
-            # Overwrite with zeros before deletion for extra security
-            password_bytes = b"\x00" * len(password_bytes)
-            del password_bytes
-        if "hashed_bytes" in locals():
-            del hashed_bytes
-        # Note: We cannot clear the input password string as it's immutable
-        # The caller should handle clearing the original password
 
 
 def generate_mosquitto_config(
@@ -132,28 +92,49 @@ def generate_mosquitto_config(
         # Generate password file if not allowing anonymous access
         if not broker_config.allow_anonymous and broker_config.users:
             passwd_path = output_dir_path / "passwd"
-            with open(passwd_path, "w") as f:
+
+            # Use mosquitto_passwd to generate the password file
+            import subprocess
+
+            try:
+                # Generate password file using mosquitto_passwd
+                cmd = [
+                    "docker",
+                    "run",
+                    "--rm",
+                    "-v",
+                    f"{passwd_path.parent}:/data",
+                    "eclipse-mosquitto:2.0",
+                    "mosquitto_passwd",
+                    "-c",
+                    "-b",
+                    "/data/passwd",
+                ]
+
+                # Add username:password pairs
                 for user in broker_config.users:
                     if user.username and user.password:
-                        # Securely hash password using bcrypt
-                        try:
-                            # Hash password directly without intermediate var
-                            hashed_password = generate_mosquitto_password(user.password)
-                            f.write(f"{user.username}: {hashed_password}\n")
-                            # Clear hashed password from memory after use
-                            del hashed_password
-                        except Exception as e:
-                            print(
-                                f"Error hashing password for user "
-                                f"{user.username}: {e}"
-                            )
-                            continue
-                        # Note: user.password typed as str, can't modify
-                        # Password garbage collected after function ends
+                        cmd.extend([user.username, user.password])
 
-            # Set restrictive file permissions (owner read/write only)
-            passwd_path.chmod(0o600)
-            print(f"Generated passwd file: {passwd_path}")
+                # Run mosquitto_passwd
+                subprocess.run(cmd, capture_output=True, text=True, check=True)
+
+                # Set appropriate file permissions for Docker
+                # Mosquitto container needs to read the file
+                passwd_path.chmod(0o644)
+
+                print(f"Generated passwd file: {passwd_path}")
+
+            except subprocess.CalledProcessError as e:
+                print(f"Error generating password file: {e}")
+                if e.stderr:
+                    print(f"stderr: {e.stderr}")
+                if e.stdout:
+                    print(f"stdout: {e.stdout}")
+                return False
+            except Exception as e:
+                print(f"Error generating password file: {e}")
+                return False
 
             # Generate ACL file if enabled
             if broker_config.acl_enabled:
