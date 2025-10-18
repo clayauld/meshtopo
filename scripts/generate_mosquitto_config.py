@@ -103,7 +103,7 @@ def generate_mosquitto_config(
                     "run",
                     "--rm",
                     "-v",
-                    f"{passwd_path.parent}:/data",
+                    f"{passwd_path.parent}:/data",  # noqa: E231
                     "eclipse-mosquitto:2.0",
                     "mosquitto_passwd",
                     "-c",
@@ -254,7 +254,8 @@ MQTT_ACL_MOUNT={acl_mount}
             # Set restrictive file permissions (owner read/write only)
             env_path.chmod(0o600)
             print(
-                "Use 'docker compose --profile mqtt up -d' to start with " "MQTT broker"
+                "Use 'docker compose --profile mqtt up -d' to start with "
+                "MQTT broker"
             )
 
         print("Mosquitto configuration generated successfully!")
