@@ -22,7 +22,7 @@ repos:
 
   # Python formatting
   - repo: https://github.com/psf/black
-    rev: 23.7.0
+    rev: 25.9.0
     hooks:
       - id: black
         language_version: python3
@@ -30,14 +30,14 @@ repos:
 
   # Python import sorting
   - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+    rev: 7.0.0
     hooks:
       - id: isort
         args: [--profile=black, --line-length=88]
 
   # Python linting
   - repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
+    rev: 7.3.0
     hooks:
       - id: flake8
         args:
@@ -46,7 +46,7 @@ repos:
 
   # Python type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.5.1
+    rev: v1.18.2
     hooks:
       - id: mypy
         additional_dependencies: [types-PyYAML, types-requests, types-WTForms]

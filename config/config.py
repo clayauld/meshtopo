@@ -4,10 +4,13 @@ Configuration management for the Meshtopo gateway service using Pydantic.
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import yaml
 from pydantic import BaseModel, Field, model_validator
+
+# Constants
+_LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 
 class MqttUser(BaseModel):
@@ -49,7 +52,7 @@ class CalTopoConfig(BaseModel):
     connect_key: Optional[str] = None
     group: Optional[str] = None
 
-    @model_validator(mode="after")
+    @model_validator(mode="after")  # type: ignore[misc]
     def check_at_least_one_mode(self) -> "CalTopoConfig":
         if not self.connect_key and not self.group:
             raise ValueError(
@@ -71,7 +74,7 @@ class LoggingConfig(BaseModel):
     """Logging configuration."""
 
     level: str = "INFO"
-    format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    format: str = _LOG_FORMAT
     file: FileLoggingConfig = Field(default_factory=FileLoggingConfig)
 
 
@@ -110,11 +113,14 @@ class Config(BaseModel):
 
         try:
             with open(config_file, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(f)
+                data: Any = yaml.safe_load(f)
         except yaml.YAMLError as e:
             raise yaml.YAMLError(f"Failed to parse YAML configuration: {e}")
 
-        return cls.model_validate(data)
+        if isinstance(data, dict):
+            return cls.model_validate(data)  # type: ignore
+        else:
+            raise TypeError("Config file must be a dictionary")
 
     def get_node_device_id(self, node_id: str) -> Optional[str]:
         """

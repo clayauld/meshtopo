@@ -74,17 +74,10 @@ test-gateway:
 test-mqtt:
 	python3 -m pytest tests/test_mqtt_topic_format.py -v
 
-# Run linting
-lint:
-	flake8 . --max-line-length=88 --extend-ignore=E203,W503 --exclude=archived/
-	mypy . --ignore-missing-imports --exclude=archived/
-	@echo "Linting complete!"
-
-# Format code
+# Format and lint code using pre-commit
 format:
-	black . --line-length=88 --target-version=py39 --exclude=archived/
-	isort . --profile=black --line-length=88 --skip=archived/
-	@echo "Code formatting complete!"
+	pre-commit run --all-files
+	@echo "Code formatting and linting complete!"
 
 # Clean up temporary files
 clean:

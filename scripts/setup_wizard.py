@@ -49,9 +49,7 @@ def main() -> None:
         mqtt_host = config.get("mqtt", {}).get("host", "")
         config["mqtt"]["host"] = input(f"MQTT Host [{mqtt_host}]: ") or mqtt_host
         mqtt_port = config.get("mqtt", {}).get("port", 1883)
-        config["mqtt"]["port"] = int(
-            input(f"MQTT Port [{mqtt_port}]: ") or mqtt_port
-        )
+        config["mqtt"]["port"] = int(input(f"MQTT Port [{mqtt_port}]: ") or mqtt_port)
         mqtt_user = config.get("mqtt", {}).get("user", "")
         config["mqtt"]["user"] = input(f"MQTT User [{mqtt_user}]: ") or mqtt_user
         mqtt_pass = config.get("mqtt", {}).get("password", "")
@@ -94,7 +92,7 @@ def main() -> None:
                 ],
                 check=True,
                 capture_output=True,
-                text=.True,
+                text=True,
             )
             print(f"Successfully created password file at '{MOSQUITTO_PASSWD_FILE}'.")
         except FileNotFoundError:
