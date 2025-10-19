@@ -11,6 +11,7 @@ from typing import Any, Dict, Optional, Union
 from caltopo_reporter import CalTopoReporter
 from config.config import Config
 from mqtt_client import MqttClient
+from sqlitedict import SqliteDict
 
 
 class GatewayApp:
@@ -41,9 +42,13 @@ class GatewayApp:
             "start_time": 0.0,
         }
 
-        # Node ID mapping: numeric ID -> hardware ID -> callsign
-        self.node_id_mapping: Dict[str, str] = {}
-        self.callsign_mapping: Dict[str, str] = {}  # hardware_id -> callsign
+        # Persistent state using sqlitedict
+        self.node_id_mapping: Dict[str, str] = SqliteDict(
+            "meshtopo_state.sqlite", tablename="node_id_mapping", autocommit=True
+        )
+        self.callsign_mapping: Dict[str, str] = SqliteDict(
+            "meshtopo_state.sqlite", tablename="callsign_mapping", autocommit=True
+        )
         self.configured_devices: set = (
             set()
         )  # Track which devices are in the nodes config
@@ -320,7 +325,7 @@ class GatewayApp:
 
         # Get GROUP for this device (if using group-based API)
         group = None
-        if self.config is not None and self.config.caltopo.has_group:
+        if self.config is not None and self.config.caltopo.group:
             group = self.config.get_node_group(hardware_id)
 
         success = self.caltopo_reporter.send_position_update(

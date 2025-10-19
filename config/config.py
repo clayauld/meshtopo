@@ -1,26 +1,24 @@
 """
-Configuration management for the Meshtopo gateway service.
+Configuration management for the Meshtopo gateway service using Pydantic.
 """
 
 import logging
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import yaml
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
-@dataclass
-class MqttUser:
+class MqttUser(BaseModel):
     """MQTT user configuration."""
 
     username: str
     password: str
-    acl: str = "readwrite"  # "read", "write", "readwrite"
+    acl: str = "readwrite"
 
 
-@dataclass
-class MqttConfig:
+class MqttConfig(BaseModel):
     """MQTT broker configuration."""
 
     broker: str
@@ -32,8 +30,7 @@ class MqttConfig:
     use_internal_broker: bool = False
 
 
-@dataclass
-class MqttBrokerConfig:
+class MqttBrokerConfig(BaseModel):
     """Internal MQTT broker configuration."""
 
     enabled: bool = False
@@ -42,55 +39,24 @@ class MqttBrokerConfig:
     persistence: bool = True
     max_connections: int = 1000
     allow_anonymous: bool = False
-    users: List[MqttUser] = field(default_factory=list)
+    users: List[MqttUser] = Field(default_factory=list)
     acl_enabled: bool = False
 
 
-@dataclass
-class CalTopoConfig:
+class CalTopoConfig(BaseModel):
     """CalTopo API configuration."""
 
     connect_key: Optional[str] = None
     group: Optional[str] = None
 
-    def __post_init__(self) -> None:
-        """Validate that at least one mode is configured and both are valid."""
-        # Normalize None values to empty strings for easier checking
-        connect_key = self.connect_key or ""
-        group = self.group or ""
-
-        # Check for empty values first
-        if self.connect_key is not None and not connect_key.strip():
-            raise ValueError("connect_key cannot be empty if provided")
-
-        if self.group is not None and not group.strip():
-            raise ValueError("group cannot be empty if provided")
-
-        # Check that at least one mode is configured with non-empty values
-        has_valid_connect_key = bool(connect_key.strip())
-        has_valid_group = bool(group.strip())
-
-        if not has_valid_connect_key and not has_valid_group:
-            raise ValueError("At least one of connect_key or group must be configured")
-
-    @property
-    def has_connect_key(self) -> bool:
-        """Check if connect_key mode is configured."""
-        return self.connect_key is not None and bool(self.connect_key.strip())
-
-    @property
-    def has_group(self) -> bool:
-        """Check if group mode is configured."""
-        return self.group is not None and bool(self.group.strip())
-
-    @property
-    def has_both_modes(self) -> bool:
-        """Check if both modes are configured."""
-        return self.has_connect_key and self.has_group
+    @model_validator(mode='after')
+    def check_at_least_one_mode(self):
+        if not self.connect_key and not self.group:
+            raise ValueError("At least one of 'connect_key' or 'group' must be configured.")
+        return self
 
 
-@dataclass
-class FileLoggingConfig:
+class FileLoggingConfig(BaseModel):
     """File logging configuration."""
 
     enabled: bool = False
@@ -99,56 +65,41 @@ class FileLoggingConfig:
     backup_count: int = 5
 
 
-@dataclass
-class LoggingConfig:
+class LoggingConfig(BaseModel):
     """Logging configuration."""
 
     level: str = "INFO"
     format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    file: FileLoggingConfig = field(default_factory=FileLoggingConfig)
+    file: FileLoggingConfig = Field(default_factory=FileLoggingConfig)
 
 
-@dataclass
-class NodeMapping:
+class NodeMapping(BaseModel):
     """Node mapping configuration."""
 
     device_id: str
     group: Optional[str] = None
 
 
-@dataclass
-class DeviceConfig:
+class DeviceConfig(BaseModel):
     """Device management configuration."""
 
     allow_unknown_devices: bool = True
 
 
-@dataclass
-class Config:
+class Config(BaseModel):
     """Main configuration class."""
 
     mqtt: MqttConfig
     caltopo: CalTopoConfig
     nodes: Dict[str, NodeMapping]
     logging: LoggingConfig
-    mqtt_broker: MqttBrokerConfig = field(default_factory=MqttBrokerConfig)
-    devices: DeviceConfig = field(default_factory=DeviceConfig)
+    mqtt_broker: MqttBrokerConfig = Field(default_factory=MqttBrokerConfig)
+    devices: DeviceConfig = Field(default_factory=DeviceConfig)
 
     @classmethod
     def from_file(cls, config_path: str) -> "Config":
         """
         Load configuration from a YAML file.
-
-        Args:
-            config_path: Path to the configuration file
-
-        Returns:
-            Config: Loaded configuration object
-
-        Raises:
-            FileNotFoundError: If the config file doesn't exist
-            yaml.YAMLError: If the YAML file is malformed
-            ValueError: If required configuration is missing
         """
         config_file = Path(config_path)
 
@@ -161,148 +112,11 @@ class Config:
         except yaml.YAMLError as e:
             raise yaml.YAMLError(f"Failed to parse YAML configuration: {e}")
 
-        return cls._from_dict(data)
-
-    @classmethod
-    def _from_dict(cls, data: Dict[str, Any]) -> "Config":
-        """
-        Create Config object from dictionary data.
-
-        Args:
-            data: Configuration data dictionary
-
-        Returns:
-            Config: Configuration object
-
-        Raises:
-            ValueError: If required configuration is missing
-        """
-        # Validate required sections
-        required_sections = ["mqtt", "caltopo", "nodes"]
-        for section in required_sections:
-            if section not in data:
-                raise ValueError(f"Missing required configuration section: {section}")
-
-        # Validate MQTT configuration
-        mqtt_data = data["mqtt"]
-        required_mqtt_keys = ["broker", "port", "username", "password", "topic"]
-        for key in required_mqtt_keys:
-            if key not in mqtt_data:
-                raise ValueError(f"Missing required MQTT configuration: {key}")
-            # Check that string values are not empty
-            if key in ["broker", "topic"] and (
-                not mqtt_data[key] or not str(mqtt_data[key]).strip()
-            ):
-                raise ValueError(f"MQTT {key} cannot be empty")
-
-        mqtt_config = MqttConfig(
-            broker=mqtt_data["broker"],
-            port=int(mqtt_data["port"]),
-            username=mqtt_data["username"],
-            password=mqtt_data["password"],
-            topic=mqtt_data["topic"],
-            keepalive=int(mqtt_data.get("keepalive", 60)),
-            use_internal_broker=mqtt_data.get("use_internal_broker", False),
-        )
-
-        # Validate CalTopo configuration
-        caltopo_data = data["caltopo"]
-
-        # Create the config object - dataclass __post_init__ will validate values
-        caltopo_config = CalTopoConfig(
-            connect_key=caltopo_data.get("connect_key"),
-            group=caltopo_data.get("group"),
-        )
-
-        # Validate and process node mappings
-        nodes_data = data["nodes"]
-        if not isinstance(nodes_data, dict):
-            raise ValueError("Nodes configuration must be a dictionary")
-
-        nodes = {}
-        for node_id, node_config in nodes_data.items():
-            if not isinstance(node_config, dict) or "device_id" not in node_config:
-                raise ValueError(
-                    f"Invalid node configuration for {node_id}: missing device_id"
-                )
-
-            # Check that device_id is not empty
-            if (
-                not node_config["device_id"]
-                or not str(node_config["device_id"]).strip()
-            ):
-                raise ValueError(f"Node {node_id} device_id cannot be empty")
-
-            nodes[node_id] = NodeMapping(
-                device_id=node_config["device_id"],
-                group=node_config.get("group"),
-            )
-
-        # Process logging configuration (optional)
-        logging_data = data.get("logging", {})
-        file_data = logging_data.get("file", {})
-        file_logging_config = FileLoggingConfig(
-            enabled=file_data.get("enabled", False),
-            path=file_data.get("path", "/app/logs/meshtopo.log"),
-            max_size=file_data.get("max_size", "10MB"),
-            backup_count=file_data.get("backup_count", 5),
-        )
-
-        logging_config = LoggingConfig(
-            level=logging_data.get("level", "INFO"),
-            format=logging_data.get(
-                "format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            ),
-            file=file_logging_config,
-        )
-
-        # Process MQTT broker configuration (optional)
-        mqtt_broker_data = data.get("mqtt_broker", {})
-        mqtt_users = []
-        for user_data in mqtt_broker_data.get("users", []):
-            if isinstance(user_data, dict):
-                mqtt_user = MqttUser(
-                    username=user_data.get("username", ""),
-                    password=user_data.get("password", ""),
-                    acl=user_data.get("acl", "readwrite"),
-                )
-                mqtt_users.append(mqtt_user)
-
-        mqtt_broker_config = MqttBrokerConfig(
-            enabled=mqtt_broker_data.get("enabled", False),
-            port=mqtt_broker_data.get("port", 1883),
-            websocket_port=mqtt_broker_data.get("websocket_port", 9001),
-            persistence=mqtt_broker_data.get("persistence", True),
-            max_connections=mqtt_broker_data.get("max_connections", 1000),
-            allow_anonymous=mqtt_broker_data.get("allow_anonymous", False),
-            users=mqtt_users,
-            acl_enabled=mqtt_broker_data.get("acl_enabled", False),
-        )
-
-        # Process device configuration (optional)
-        devices_data = data.get("devices", {})
-        device_config = DeviceConfig(
-            allow_unknown_devices=devices_data.get("allow_unknown_devices", True),
-        )
-
-        return cls(
-            mqtt=mqtt_config,
-            caltopo=caltopo_config,
-            nodes=nodes,
-            logging=logging_config,
-            mqtt_broker=mqtt_broker_config,
-            devices=device_config,
-        )
+        return cls.model_validate(data)
 
     def get_node_device_id(self, node_id: str) -> Optional[str]:
         """
         Get the CalTopo device ID for a given Meshtastic node ID.
-
-        Args:
-            node_id: Meshtastic hardware node ID
-
-        Returns:
-            str: CalTopo device ID if mapped, None otherwise
         """
         node_mapping = self.nodes.get(node_id)
         return node_mapping.device_id if node_mapping else None
@@ -310,21 +124,10 @@ class Config:
     def get_node_group(self, node_id: str) -> Optional[str]:
         """
         Get the GROUP for a given Meshtastic node ID.
-
-        Checks for per-device GROUP override first, then falls back to global GROUP.
-
-        Args:
-            node_id: Meshtastic hardware node ID
-
-        Returns:
-            str: GROUP if configured (per-device or global), None otherwise
         """
-        # Check for per-device GROUP override
         node_mapping = self.nodes.get(node_id)
         if node_mapping and node_mapping.group:
             return node_mapping.group
-
-        # Fall back to global GROUP
         return self.caltopo.group
 
     def setup_logging(self) -> None:
@@ -337,6 +140,5 @@ class Config:
             level=log_level, format=self.logging.format, datefmt="%Y-%m-%d %H:%M:%S"
         )
 
-        # Set specific loggers to appropriate levels
         logging.getLogger("paho.mqtt").setLevel(logging.WARNING)
         logging.getLogger("urllib3").setLevel(logging.WARNING)

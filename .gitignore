@@ -79,3 +79,4 @@ archived/
 # Beads database
 .beads/*.db
 .beads/*.db-*
+meshtopo_state.sqlite
