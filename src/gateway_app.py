@@ -8,10 +8,11 @@ import sys
 import time
 from typing import Any, Dict, Optional, Union
 
+from sqlitedict import SqliteDict
+
 from caltopo_reporter import CalTopoReporter
 from config.config import Config
 from mqtt_client import MqttClient
-from sqlitedict import SqliteDict
 
 
 class GatewayApp:

@@ -15,7 +15,9 @@ from config.config import Config
 class TestCalTopoModes:
     """Test CalTopo configuration modes."""
 
-    def create_config_file(self, caltopo_config: dict, missing_logging: bool = False) -> str:
+    def create_config_file(
+        self, caltopo_config: dict, missing_logging: bool = False
+    ) -> str:
         """Create a temporary config file with the given CalTopo configuration."""
         config_data = {
             "mqtt": {

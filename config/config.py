@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import yaml
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 
 class MqttUser(BaseModel):
@@ -49,10 +49,12 @@ class CalTopoConfig(BaseModel):
     connect_key: Optional[str] = None
     group: Optional[str] = None
 
-    @model_validator(mode='after')
-    def check_at_least_one_mode(self):
+    @model_validator(mode="after")
+    def check_at_least_one_mode(self) -> "CalTopoConfig":
         if not self.connect_key and not self.group:
-            raise ValueError("At least one of 'connect_key' or 'group' must be configured.")
+            raise ValueError(
+                "At least one of 'connect_key' or 'group' must be configured."
+            )
         return self
 
 

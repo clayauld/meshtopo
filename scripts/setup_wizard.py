@@ -14,7 +14,7 @@ CONFIG_TEMPLATE = os.path.join(CONFIG_DIR, "config.yaml.basic")
 MOSQUITTO_PASSWD_FILE = "deploy/passwd"
 
 
-def main():
+def main() -> None:
     """The main function for the setup wizard."""
     print("--- Meshtopo Setup Wizard ---")
 
@@ -38,26 +38,24 @@ def main():
     print("\nPlease provide the following information:")
 
     # CalTopo
+    caltopo_key = config.get("caltopo", {}).get("connect_key", "")
     config["caltopo"]["connect_key"] = (
-        input(f"Enter your CalTopo 'Connect Key' [{config.get('caltopo', {}).get('connect_key', '')}]: ")
-        or config.get("caltopo", {}).get("connect_key", "")
+        input(f"Enter your CalTopo 'Connect Key' [{caltopo_key}]: ") or caltopo_key
     )
 
     # MQTT Broker (external)
     if not config.get("mqtt_broker", {}).get("enabled", False):
         print("\n--- External MQTT Broker ---")
-        config["mqtt"]["host"] = (
-            input(f"MQTT Host [{config.get('mqtt', {}).get('host', '')}]: ") or config.get("mqtt", {}).get("host", "")
-        )
+        mqtt_host = config.get("mqtt", {}).get("host", "")
+        config["mqtt"]["host"] = input(f"MQTT Host [{mqtt_host}]: ") or mqtt_host
+        mqtt_port = config.get("mqtt", {}).get("port", 1883)
         config["mqtt"]["port"] = int(
-            input(f"MQTT Port [{config.get('mqtt', {}).get('port', 1883)}]: ") or config.get("mqtt", {}).get("port", 1883)
+            input(f"MQTT Port [{mqtt_port}]: ") or mqtt_port
         )
-        config["mqtt"]["user"] = (
-            input(f"MQTT User [{config.get('mqtt', {}).get('user', '')}]: ") or config.get("mqtt", {}).get("user", "")
-        )
-        config["mqtt"]["password"] = (
-            getpass(f"MQTT Password: ") or config.get("mqtt", {}).get("password", "")
-        )
+        mqtt_user = config.get("mqtt", {}).get("user", "")
+        config["mqtt"]["user"] = input(f"MQTT User [{mqtt_user}]: ") or mqtt_user
+        mqtt_pass = config.get("mqtt", {}).get("password", "")
+        config["mqtt"]["password"] = getpass("MQTT Password: ") or mqtt_pass
 
     # Save configuration
     with open(CONFIG_FILE, "w") as f:
@@ -69,7 +67,10 @@ def main():
         print("\n--- Internal MQTT Broker Setup ---")
         mqtt_user = config.get("mqtt_broker", {}).get("user")
         if not mqtt_user:
-            print("ERROR: 'mqtt_broker.user' not set in config. Cannot create password file.")
+            print(
+                "ERROR: 'mqtt_broker.user' not set in config. "
+                "Cannot create password file."
+            )
             return
 
         print("Please set a password for the internal MQTT broker.")
@@ -84,10 +85,16 @@ def main():
 
         try:
             subprocess.run(
-                ["mosquitto_passwd", "-b", MOSQUITTO_PASSWD_FILE, mqtt_user, mqtt_password],
+                [
+                    "mosquitto_passwd",
+                    "-b",
+                    MOSQUITTO_PASSWD_FILE,
+                    mqtt_user,
+                    mqtt_password,
+                ],
                 check=True,
                 capture_output=True,
-                text=True,
+                text=.True,
             )
             print(f"Successfully created password file at '{MOSQUITTO_PASSWD_FILE}'.")
         except FileNotFoundError:
