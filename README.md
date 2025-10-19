@@ -13,6 +13,7 @@ A lightweight Python gateway service that bridges Meshtastic LoRa mesh networks 
 **Meshtopo** solves the communication gap between off-grid LoRa mesh networks (Meshtastic) and online mapping platforms (CalTopo). It acts as a reliable bridge that forwards location data from Meshtastic nodes directly to CalTopo maps, providing real-time situational awareness for backcountry coordinators, event organizers, and response teams.
 
 Key features include:
+
 - **Real-time Position Forwarding**: Automatically forwards Meshtastic position packets to CalTopo.
 - **Automatic Device Registration**: Devices automatically appear in CalTopo using their callsigns.
 - **Docker Deployment**: Easy deployment with Docker and Docker Compose.
@@ -24,23 +25,28 @@ Key features include:
 
 Get your Meshtopo gateway up and running with just three commands.
 
-1.  **Clone the repository:**
+1. **Clone the repository:**
+
     ```bash
     git clone https://github.com/clayauld/meshtopo.git
     ```
 
-2.  **Navigate into the directory:**
+2. **Navigate into the directory:**
+
     ```bash
     cd meshtopo
     ```
 
-3.  **Run the setup wizard:**
+3. **Run the setup wizard:**
+
     ```bash
     make setup
     ```
+
     The interactive wizard will guide you through creating your `config.yaml` file, entering your CalTopo connect key, and setting up the MQTT broker.
 
 Once the setup is complete, you can start the service using Docker:
+
 ```bash
 docker compose up -d
 ```
@@ -51,10 +57,10 @@ docker compose up -d
 
 The system follows a simple linear data flow:
 
-1.  **Meshtastic Network** → LoRa mesh nodes with an MQTT gateway feature enabled.
-2.  **MQTT Broker** → A central message broker (e.g., Mosquitto) that receives data from the Meshtastic network. This can be an external broker or the one integrated with Meshtopo.
-3.  **Meshtopo Gateway Service** → This Python service connects to the MQTT broker, filters and transforms the data, and forwards it to CalTopo.
-4.  **CalTopo Team Account** → The cloud mapping platform where your devices appear in real-time.
+1. **Meshtastic Network** → LoRa mesh nodes with an MQTT gateway feature enabled.
+2. **MQTT Broker** → A central message broker (e.g., Mosquitto) that receives data from the Meshtastic network. This can be an external broker or the one integrated with Meshtopo.
+3. **Meshtopo Gateway Service** → This Python service connects to the MQTT broker, filters and transforms the data, and forwards it to CalTopo.
+4. **CalTopo Team Account** → The cloud mapping platform where your devices appear in real-time.
 
 ---
 
@@ -109,13 +115,15 @@ Interested in contributing to Meshtopo? Here's how to get your development envir
 
 ### Setup
 
-1.  **Install dependencies**:
+1. **Install dependencies**:
+
     ```bash
     make install
     ```
 
-2.  **Set up the development environment**:
+2. **Set up the development environment**:
     This will install development dependencies and pre-commit hooks.
+
     ```bash
     make dev-setup
     ```
@@ -123,6 +131,7 @@ Interested in contributing to Meshtopo? Here's how to get your development envir
 ### Running Tests
 
 Run the full test suite:
+
 ```bash
 make test
 ```
@@ -132,10 +141,13 @@ make test
 The project follows PEP 8 guidelines and uses `black` for formatting and `flake8`/`mypy` for linting. The pre-commit hooks handle this automatically.
 
 - **Run linting checks:**
+
   ```bash
   make lint
   ```
+
 - **Format code:**
+
   ```bash
   make format
   ```
