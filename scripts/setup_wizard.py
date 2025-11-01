@@ -46,12 +46,16 @@ def main() -> None:
     # MQTT Broker (external)
     if not config.get("mqtt_broker", {}).get("enabled", False):
         print("\n--- External MQTT Broker ---")
-        mqtt_host = config.get("mqtt", {}).get("host", "")
-        config["mqtt"]["host"] = input(f"MQTT Host [{mqtt_host}]: ") or mqtt_host
+        mqtt_broker = config.get("mqtt", {}).get("broker", "")
+        config["mqtt"]["broker"] = (
+            input(f"MQTT Broker [{mqtt_broker}]: ") or mqtt_broker
+        )
         mqtt_port = config.get("mqtt", {}).get("port", 1883)
         config["mqtt"]["port"] = int(input(f"MQTT Port [{mqtt_port}]: ") or mqtt_port)
-        mqtt_user = config.get("mqtt", {}).get("user", "")
-        config["mqtt"]["user"] = input(f"MQTT User [{mqtt_user}]: ") or mqtt_user
+        mqtt_username = config.get("mqtt", {}).get("username", "")
+        config["mqtt"]["username"] = (
+            input(f"MQTT Username [{mqtt_username}]: ") or mqtt_username
+        )
         mqtt_pass = config.get("mqtt", {}).get("password", "")
         config["mqtt"]["password"] = getpass("MQTT Password: ") or mqtt_pass
 
@@ -63,45 +67,52 @@ def main() -> None:
     # Mosquitto password file
     if config.get("mqtt_broker", {}).get("enabled", False):
         print("\n--- Internal MQTT Broker Setup ---")
-        mqtt_user = config.get("mqtt_broker", {}).get("user")
-        if not mqtt_user:
-            print(
-                "ERROR: 'mqtt_broker.user' not set in config. "
-                "Cannot create password file."
-            )
+        mqtt_users = config.get("mqtt_broker", {}).get("users", [])
+        if not mqtt_users:
+            print("No users found in 'mqtt_broker.users'.")
             return
 
-        print("Please set a password for the internal MQTT broker.")
-        mqtt_password = getpass(f"Password for user '{mqtt_user}': ")
-        if not mqtt_password:
-            print("Password cannot be empty.")
-            return
-
-        # Create the password file
+        # Clear the password file
         with open(MOSQUITTO_PASSWD_FILE, "w") as f:
-            f.write("")  # Clear the file
+            f.write("")
 
-        try:
-            subprocess.run(
-                [
-                    "mosquitto_passwd",
-                    "-b",
-                    MOSQUITTO_PASSWD_FILE,
-                    mqtt_user,
-                    mqtt_password,
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            print(f"Successfully created password file at '{MOSQUITTO_PASSWD_FILE}'.")
-        except FileNotFoundError:
-            print(
-                "ERROR: 'mosquitto_passwd' command not found. "
-                "Is Mosquitto installed and in your PATH?"
-            )
-        except subprocess.CalledProcessError as e:
-            print(f"ERROR: Failed to create password file: {e.stderr}")
+        for user in mqtt_users:
+            username = user.get("username")
+            if not username:
+                print("Skipping user with no username.")
+                continue
+
+            print(f"Setting password for user '{username}'.")
+            password = getpass("Password: ")
+            if not password:
+                print("Password cannot be empty. Skipping user.")
+                continue
+
+            try:
+                subprocess.run(
+                    [
+                        "mosquitto_passwd",
+                        "-b",
+                        MOSQUITTO_PASSWD_FILE,
+                        username,
+                        password,
+                    ],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+                print(f"Successfully updated password for user '{username}'.")
+            except FileNotFoundError:
+                print(
+                    "ERROR: 'mosquitto_passwd' command not found. "
+                    "Is Mosquitto installed and in your PATH?"
+                )
+                return
+            except subprocess.CalledProcessError as e:
+                print(
+                    f"ERROR: Failed to update password for user '{username}': "
+                    f"{e.stderr}"
+                )
 
 
 if __name__ == "__main__":

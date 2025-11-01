@@ -163,9 +163,20 @@ class GatewayApp:
         if self.caltopo_reporter:
             self.caltopo_reporter.close()
 
+        # Close database connections
+        self.close()
+
         # Log final statistics
         self._log_statistics()
         self.logger.info("Gateway service stopped")
+
+    def close(self) -> None:
+        """Close all resources."""
+        self.logger.info("Closing database connections...")
+        if isinstance(self.node_id_mapping, SqliteDict):
+            self.node_id_mapping.close()
+        if isinstance(self.callsign_mapping, SqliteDict):
+            self.callsign_mapping.close()
 
     def _process_message(self, data: Dict[str, Any]) -> None:
         """
