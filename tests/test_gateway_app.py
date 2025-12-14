@@ -52,7 +52,7 @@ class TestGatewayApp:
     def test_init(self):
         app = GatewayApp("config.yaml")
         assert app.config_path == "config.yaml"
-        assert not app.stop_event.is_set()
+        assert app.stop_event is None
         assert app.stats["messages_received"] == 0
 
     @patch("gateway_app.MqttClient")
@@ -126,6 +126,7 @@ class TestGatewayApp:
     async def test_stop(self, app):
         app.mqtt_client = Mock()
         app.caltopo_reporter = AsyncMock()  # async close
+        app.stop_event = asyncio.Event()
 
         await app.stop()
 

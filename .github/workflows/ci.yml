@@ -242,6 +242,25 @@ jobs:
             });
           }
 
+  integration-test:
+    name: 🔄 Integration Test
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install test dependencies
+        run: pip install pytest httpx paho-mqtt
+
+      - name: Run Integration Tests
+        run: |
+          python -m pytest tests/integration/test_integration.py -v -s
+
   docker:
     name: 🐳 Docker Build
     runs-on: ubuntu-latest

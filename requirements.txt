@@ -1,5 +1,6 @@
 # Asyncio support
 asyncio-mqtt==0.16.1
+paho-mqtt<2.0.0
 httpx==0.24.1
 # Configuration and Serialization
 PyYAML==6.0.3

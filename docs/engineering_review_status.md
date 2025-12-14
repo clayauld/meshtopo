@@ -26,7 +26,7 @@ This document tracks the progress of the engineering review and modernization ro
 
 | Initiative                     | Key Activities                                                  | Status                           |
 | :----------------------------- | :-------------------------------------------------------------- | :------------------------------- |
-| **Automate Release Lifecycle** | 1. Enforce Conventional Commits standard.                       | :red_circle: **Pending**         |
-|                                | 2. Integrate `python-semantic-release` into the CI/CD pipeline. | :red_circle: **Pending**         |
-| **Optimize CI/CD Pipeline**    | 1. Add an integration test stage using Docker Compose.          | :red_circle: **Pending**         |
+| **Automate Release Lifecycle** | 1. Enforce Conventional Commits standard.                       | :white_check_mark: **Completed** |
+|                                | 2. Integrate `python-semantic-release` into the CI/CD pipeline. | :white_check_mark: **Completed** |
+| **Optimize CI/CD Pipeline**    | 1. Add an integration test stage using Docker Compose.          | :white_check_mark: **Completed** |
 |                                | 2. Optimize `Dockerfile` layer caching.                         | :white_check_mark: **Completed** |

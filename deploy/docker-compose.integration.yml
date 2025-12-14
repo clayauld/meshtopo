@@ -1,0 +1,31 @@
+services:
+  gateway:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    environment:
+      - MQTT_BROKER_HOST=mosquitto
+      - MQTT_BROKER_PORT=1883
+      - CALTOPO_CONNECT_KEY=test_key
+      - CALTOPO_URL=http://mock-server:8080/api/v1/position/report
+      - LOG_LEVEL=DEBUG
+    depends_on:
+      - mosquitto
+      - mock-server
+    volumes:
+      - ../config/config.yaml.docker:/app/config/config.yaml
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    command: mosquitto -c /mosquitto-no-auth.conf
+    volumes:
+       - ./mosquitto-no-auth.conf:/mosquitto-no-auth.conf
+    ports:
+      - "1883:1883"
+
+  mock-server:
+    build:
+      context: ../tests/integration
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"

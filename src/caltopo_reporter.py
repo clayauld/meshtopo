@@ -4,6 +4,7 @@ CalTopo API integration for sending position reports.
 
 import asyncio
 import logging
+import os
 import re
 import secrets
 from typing import Any, Optional
@@ -17,7 +18,7 @@ class CalTopoReporter:
     Handles communication with the CalTopo Position Report API.
     """
 
-    BASE_URL = "https://caltopo.com/api/v1/position/report"
+    BASE_URL = os.getenv("CALTOPO_URL", "https://caltopo.com/api/v1/position/report")
 
     def __init__(self, config: Any) -> None:
         """

@@ -31,7 +31,7 @@ class GatewayApp:
         self.config: Optional[Config] = None
         self.mqtt_client: Optional[MqttClient] = None
         self.caltopo_reporter: Optional[CalTopoReporter] = None
-        self.stop_event = asyncio.Event()
+        self.stop_event: Optional[asyncio.Event] = None
         self.logger = logging.getLogger(__name__)
 
         # Statistics
@@ -98,6 +98,9 @@ class GatewayApp:
             self.configured_devices = set(self.config.nodes.keys())
             self.logger.info(f"Configured devices: {self.configured_devices}")
 
+            # Create stop event in the running loop
+            self.stop_event = asyncio.Event()
+
             self.logger.info("Application initialized successfully")
             return True
 
@@ -137,6 +140,8 @@ class GatewayApp:
             self.logger.info("Gateway service started successfully")
 
             # Wait for stop event
+            if not self.stop_event:
+                raise RuntimeError("GatewayApp not initialized: stop_event is None")
             await self.stop_event.wait()
 
             # Cancel tasks
@@ -155,7 +160,7 @@ class GatewayApp:
 
     async def _stats_loop(self) -> None:
         """Log statistics periodically."""
-        while not self.stop_event.is_set():
+        while self.stop_event and not self.stop_event.is_set():
             await asyncio.sleep(60)
             self._log_statistics()
 
@@ -164,7 +169,8 @@ class GatewayApp:
         Stop the gateway service gracefully.
         """
         self.logger.info("Stopping gateway service...")
-        self.stop_event.set()
+        if self.stop_event:
+            self.stop_event.set()
 
         # Close CalTopo reporter
         if self.caltopo_reporter:

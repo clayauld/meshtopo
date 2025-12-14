@@ -15,7 +15,8 @@ help:
 	@echo "Development:"
 	@echo "  install      Install dependencies"
 	@echo "  dev-setup    Setup development environment"
-	@echo "  test         Run all tests"
+	@echo "  test         Run tests (excludes slow integration tests)"
+	@echo "  test-full    Run all tests including integration tests"
 	@echo "  test-config  Run configuration tests"
 	@echo "  test-gateway Run gateway tests"
 	@echo "  test-mqtt    Run MQTT topic format tests"
@@ -60,8 +61,12 @@ dev-setup: install
 	python3 -m pre_commit install
 	@echo "Development environment setup complete!"
 
-# Run tests
+# Run tests (excludes slow integration tests)
 test:
+	python3 -m pytest -m "not integration" tests/ -v --tb=short
+
+# Run all tests including integration tests
+test-full:
 	python3 -m pytest tests/ -v --tb=short
 
 # Run specific test modules

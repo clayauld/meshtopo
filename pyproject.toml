@@ -169,6 +169,7 @@ exclude_lines = [
 ]
 [tool.semantic_release]
 version_variables = ["pyproject.toml:version"]
+version_toml = ["pyproject.toml:project.version"]
 version_source = "tag"
 commit_version_number = true
 upload_to_pypi = false
