@@ -52,9 +52,19 @@ class CalTopoConfig(BaseModel):
     connect_key: Optional[str] = None
     group: Optional[str] = None
 
+    @property
+    def has_connect_key(self) -> bool:
+        """Check if connect_key is configured and valid."""
+        return bool(self.connect_key and self.connect_key.strip())
+
+    @property
+    def has_group(self) -> bool:
+        """Check if group is configured and valid."""
+        return bool(self.group and self.group.strip())
+
     @model_validator(mode="after")  # type: ignore[misc]
     def check_at_least_one_mode(self) -> "CalTopoConfig":
-        if not self.connect_key and not self.group:
+        if not self.has_connect_key and not self.has_group:
             raise ValueError(
                 "At least one of 'connect_key' or 'group' must be configured."
             )

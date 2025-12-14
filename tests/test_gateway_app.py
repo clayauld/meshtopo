@@ -15,6 +15,9 @@ def mock_config():
     config.get_node_device_id.side_effect = lambda x: {"!823a4edc": "TEAM-LEAD"}.get(x)
     config.devices.allow_unknown_devices = False
     config.caltopo.group = None
+    config.caltopo.has_group = False
+    config.caltopo.connect_key = "key"
+    config.caltopo.has_connect_key = True
     return config
 
 

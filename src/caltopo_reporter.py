@@ -86,13 +86,13 @@ class CalTopoReporter:
         total_attempts = 0
 
         # Send to connect_key endpoint if configured
-        if self.config.caltopo.connect_key:
+        if self.config.caltopo.has_connect_key:
             total_attempts += 1
             if self._send_to_connect_key(callsign, latitude, longitude):
                 success_count += 1
 
         # Send to group endpoint if configured
-        if self.config.caltopo.group:
+        if self.config.caltopo.has_group:
             total_attempts += 1
             group_to_use = group or self.config.caltopo.group
             if self._send_to_group(callsign, latitude, longitude, group_to_use):
@@ -210,9 +210,9 @@ class CalTopoReporter:
             str: Complete API URL
         """
         # For backward compatibility, prefer connect_key if available
-        if self.config.caltopo.connect_key:
+        if self.config.caltopo.has_connect_key:
             url = f"{self.BASE_URL}/{self.config.caltopo.connect_key}"
-        elif self.config.caltopo.group:
+        elif self.config.caltopo.has_group:
             group_to_use = group or self.config.caltopo.group
             if not group_to_use:
                 raise ValueError("GROUP is required for group-based API mode")
@@ -239,13 +239,13 @@ class CalTopoReporter:
         total_attempts = 0
 
         # Test connect_key endpoint if configured
-        if self.config.caltopo.connect_key:
+        if self.config.caltopo.has_connect_key:
             total_attempts += 1
             if self._test_connect_key_endpoint():
                 success_count += 1
 
         # Test group endpoint if configured
-        if self.config.caltopo.group:
+        if self.config.caltopo.has_group:
             total_attempts += 1
             if self._test_group_endpoint():
                 success_count += 1
