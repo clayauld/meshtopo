@@ -30,7 +30,7 @@ classifiers = [
 
 dependencies = [
     "paho-mqtt==1.6.1",
-    "requests==2.32.4",
+    "requests==2.32.5",
     "PyYAML==6.0.1",
 ]
 
