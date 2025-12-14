@@ -51,7 +51,13 @@ def main() -> None:
             input(f"MQTT Broker [{mqtt_broker}]: ") or mqtt_broker
         )
         mqtt_port = config.get("mqtt", {}).get("port", 1883)
-        config["mqtt"]["port"] = int(input(f"MQTT Port [{mqtt_port}]: ") or mqtt_port)
+        while True:
+            try:
+                port_input = input(f"MQTT Port [{mqtt_port}]: ")
+                config["mqtt"]["port"] = int(port_input or mqtt_port)
+                break
+            except ValueError:
+                print("Invalid port. Please enter a number.")
         mqtt_username = config.get("mqtt", {}).get("username", "")
         config["mqtt"]["username"] = (
             input(f"MQTT Username [{mqtt_username}]: ") or mqtt_username
