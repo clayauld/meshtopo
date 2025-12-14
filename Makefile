@@ -62,12 +62,12 @@ fi
 # Install dependencies
 install:
 	$(VENV_CHECK)
-	pip3 install -r requirements.txt
+	pip3 install .
 
 # Setup development environment
 dev-setup: install
 	$(VENV_CHECK)
-	pip3 install -r requirements-dev.txt
+	pip3 install ".[dev]"
 	python3 -m pre_commit install
 	@echo "Development environment setup complete!"
 

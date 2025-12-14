@@ -85,5 +85,5 @@ The core logic is encapsulated in the `GatewayApp` class (`src/gateway_app.py`),
 * **Linting:** `flake8` and `mypy` are used for linting and type checking.
 * **Pre-commit Hooks:** The project uses pre-commit hooks to automatically enforce code style and linting before each commit.
 * **Configuration:** Application configuration is managed through a `config.yaml` file, with schema validation performed by `pydantic`.
-* **Dependencies:** Project dependencies are managed in `pyproject.toml` and `requirements.txt`.
+* **Dependencies:** Project dependencies are managed in `pyproject.toml`.
 * **Makefile:** A comprehensive `Makefile` provides commands for common development tasks such as installation, testing, and deployment.

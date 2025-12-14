@@ -419,11 +419,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc=4:14.2.0-1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy project definition for dependency installation
+COPY pyproject.toml .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir .
 
 # Copy application code
 COPY . .
