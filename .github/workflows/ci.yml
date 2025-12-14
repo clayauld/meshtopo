@@ -274,11 +274,11 @@ jobs:
         if: failure()
         run: |
           echo "=== Gateway Logs ==="
-          docker logs deploy-gateway-1 || echo "Gateway container not found"
+          docker compose -f deploy/docker-compose.integration.yml logs gateway || echo "Gateway service not found"
           echo "=== Mock Server Logs ==="
-          docker logs deploy-mock-server-1 || echo "Mock server container not found"
+          docker compose -f deploy/docker-compose.integration.yml logs mock-server || echo "Mock server service not found"
           echo "=== Mosquitto Logs ==="
-          docker logs deploy-mosquitto-1 || echo "Mosquitto container not found"
+          docker compose -f deploy/docker-compose.integration.yml logs mosquitto || echo "Mosquitto service not found"
 
       - name: Cleanup
         if: always()

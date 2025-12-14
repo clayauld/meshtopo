@@ -114,7 +114,17 @@ def docker_stack():
     yield
 
     logger.info("Dumping Gateway Logs...")
-    subprocess.run(["docker", "logs", "deploy-gateway-1"], check=False)
+    subprocess.run(
+        [
+            "docker",
+            "compose",
+            "-f",
+            "deploy/docker-compose.integration.yml",
+            "logs",
+            "gateway",
+        ],
+        check=False,
+    )
     logger.info("Stopping Docker Compose stack...")
     subprocess.run(
         [

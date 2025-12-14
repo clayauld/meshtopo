@@ -4,7 +4,7 @@ I have identified the following vulnerabilities in the code changes:
 
 File: src/caltopo_reporter.py
 
-L21: [MEDIUM] Server-Side Request Forgery (SSRF)
+L21: [MEDIUM] Server-Side Request Forgery (SSRF) - ✅ RESOLVED
 
 When the ALLOW_NON_PROD_CALTOPO_URL environment variable is set to true, the application is vulnerable to Server-Side Request Forgery (SSRF). The CALTOPO_URL environment variable is used to construct the base
 URL for API requests without sufficient validation, allowing an attacker to specify an arbitrary URL. This could be abused to make requests to internal services, scan internal networks, or interact with cloud
@@ -13,6 +13,8 @@ provider metadata endpoints.
 Suggested change:
 For development and testing, instead of allowing any URL, implement a more robust check. For example, allow localhost, 127.0.0.1, and perhaps a specific, non-routable test domain. If flexible endpoints are
 needed, use an explicit allow-list of domains/IPs in the configuration rather than a simple boolean flag.
+
+Resolution: Replaced ALLOW_NON_PROD_CALTOPO_URL boolean with CALTOPO_ALLOWED_URL_PATTERNS explicit allowlist (src/caltopo_reporter.py:L44-L72). URLs must match explicit patterns in test/dev mode or point to caltopo.com in production.
 
 File: src/gateway_app.py
 
