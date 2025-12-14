@@ -2,8 +2,8 @@
 Main gateway application that orchestrates MQTT and CalTopo communication.
 """
 
+import asyncio
 import logging
-import signal
 import sys
 import time
 from typing import Any, Dict, Optional, Union
@@ -31,7 +31,7 @@ class GatewayApp:
         self.config: Optional[Config] = None
         self.mqtt_client: Optional[MqttClient] = None
         self.caltopo_reporter: Optional[CalTopoReporter] = None
-        self.running = False
+        self.stop_event = asyncio.Event()
         self.logger = logging.getLogger(__name__)
 
         # Statistics
@@ -50,7 +50,7 @@ class GatewayApp:
             set()
         )  # Track which devices are in the nodes config
 
-    def initialize(self) -> bool:
+    async def initialize(self) -> bool:
         """
         Initialize the application components.
 
@@ -85,7 +85,7 @@ class GatewayApp:
             self.caltopo_reporter = CalTopoReporter(self.config)
 
             # Test CalTopo connectivity
-            if not self.caltopo_reporter.test_connection():
+            if not await self.caltopo_reporter.test_connection():
                 self.logger.warning(
                     "CalTopo API connectivity test failed, but continuing..."
                 )
@@ -105,21 +105,24 @@ class GatewayApp:
             self.logger.error(f"Failed to initialize application: {e}")
             return False
 
-    def start(self) -> None:
+    async def start(self) -> None:
         """
         Start the gateway service.
         """
         try:
-            if not self.initialize():
+            if not await self.initialize():
                 self.logger.error("Failed to initialize application. Exiting.")
                 sys.exit(1)
 
-            # Setup signal handlers for graceful shutdown
-            signal.signal(signal.SIGINT, self._signal_handler)
-            signal.signal(signal.SIGTERM, self._signal_handler)
+            # Setup signal handlers for graceful shutdown (managed by main loop really,
+            # but we can hook into asyncio loop too if needed, or just let the caller
+            # handle it.
+            # Gateway.py handles signals by calling stop().
+            # Note: signal.signal only works in main thread.
+            # We'll rely on the caller to cancel the tasks or set the stop event.
+            # But let's keep the logging here if logical.
 
             self.logger.info("Starting Meshtopo gateway service...")
-            self.running = True
             self.stats["start_time"] = time.time()
 
             # Connect to MQTT broker
@@ -127,45 +130,45 @@ class GatewayApp:
                 self.logger.error("MQTT client not initialized. Exiting.")
                 sys.exit(1)
 
-            if not self.mqtt_client.connect():
-                self.logger.error("Failed to connect to MQTT broker. Exiting.")
-                sys.exit(1)
+            # Create tasks
+            mqtt_task = asyncio.create_task(self.mqtt_client.run())
+            stats_task = asyncio.create_task(self._stats_loop())
 
             self.logger.info("Gateway service started successfully")
 
-            # Main loop
-            while self.running:
-                time.sleep(1)
+            # Wait for stop event
+            await self.stop_event.wait()
 
-                # Log statistics every 60 seconds
-                if (
-                    self.stats["start_time"]
-                    and (time.time() - self.stats["start_time"]) % 60 < 1
-                ):
-                    self._log_statistics()
+            # Cancel tasks
+            mqtt_task.cancel()
+            stats_task.cancel()
 
-        except KeyboardInterrupt:
-            self.logger.info("Received keyboard interrupt")
+            # Wait for tasks to finish (suppress cancellation errors)
+            await asyncio.gather(mqtt_task, stats_task, return_exceptions=True)
+
+        except asyncio.CancelledError:
+            self.logger.info("Service cancelled")
+        except Exception as e:
+            self.logger.error(f"Fatal error in service: {e}")
         finally:
-            self.stop()
+            await self.stop()
 
-    def stop(self) -> None:
+    async def _stats_loop(self) -> None:
+        """Log statistics periodically."""
+        while not self.stop_event.is_set():
+            await asyncio.sleep(60)
+            self._log_statistics()
+
+    async def stop(self) -> None:
         """
         Stop the gateway service gracefully.
         """
-        if not self.running:
-            return
-
         self.logger.info("Stopping gateway service...")
-        self.running = False
-
-        # Disconnect MQTT client
-        if self.mqtt_client:
-            self.mqtt_client.disconnect()
+        self.stop_event.set()
 
         # Close CalTopo reporter
         if self.caltopo_reporter:
-            self.caltopo_reporter.close()
+            await self.caltopo_reporter.close()
 
         # Close database connections
         self.close()
@@ -182,7 +185,7 @@ class GatewayApp:
         if self.callsign_mapping and hasattr(self.callsign_mapping, "close"):
             self.callsign_mapping.close()
 
-    def _process_message(self, data: Dict[str, Any]) -> None:
+    async def _process_message(self, data: Dict[str, Any]) -> None:
         """
         Process a message received from MQTT.
 
@@ -201,7 +204,7 @@ class GatewayApp:
             # Check message type and process accordingly
             message_type = data.get("type")
             if message_type == "position":
-                self._process_position_message(data, numeric_node_id)
+                await self._process_position_message(data, numeric_node_id)
             elif message_type == "nodeinfo":
                 self._process_nodeinfo_message(data, numeric_node_id)
             elif message_type == "telemetry":
@@ -226,7 +229,7 @@ class GatewayApp:
             self.logger.error(f"Error processing message: {e}")
             self.stats["errors"] += 1
 
-    def _process_position_message(
+    async def _process_position_message(
         self, data: Dict[str, Any], numeric_node_id: str
     ) -> None:
         """
@@ -349,7 +352,7 @@ class GatewayApp:
         if self.config is not None and self.config.caltopo.has_group:
             group = self.config.get_node_group(hardware_id)
 
-        success = self.caltopo_reporter.send_position_update(
+        success = await self.caltopo_reporter.send_position_update(
             callsign, latitude, longitude, group
         )
 
@@ -478,21 +481,6 @@ class GatewayApp:
         route = payload.get("route", [])
 
         self.logger.info(f"Traceroute from {numeric_node_id}: Route={route}")
-
-    def _signal_handler(self, signum: int, frame: Any) -> None:
-        """
-        Handle shutdown signals.
-
-        Args:
-            signum: Signal number
-            frame: Current stack frame
-        """
-        signal_name = signal.Signals(signum).name
-        self.logger.info(
-            f"Received signal {signal_name}, initiating graceful shutdown..."
-        )
-        self.stop()
-        sys.exit(0)
 
     def _log_statistics(self) -> None:
         """Log current statistics."""

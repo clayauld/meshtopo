@@ -12,6 +12,7 @@ Arguments:
     config_file    Path to configuration file (default: config.yaml)
 """
 
+import asyncio
 import sys
 from pathlib import Path
 
@@ -37,7 +38,7 @@ def main() -> None:
     app = GatewayApp(config_path)
 
     try:
-        app.start()
+        asyncio.run(app.start())
     except KeyboardInterrupt:
         print("\nReceived keyboard interrupt, shutting down...")
     except Exception as e:

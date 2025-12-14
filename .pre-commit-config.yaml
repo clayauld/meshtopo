@@ -97,6 +97,13 @@ repos:
       - id: markdownlint
         args: [--fix, --config, .markdownlint.json]
 
+  # Conventional Commits
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.27.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
   # Local hooks
   - repo: local
     hooks:

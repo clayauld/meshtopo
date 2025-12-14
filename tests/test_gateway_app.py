@@ -1,5 +1,5 @@
-import signal
-from unittest.mock import Mock, patch
+import asyncio
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -52,88 +52,102 @@ class TestGatewayApp:
     def test_init(self):
         app = GatewayApp("config.yaml")
         assert app.config_path == "config.yaml"
-        assert app.running is False
+        assert not app.stop_event.is_set()
         assert app.stats["messages_received"] == 0
 
     @patch("gateway_app.MqttClient")
     @patch("gateway_app.CalTopoReporter")
-    def test_initialize_success(self, MockReporter, MockMqtt, app):
+    @pytest.mark.asyncio
+    async def test_initialize_success(self, MockReporter, MockMqtt, app):
         app.config.setup_logging = Mock()
-        MockReporter.return_value.test_connection.return_value = True
 
-        assert app.initialize() is True
+        # Mock Reporter
+        mock_reporter_instance = MockReporter.return_value
+        mock_reporter_instance.test_connection = AsyncMock(return_value=True)
+
+        # Mock Mqtt Client
+        MockMqtt.return_value = Mock()  # The init is sync
+
+        assert await app.initialize() is True
 
         assert app.mqtt_client is not None
         assert app.caltopo_reporter is not None
         assert "!823a4edc" in app.configured_devices
 
-    def test_initialize_failure(self, app):
+    @pytest.mark.asyncio
+    async def test_initialize_failure(self, app):
         with patch(
             "gateway_app.Config.from_file",
             side_effect=Exception("Config Error"),
         ):
-            assert app.initialize() is False
+            assert await app.initialize() is False
 
     @patch("gateway_app.sys.exit")
-    @patch("gateway_app.signal.signal")
-    @patch("gateway_app.time.sleep")
-    def test_start_success(self, mock_sleep, mock_signal, mock_exit, app):
-        app.initialize = Mock(return_value=True)
+    @pytest.mark.asyncio
+    async def test_start_success(self, mock_exit, app):
+        app.initialize = AsyncMock(return_value=True)
         app.mqtt_client = Mock()
-        app.mqtt_client.connect.return_value = True
+        app.mqtt_client.run = AsyncMock()  # run is async
 
-        # Stop loop after one iteration
-        def stop(*args):
-            app.running = False
+        # We need to simulate the stop event being set eventually so start returns
+        async def trigger_stop():
+            await asyncio.sleep(0.1)
+            app.stop_event.set()
 
-        mock_sleep.side_effect = stop
+        asyncio.create_task(trigger_stop())
 
-        app.start()
+        # Start should wait until stop_event is set
+        await app.start()
 
-        assert app.mqtt_client.connect.called
+        assert app.mqtt_client.run.called
+        # Should call stats loop too, but that's internal async task
 
     @patch("gateway_app.sys.exit")
-    def test_start_init_failure(self, mock_exit, app):
-        app.initialize = Mock(return_value=False)
+    @pytest.mark.asyncio
+    async def test_start_init_failure(self, mock_exit, app):
+        app.initialize = AsyncMock(return_value=False)
         mock_exit.side_effect = SystemExit
         with pytest.raises(SystemExit):
-            app.start()
+            await app.start()
         mock_exit.assert_called_with(1)
 
     @patch("gateway_app.sys.exit")
-    def test_start_mqtt_connect_failure(self, mock_exit, app):
-        app.initialize = Mock(return_value=True)
-        app.mqtt_client = Mock()
-        app.mqtt_client.connect.return_value = False
+    @pytest.mark.asyncio
+    async def test_start_mqtt_not_init(self, mock_exit, app):
+        app.initialize = AsyncMock(return_value=True)
+        app.mqtt_client = None  # Not initialized
         mock_exit.side_effect = SystemExit
 
         with pytest.raises(SystemExit):
-            app.start()
+            await app.start()
         mock_exit.assert_called_with(1)
 
-    def test_stop(self, app):
-        app.running = True
+    @pytest.mark.asyncio
+    async def test_stop(self, app):
         app.mqtt_client = Mock()
-        app.caltopo_reporter = Mock()
+        app.caltopo_reporter = AsyncMock()  # async close
 
-        app.stop()
+        await app.stop()
 
-        assert app.running is False
-        assert app.mqtt_client.disconnect.called
+        assert app.stop_event.is_set()
         assert app.caltopo_reporter.close.called
+        # Database close called via app.close()
 
-    def test_process_message_no_type(self, app):
+    @pytest.mark.asyncio
+    async def test_process_message_no_type(self, app):
         # Should just return/log warning
-        app._process_message({"from": 123})
+        await app._process_message({"from": 123})
         assert app.stats["messages_received"] == 1
         assert app.stats["messages_processed"] == 0
 
-    def test_process_message_unknown_type(self, app):
-        app._process_message({"from": 123, "type": "unknown"})
+    @pytest.mark.asyncio
+    async def test_process_message_unknown_type(self, app):
+        await app._process_message({"from": 123, "type": "unknown"})
         assert app.stats["messages_received"] == 1
         assert app.stats["messages_processed"] == 0
 
     def test_process_nodeinfo_message(self, app):
+        # nodeinfo is still sync internal method, but called from async
         msg = {
             "from": 123,
             "type": "nodeinfo",
@@ -165,9 +179,11 @@ class TestGatewayApp:
         app._process_nodeinfo_message(msg, "789")
         assert app.callsign_mapping["!unknown2"] == "Short"
 
-    def test_process_position_message_success(self, app):
+    @pytest.mark.asyncio
+    async def test_process_position_message_success(self, app):
         app.caltopo_reporter = Mock()
-        app.caltopo_reporter.send_position_update.return_value = True
+        # send_position_update is async
+        app.caltopo_reporter.send_position_update = AsyncMock(return_value=True)
         app.node_id_mapping["123"] = "!823a4edc"
         app.callsign_mapping["!823a4edc"] = "TEAM-LEAD"
 
@@ -176,21 +192,24 @@ class TestGatewayApp:
             "payload": {"latitude_i": 100000000, "longitude_i": 200000000},
         }
 
-        app._process_position_message(msg, "123")
+        await app._process_position_message(msg, "123")
 
         app.caltopo_reporter.send_position_update.assert_called_with(
             "TEAM-LEAD", 10.0, 20.0, None
         )
         assert app.stats["position_updates_sent"] == 1
 
-    def test_process_position_message_no_payload(self, app):
+    @pytest.mark.asyncio
+    async def test_process_position_message_no_payload(self, app):
         app.caltopo_reporter = Mock()
-        app._process_position_message({}, "123")
+        app.caltopo_reporter.send_position_update = AsyncMock()
+        await app._process_position_message({}, "123")
         app.caltopo_reporter.send_position_update.assert_not_called()
 
-    def test_process_position_sender_fallback(self, app):
+    @pytest.mark.asyncio
+    async def test_process_position_sender_fallback(self, app):
         app.caltopo_reporter = Mock()
-        app.caltopo_reporter.send_position_update.return_value = True
+        app.caltopo_reporter.send_position_update = AsyncMock(return_value=True)
         # Not in mapping, but sender field present
         msg = {
             "type": "position",
@@ -198,13 +217,15 @@ class TestGatewayApp:
             "payload": {"latitude_i": 100000000, "longitude_i": 200000000},
         }
 
-        app._process_position_message(msg, "123")
+        await app._process_position_message(msg, "123")
 
         assert app.node_id_mapping["123"] == "!823a4edc"
         app.caltopo_reporter.send_position_update.assert_called()
 
-    def test_process_position_unknown_device_blocked(self, app):
+    @pytest.mark.asyncio
+    async def test_process_position_unknown_device_blocked(self, app):
         app.caltopo_reporter = Mock()
+        app.caltopo_reporter.send_position_update = AsyncMock()
         app.config.devices.allow_unknown_devices = False
         app.configured_devices = set(["!known"])
         app.node_id_mapping["999"] = "!unknown"
@@ -213,12 +234,14 @@ class TestGatewayApp:
             "type": "position",
             "payload": {"latitude_i": 100, "longitude_i": 200},
         }
-        app._process_position_message(msg, "999")
+        await app._process_position_message(msg, "999")
 
         app.caltopo_reporter.send_position_update.assert_not_called()
 
-    def test_process_position_unknown_device_allowed(self, app) -> None:
+    @pytest.mark.asyncio
+    async def test_process_position_unknown_device_allowed(self, app) -> None:
         app.caltopo_reporter = Mock()
+        app.caltopo_reporter.send_position_update = AsyncMock(return_value=True)
         app.config.devices.allow_unknown_devices = True
         app.configured_devices = set(["!known"])
         app.node_id_mapping["999"] = "!unknown"
@@ -227,18 +250,11 @@ class TestGatewayApp:
             "type": "position",
             "payload": {"latitude_i": 100, "longitude_i": 200},
         }
-        app._process_position_message(msg, "999")
+        await app._process_position_message(msg, "999")
 
         app.caltopo_reporter.send_position_update.assert_called_with(
             "!unknown", 0.00001, 0.00002, None
         )
-
-    def test_signal_handler(self, app):
-        with patch("gateway_app.sys.exit") as mock_exit:
-            app.stop = Mock()
-            app._signal_handler(signal.SIGINT, None)
-            app.stop.assert_called()
-            mock_exit.assert_called_with(0)
 
     def test_telemetry_message(self, app):
         msg = {"type": "telemetry", "payload": {"battery_level": 100}}

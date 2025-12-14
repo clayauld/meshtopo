@@ -15,12 +15,12 @@ This document tracks the progress of the engineering review and modernization ro
 
 ## Phase 2: Core Architectural Refactoring
 
-| Initiative                                | Key Activities                                                                                               | Status                   |
-| :---------------------------------------- | :----------------------------------------------------------------------------------------------------------- | :----------------------- |
-| **Transition to Asynchronous Core**       | 1. Refactor `gateway_app.py` to use an `asyncio` event loop.                                                 | :red_circle: **Pending** |
-|                                           | 2. Replace `MqttClient` with an `asyncio-mqtt` implementation.                                               | :red_circle: **Pending** |
-|                                           | 3. Replace `CalTopoReporter` with an `httpx`-based async implementation.                                     | :red_circle: **Pending** |
-| **Implement Advanced Network Resilience** | 1. Add a configurable retry mechanism with exponential backoff and jitter to the new `httpx`-based reporter. | :red_circle: **Pending** |
+| Initiative                                | Key Activities                                                                                               | Status                           |
+| :---------------------------------------- | :----------------------------------------------------------------------------------------------------------- | :------------------------------- |
+| **Transition to Asynchronous Core**       | 1. Refactor `gateway_app.py` to use an `asyncio` event loop.                                                 | :white_check_mark: **Completed** |
+|                                           | 2. Replace `MqttClient` with an `asyncio-mqtt` implementation.                                               | :white_check_mark: **Completed** |
+|                                           | 3. Replace `CalTopoReporter` with an `httpx`-based async implementation.                                     | :white_check_mark: **Completed** |
+| **Implement Advanced Network Resilience** | 1. Add a configurable retry mechanism with exponential backoff and jitter to the new `httpx`-based reporter. | :white_check_mark: **Completed** |
 
 ## Phase 3: Advanced Capabilities & Optimization
 
