@@ -72,47 +72,65 @@ def main() -> None:
             print("No users found in 'mqtt_broker.users'.")
             return
 
-        # Clear the password file
-        with open(MOSQUITTO_PASSWD_FILE, "w") as f:
-            f.write("")
+        # Create password file atomically by writing to a temporary file first.
+        tmp_passwd_file = MOSQUITTO_PASSWD_FILE + ".tmp"
+        try:
+            # Ensure the temp file does not exist from a previous failed run
+            if os.path.exists(tmp_passwd_file):
+                os.remove(tmp_passwd_file)
 
-        for user in mqtt_users:
-            username = user.get("username")
-            if not username:
-                print("Skipping user with no username.")
-                continue
+            all_users_processed_successfully = True
+            for user in mqtt_users:
+                username = user.get("username")
+                if not username:
+                    print("Skipping user with no username.")
+                    continue
 
-            print(f"Setting password for user '{username}'.")
-            password = getpass("Password: ")
-            if not password:
-                print("Password cannot be empty. Skipping user.")
-                continue
+                print(f"Setting password for user '{username}'.")
+                password = getpass("Password: ")
+                if not password:
+                    print("Password cannot be empty. Skipping user.")
+                    continue
 
-            try:
-                subprocess.run(
-                    [
-                        "mosquitto_passwd",
-                        "-b",
-                        MOSQUITTO_PASSWD_FILE,
-                        username,
-                        password,
-                    ],
-                    check=True,
-                    capture_output=True,
-                    text=True,
-                )
-                print(f"Successfully updated password for user '{username}'.")
-            except FileNotFoundError:
-                print(
-                    "ERROR: 'mosquitto_passwd' command not found. "
-                    "Is Mosquitto installed and in your PATH?"
-                )
-                return
-            except subprocess.CalledProcessError as e:
-                print(
-                    f"ERROR: Failed to update password for user '{username}': "
-                    f"{e.stderr}"
-                )
+                try:
+                    subprocess.run(
+                        [
+                            "mosquitto_passwd",
+                            "-b",
+                            tmp_passwd_file,
+                            username,
+                            password,
+                        ],
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    )
+                    print(f"Successfully staged password for user '{username}'.")
+                except FileNotFoundError:
+                    print(
+                        "ERROR: 'mosquitto_passwd' command not found. "
+                        "Is Mosquitto installed and in your PATH?"
+                    )
+                    all_users_processed_successfully = False
+                    break  # Abort if command is not found
+                except subprocess.CalledProcessError as e:
+                    print(
+                        f"ERROR: Failed to stage password for user '{username}': "
+                        f"{e.stderr}"
+                    )
+                    all_users_processed_successfully = False
+                    # Continue to the next user to identify all potential issues
+
+            if all_users_processed_successfully:
+                shutil.move(tmp_passwd_file, MOSQUITTO_PASSWD_FILE)
+                print(f"Successfully created password file at '{MOSQUITTO_PASSWD_FILE}'.")
+            else:
+                print("\nPassword file was not updated due to errors during the process.")
+
+        finally:
+            # Clean up the temp file if it still exists
+            if os.path.exists(tmp_passwd_file):
+                os.remove(tmp_passwd_file)
 
 
 if __name__ == "__main__":
