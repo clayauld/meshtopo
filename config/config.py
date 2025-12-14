@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 # Constants
 _LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -59,6 +59,13 @@ class CalTopoConfig(BaseModel):
                 "At least one of 'connect_key' or 'group' must be configured."
             )
         return self
+
+    @field_validator("connect_key", "group", mode="before")  # type: ignore[misc]
+    @classmethod
+    def strip_whitespace(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            return v.strip() or None
+        return v
 
 
 class FileLoggingConfig(BaseModel):
