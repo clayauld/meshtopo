@@ -1,215 +1,251 @@
-#!/usr/bin/env python3
-"""
-Test script for the Meshtopo gateway service.
-"""
+import signal
+from unittest.mock import Mock, patch
 
-import logging
-import sys
-from pathlib import Path
+import pytest
 
-# Add parent directory and src directory to path for imports
-PROJECT_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
-
-# Local imports after path modification
-from config.config import Config  # noqa: E402
-from gateway_app import GatewayApp  # noqa: E402
+from gateway_app import GatewayApp
 
 
-def test_config_loading() -> None:
-    """Test configuration loading."""
-    print("Testing configuration loading...")
-
-    # Test with example config
-    config = Config.from_file(str(PROJECT_ROOT / "config" / "config.yaml.example"))
-    print("✓ Configuration loaded successfully")
-
-    # Test node mapping
-    device_id = config.get_node_device_id("!823a4edc")
-    assert device_id == "TEAM-LEAD", f"Expected 'TEAM-LEAD', got '{device_id}'"
-    print("✓ Node mapping works correctly")
-
-    # Test unmapped node
-    device_id = config.get_node_device_id("!unknown")
-    assert device_id is None, f"Expected None, got '{device_id}'"
-    print("✓ Unmapped node handling works correctly")
+@pytest.fixture
+def mock_config():
+    config = Mock()
+    config.mqtt.use_internal_broker = False
+    config.mqtt.broker = "mqtt.example.com"
+    config.nodes = {"!823a4edc": {"device_id": "TEAM-LEAD"}}
+    config.get_node_device_id.side_effect = lambda x: {"!823a4edc": "TEAM-LEAD"}.get(x)
+    config.devices.allow_unknown_devices = False
+    config.caltopo.group = None
+    config.caltopo.has_group = False
+    config.caltopo.connect_key = "key"
+    config.caltopo.has_connect_key = True
+    return config
 
 
-def test_message_processing() -> None:
-    """Test message processing logic."""
-    print("\nTesting message processing...")
+class MockSqliteDict(dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
 
-    # Create a test configuration
-    config = Config.from_file(str(PROJECT_ROOT / "config" / "config.yaml.example"))
-
-    # Create gateway app
-    app = GatewayApp(str(PROJECT_ROOT / "config" / "config.yaml.example"))
-    app.config = config
-
-    # Initialize CalTopo reporter
-    from caltopo_reporter import CalTopoReporter
-
-    app.caltopo_reporter = CalTopoReporter(config)
-
-    # Test position message with correct field names
-    test_message = {
-        "from": 862485920,  # Numeric node ID
-        "sender": "!823a4edc",  # Hardware ID
-        "type": "position",
-        "payload": {"latitude_i": 612188460, "longitude_i": -1499001320},
-    }
-
-    # Process the message
-    app._process_message(test_message)
-
-    print("✓ Message processing completed")
-    print(f"  Messages received: {app.stats['messages_received']}")
-    print(f"  Messages processed: {app.stats['messages_processed']}")
-    print(f"  Position updates sent: {app.stats['position_updates_sent']}")
-    print(f"  Errors: {app.stats['errors']}")
+    def close(self):
+        pass
 
 
-def test_caltopo_url_building() -> None:
-    """Test CalTopo URL building."""
-    print("\nTesting CalTopo URL building...")
+@pytest.fixture
+def app(mock_config):
+    with (
+        patch("gateway_app.Config") as MockConfig,
+        patch("gateway_app.SqliteDict", new=MockSqliteDict),
+    ):
 
-    config = Config.from_file(str(PROJECT_ROOT / "config" / "config.yaml.example"))
-    from caltopo_reporter import CalTopoReporter
+        MockConfig.from_file.return_value = mock_config
 
-    reporter = CalTopoReporter(config)
+        app = GatewayApp("dummy_config.yaml")
+        app.config = mock_config
+        # We start with plain dicts, but the code checks isinstance
+        # against the class we patched
+        app.node_id_mapping = MockSqliteDict()
+        app.callsign_mapping = MockSqliteDict()
 
-    # Test URL building
-    url = reporter._build_api_url("TEST-DEVICE", 61.218846, -149.900132)
-    expected = (
-        "https://caltopo.com/api/v1/position/report/YOUR_CONNECT_KEY_HERE"
-        "?id=TEST-DEVICE&lat=61.218846&lng=-149.900132"
-    )
-
-    assert url == expected, f"Expected '{expected}', got '{url}'"
-    print("✓ CalTopo URL building works correctly")
-
-
-def test_node_mapping_mechanism() -> None:
-    """Test the node ID mapping mechanism."""
-    print("\nTesting node ID mapping mechanism...")
-
-    config = Config.from_file(str(PROJECT_ROOT / "config" / "config.yaml.example"))
-    app = GatewayApp(str(PROJECT_ROOT / "config" / "config.yaml.example"))
-    app.config = config
-
-    # Test nodeinfo message processing
-    nodeinfo_message = {
-        "from": 862485920,
-        "type": "nodeinfo",
-        "payload": {
-            "id": "!823a4edc",
-            "longname": "TEST-DEVICE",
-            "shortname": "TEST",
-        },
-    }
-
-    app._process_nodeinfo_message(nodeinfo_message, 862485920)
-
-    # Verify mapping was created
-    assert "862485920" in app.node_id_mapping
-    assert app.node_id_mapping["862485920"] == "!823a4edc"
-    print("✓ Nodeinfo message mapping works correctly")
-
-    # Test position message with sender fallback
-    position_message = {
-        "from": 862481648,
-        "sender": "!a4b8c2f0",
-        "type": "position",
-        "payload": {"latitude_i": 612188460, "longitude_i": -1499001320},
-    }
-
-    # Initialize CalTopo reporter to avoid errors
-    from caltopo_reporter import CalTopoReporter
-
-    app.caltopo_reporter = CalTopoReporter(config)
-
-    app._process_position_message(position_message, 862481648)
-
-    # Verify fallback mapping was created
-    assert "862481648" in app.node_id_mapping
-    assert app.node_id_mapping["862481648"] == "!a4b8c2f0"
-    print("✓ Position message sender fallback works correctly")
+        yield app
 
 
-def test_message_type_handling() -> None:
-    """Test different message type handling."""
-    print("\nTesting message type handling...")
+class TestGatewayApp:
+    def test_init(self):
+        app = GatewayApp("config.yaml")
+        assert app.config_path == "config.yaml"
+        assert app.running is False
+        assert app.stats["messages_received"] == 0
 
-    config = Config.from_file(str(PROJECT_ROOT / "config" / "config.yaml.example"))
-    app = GatewayApp(str(PROJECT_ROOT / "config" / "config.yaml.example"))
-    app.config = config
+    @patch("gateway_app.MqttClient")
+    @patch("gateway_app.CalTopoReporter")
+    def test_initialize_success(self, MockReporter, MockMqtt, app):
+        app.config.setup_logging = Mock()
+        MockReporter.return_value.test_connection.return_value = True
 
-    # Test telemetry message
-    telemetry_message = {
-        "from": 862485920,
-        "type": "telemetry",
-        "payload": {"battery_level": 95, "voltage": 4.1, "uptime_seconds": 3600},
-    }
+        assert app.initialize() is True
 
-    app._process_telemetry_message(telemetry_message, 862485920)
-    print("✓ Telemetry message processing works correctly")
+        assert app.mqtt_client is not None
+        assert app.caltopo_reporter is not None
+        assert "!823a4edc" in app.configured_devices
 
-    # Test traceroute message
-    traceroute_message = {
-        "from": 862485920,
-        "type": "traceroute",
-        "payload": {"route": ["DEVICE1", "DEVICE2"]},
-    }
+    def test_initialize_failure(self, app):
+        with patch(
+            "gateway_app.Config.from_file",
+            side_effect=Exception("Config Error"),
+        ):
+            assert app.initialize() is False
 
-    app._process_traceroute_message(traceroute_message, 862485920)
-    print("✓ Traceroute message processing works correctly")
+    @patch("gateway_app.sys.exit")
+    @patch("gateway_app.signal.signal")
+    @patch("gateway_app.time.sleep")
+    def test_start_success(self, mock_sleep, mock_signal, mock_exit, app):
+        app.initialize = Mock(return_value=True)
+        app.mqtt_client = Mock()
+        app.mqtt_client.connect.return_value = True
 
-    # Test empty type message
-    empty_type_message = {"from": 862485920, "type": "", "payload": {}}
+        # Stop loop after one iteration
+        def stop(*args):
+            app.running = False
 
-    # This should be handled gracefully
-    app._process_message(empty_type_message)
-    print("✓ Empty type message handling works correctly")
+        mock_sleep.side_effect = stop
 
+        app.start()
 
-def main() -> int:
-    """Run all tests."""
-    print("Meshtopo Gateway Service - Test Suite")
-    print("=" * 50)
+        assert app.mqtt_client.connect.called
 
-    # Setup basic logging
-    logging.basicConfig(level=logging.WARNING)
+    @patch("gateway_app.sys.exit")
+    def test_start_init_failure(self, mock_exit, app):
+        app.initialize = Mock(return_value=False)
+        mock_exit.side_effect = SystemExit
+        with pytest.raises(SystemExit):
+            app.start()
+        mock_exit.assert_called_with(1)
 
-    tests = [
-        test_config_loading,
-        test_message_processing,
-        test_caltopo_url_building,
-        test_node_mapping_mechanism,
-        test_message_type_handling,
-    ]
+    @patch("gateway_app.sys.exit")
+    def test_start_mqtt_connect_failure(self, mock_exit, app):
+        app.initialize = Mock(return_value=True)
+        app.mqtt_client = Mock()
+        app.mqtt_client.connect.return_value = False
+        mock_exit.side_effect = SystemExit
 
-    passed = 0
-    total = len(tests)
+        with pytest.raises(SystemExit):
+            app.start()
+        mock_exit.assert_called_with(1)
 
-    for test in tests:
-        try:
-            test()
-            passed += 1
-            print(f"✓ {test.__name__} passed")
-        except Exception as e:
-            print(f"✗ {test.__name__} failed: {e}")
+    def test_stop(self, app):
+        app.running = True
+        app.mqtt_client = Mock()
+        app.caltopo_reporter = Mock()
 
-    print("\n" + "=" * 50)
-    print(f"Test Results: {passed}/{total} tests passed")
+        app.stop()
 
-    if passed == total:
-        print("✓ All tests passed!")
-        return 0
-    else:
-        print("✗ Some tests failed!")
-        return 1
+        assert app.running is False
+        assert app.mqtt_client.disconnect.called
+        assert app.caltopo_reporter.close.called
 
+    def test_process_message_no_type(self, app):
+        # Should just return/log warning
+        app._process_message({"from": 123})
+        assert app.stats["messages_received"] == 1
+        assert app.stats["messages_processed"] == 0
 
-if __name__ == "__main__":
-    sys.exit(main())
+    def test_process_message_unknown_type(self, app):
+        app._process_message({"from": 123, "type": "unknown"})
+        assert app.stats["messages_received"] == 1
+        assert app.stats["messages_processed"] == 0
+
+    def test_process_nodeinfo_message(self, app):
+        msg = {
+            "from": 123,
+            "type": "nodeinfo",
+            "payload": {
+                "id": "!823a4edc",
+                "longname": "Test Node",
+                "shortname": "TEST",
+            },
+        }
+        app._process_nodeinfo_message(msg, "123")
+
+        assert app.node_id_mapping["123"] == "!823a4edc"
+        # Should use configured name
+        assert app.callsign_mapping["!823a4edc"] == "TEAM-LEAD"
+
+    def test_process_nodeinfo_fallback_names(self, app):
+        # Case 1: Longname fallback
+        app.config.get_node_device_id.return_value = None
+        msg = {
+            "from": 456,
+            "type": "nodeinfo",
+            "payload": {"id": "!unknown", "longname": "Long Name"},
+        }
+        app._process_nodeinfo_message(msg, "456")
+        assert app.callsign_mapping["!unknown"] == "Long Name"
+
+        # Case 2: Shortname fallback
+        msg["payload"] = {"id": "!unknown2", "shortname": "Short"}
+        app._process_nodeinfo_message(msg, "789")
+        assert app.callsign_mapping["!unknown2"] == "Short"
+
+    def test_process_position_message_success(self, app):
+        app.caltopo_reporter = Mock()
+        app.caltopo_reporter.send_position_update.return_value = True
+        app.node_id_mapping["123"] = "!823a4edc"
+        app.callsign_mapping["!823a4edc"] = "TEAM-LEAD"
+
+        msg = {
+            "type": "position",
+            "payload": {"latitude_i": 100000000, "longitude_i": 200000000},
+        }
+
+        app._process_position_message(msg, "123")
+
+        app.caltopo_reporter.send_position_update.assert_called_with(
+            "TEAM-LEAD", 10.0, 20.0, None
+        )
+        assert app.stats["position_updates_sent"] == 1
+
+    def test_process_position_message_no_payload(self, app):
+        app.caltopo_reporter = Mock()
+        app._process_position_message({}, "123")
+        app.caltopo_reporter.send_position_update.assert_not_called()
+
+    def test_process_position_sender_fallback(self, app):
+        app.caltopo_reporter = Mock()
+        app.caltopo_reporter.send_position_update.return_value = True
+        # Not in mapping, but sender field present
+        msg = {
+            "type": "position",
+            "sender": "!823a4edc",
+            "payload": {"latitude_i": 100000000, "longitude_i": 200000000},
+        }
+
+        app._process_position_message(msg, "123")
+
+        assert app.node_id_mapping["123"] == "!823a4edc"
+        app.caltopo_reporter.send_position_update.assert_called()
+
+    def test_process_position_unknown_device_blocked(self, app):
+        app.caltopo_reporter = Mock()
+        app.config.devices.allow_unknown_devices = False
+        app.configured_devices = set(["!known"])
+        app.node_id_mapping["999"] = "!unknown"
+
+        msg = {
+            "type": "position",
+            "payload": {"latitude_i": 100, "longitude_i": 200},
+        }
+        app._process_position_message(msg, "999")
+
+        app.caltopo_reporter.send_position_update.assert_not_called()
+
+    def test_process_position_unknown_device_allowed(self, app) -> None:
+        app.caltopo_reporter = Mock()
+        app.config.devices.allow_unknown_devices = True
+        app.configured_devices = set(["!known"])
+        app.node_id_mapping["999"] = "!unknown"
+
+        msg = {
+            "type": "position",
+            "payload": {"latitude_i": 100, "longitude_i": 200},
+        }
+        app._process_position_message(msg, "999")
+
+        app.caltopo_reporter.send_position_update.assert_called_with(
+            "!unknown", 0.00001, 0.00002, None
+        )
+
+    def test_signal_handler(self, app):
+        with patch("gateway_app.sys.exit") as mock_exit:
+            app.stop = Mock()
+            app._signal_handler(signal.SIGINT, None)
+            app.stop.assert_called()
+            mock_exit.assert_called_with(0)
+
+    def test_telemetry_message(self, app):
+        msg = {"type": "telemetry", "payload": {"battery_level": 100}}
+        # Just ensure no exception
+        app._process_telemetry_message(msg, "123")
+
+    def test_traceroute_message(self, app):
+        msg = {"type": "traceroute", "payload": {"route": []}}
+        # Just ensure no exception
+        app._process_traceroute_message(msg, "123")

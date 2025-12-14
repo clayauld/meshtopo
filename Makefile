@@ -3,11 +3,14 @@
 # Determine repository name from GITHUB_REPOSITORY environment variable
 REPO := $(if $(GITHUB_REPOSITORY),$(GITHUB_REPOSITORY),clayauld/meshtopo)
 
-.PHONY: help install test lint format clean docker-setup docker-build docker-pull docker-run docker-run-minimal docker-run-ssl docker-stop docker-status docker-logs docker-clean docker-login docker-push docker-push-default dev-setup setup-broker generate-broker-config
+.PHONY: help setup install test lint format clean docker-setup docker-build docker-pull docker-run docker-run-minimal docker-run-ssl docker-stop docker-status docker-logs docker-clean docker-login docker-push docker-push-default dev-setup setup-broker generate-broker-config
 
 # Default target
 help:
 	@echo "Meshtopo Gateway Service - Available Commands:"
+	@echo ""
+	@echo "Onboarding:"
+	@echo "  setup        Run the interactive setup wizard"
 	@echo ""
 	@echo "Development:"
 	@echo "  install      Install dependencies"
@@ -43,6 +46,10 @@ help:
 	@echo "  setup-broker Setup internal MQTT broker"
 	@echo "  generate-broker-config Generate broker configuration files"
 
+# Run the interactive setup wizard
+setup:
+	python3 scripts/setup_wizard.py
+
 # Install dependencies
 install:
 	pip3 install -r requirements.txt
@@ -67,17 +74,10 @@ test-gateway:
 test-mqtt:
 	python3 -m pytest tests/test_mqtt_topic_format.py -v
 
-# Run linting
-lint:
-	flake8 . --max-line-length=88 --extend-ignore=E203,W503 --exclude=archived/
-	mypy . --ignore-missing-imports --exclude=archived/
-	@echo "Linting complete!"
-
-# Format code
+# Format and lint code using pre-commit
 format:
-	black . --line-length=88 --target-version=py39 --exclude=archived/
-	isort . --profile=black --line-length=88 --skip=archived/
-	@echo "Code formatting complete!"
+	pre-commit run --all-files
+	@echo "Code formatting and linting complete!"
 
 # Clean up temporary files
 clean:
@@ -205,14 +205,6 @@ docker-push-default:
 # Run the gateway service
 run:
 	python3 src/gateway.py
-
-# Setup internal MQTT broker
-setup-broker:
-	./scripts/setup_broker.sh
-
-# Generate broker configuration files
-generate-broker-config:
-	python3 scripts/generate_mosquitto_config.py
 
 # Show configuration help
 config:

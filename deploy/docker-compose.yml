@@ -61,14 +61,28 @@ services:
         container_name: mosquitto
         restart: unless-stopped
         ports:
-            - "${MQTT_PORT:-1883}:${MQTT_PORT:-1883}"
-            - "${MQTT_WS_PORT:-9001}:${MQTT_WS_PORT:-9001}"
+            - "${MQTT_PORT:-1883}:1883"
+            - "${MQTT_WS_PORT:-9001}:9001"
+        command:
+          - sh
+          - -c
+          - |
+            cat <<EOF > /mosquitto/config/mosquitto.conf
+            persistence true
+            persistence_location /mosquitto/data/
+            log_dest stdout
+            listener 1883
+            protocol mqtt
+            listener 9001
+            protocol websockets
+            allow_anonymous false
+            password_file /mosquitto/config/passwd
+            EOF
+            exec mosquitto -c /mosquitto/config/mosquitto.conf
         volumes:
             - mosquitto_data:/mosquitto/data
             - mosquitto_data:/mosquitto/log
-            - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
             - ./passwd:/mosquitto/config/passwd:ro
-            # - ./deploy/aclfile:/mosquitto/config/aclfile:ro
         networks:
             - meshtopo
         profiles:
