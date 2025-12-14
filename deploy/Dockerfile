@@ -9,19 +9,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc=4:14.2.0-1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy project definition
+COPY pyproject.toml .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies from pyproject.toml
+# This installs the project and its production dependencies
+RUN pip install --no-cache-dir .
 
 # Copy application code
 COPY . .
 
 # Test stage
 FROM base as test
-COPY requirements-test.txt .
-RUN pip install --no-cache-dir -r requirements-test.txt
+# Install testing dependencies
+# hadolint ignore=DL3013
+RUN pip install --no-cache-dir ".[dev]"
 CMD ["python", "-m", "pytest", "tests/", "-v", "--tb=short"]
 
 # Production stage

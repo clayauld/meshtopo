@@ -74,18 +74,17 @@ dev-setup: install
 # Run tests (excludes slow integration tests)
 test:
 	$(VENV_CHECK)
-	python3 -m pytest -m "not integration" tests/ -v --tb=short
+	python3 -m pytest -m "not integration" tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=html --cov-report=xml
 
 # Run all tests including integration tests
 test-full:
 	$(VENV_CHECK)
-	python3 -m pytest tests/ -v --tb=short
+	python3 -m pytest tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=html --cov-report=xml
 
 # Run integration tests
 test-integration:
 	$(VENV_CHECK)
 	python3 -m pytest tests/integration/ -v --tb=short
-
 # Run specific test modules
 test-config:
 	$(VENV_CHECK)

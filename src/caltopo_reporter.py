@@ -13,6 +13,23 @@ from urllib.parse import urlencode, urlparse
 import httpx
 
 
+def _matches_url_pattern(url: str, pattern: str) -> bool:
+    """
+    Check if a URL matches a pattern with wildcard support.
+
+    Args:
+        url: The URL to check
+        pattern: The pattern to match (supports * wildcard)
+
+    Returns:
+        bool: True if the URL matches the pattern
+    """
+    # Convert pattern to regex: escape special chars except *,
+    # then replace * with .*
+    pattern_regex = re.escape(pattern).replace(r"\*", ".*")
+    return bool(re.match(f"^{pattern_regex}$", url))
+
+
 class CalTopoReporter:
     """
     Handles communication with the CalTopo Position Report API.
@@ -23,15 +40,28 @@ class CalTopoReporter:
     )
     _parsed_url = urlparse(_raw_base_url)
 
-    # Allow non-production URLs for testing/development
-    _allow_non_prod = os.getenv("ALLOW_NON_PROD_CALTOPO_URL", "false").lower() in (
-        "true",
-        "1",
-        "yes",
-    )
+    # Allow explicit URL patterns for testing/development
+    _allowed_patterns_str = os.getenv("CALTOPO_ALLOWED_URL_PATTERNS", "")
+    _allowed_patterns = [
+        p.strip() for p in _allowed_patterns_str.split(",") if p.strip()
+    ]
 
-    if not _allow_non_prod:
-        # In production, enforce that hostname must be caltopo.com
+    # Validate URL based on allowed patterns or production rules
+    if _allowed_patterns:
+        # Test/development mode: validate against explicit allowlist
+        _url_matches = False
+        for _pattern in _allowed_patterns:
+            if _matches_url_pattern(_raw_base_url, _pattern):
+                _url_matches = True
+                break
+        if not _url_matches:
+            raise ValueError(
+                f"Invalid CALTOPO_URL: {_raw_base_url}. "
+                f"URL does not match any allowed pattern: "
+                f"{', '.join(_allowed_patterns)}"
+            )
+    else:
+        # Production mode: enforce that hostname must be caltopo.com
         if not (
             _parsed_url.hostname == "caltopo.com"
             or cast(str, _parsed_url.hostname).endswith(".caltopo.com")
@@ -189,7 +219,7 @@ class CalTopoReporter:
         base_delay = 1.0  # seconds
 
         # Consistently redact sensitive path parameters for both endpoint types.
-        log_url = re.sub(f"({self.BASE_URL}/)[^?]+", r"\\1<REDACTED>", url)
+        log_url = re.sub(f"({self.BASE_URL}/)[^?]+", r"\1<REDACTED>", url)
 
         for attempt in range(max_retries + 1):
             try:
