@@ -75,9 +75,10 @@ def main() -> None:
         # Create password file atomically by writing to a temporary file first.
         tmp_passwd_file = MOSQUITTO_PASSWD_FILE + ".tmp"
         try:
-            # Ensure the temp file does not exist from a previous failed run
-            if os.path.exists(tmp_passwd_file):
-                os.remove(tmp_passwd_file)
+            # Create an empty temp file (mosquitto_passwd requires the file to exist)
+            with open(tmp_passwd_file, "w") as f:
+                pass
+            os.chmod(tmp_passwd_file, 0o600)
 
             all_users_processed_successfully = True
             for user in mqtt_users:
@@ -96,11 +97,10 @@ def main() -> None:
                     subprocess.run(
                         [
                             "mosquitto_passwd",
-                            "-b",
                             tmp_passwd_file,
                             username,
-                            password,
                         ],
+                        input=f"{password}\n{password}\n",
                         check=True,
                         capture_output=True,
                         text=True,
