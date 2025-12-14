@@ -128,9 +128,13 @@ def main() -> None:
 
             if all_users_processed_successfully:
                 shutil.move(tmp_passwd_file, MOSQUITTO_PASSWD_FILE)
-                print(f"Successfully created password file at '{MOSQUITTO_PASSWD_FILE}'.")
+                print(
+                    f"Successfully created password file at '{MOSQUITTO_PASSWD_FILE}'."
+                )
             else:
-                print("\nPassword file was not updated due to errors during the process.")
+                print(
+                    "\nPassword file was not updated due to errors during the process."
+                )
 
         finally:
             # Clean up the temp file if it still exists
