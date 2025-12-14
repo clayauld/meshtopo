@@ -82,6 +82,11 @@ def main() -> None:
 
             all_users_processed_successfully = True
             for user in mqtt_users:
+                if not isinstance(user, dict):
+                    print(f"Skipping invalid user entry in 'mqtt_broker.users': {user}")
+                    all_users_processed_successfully = False
+                    continue
+
                 username = user.get("username")
                 if not username:
                     print("Skipping user with no username.")
