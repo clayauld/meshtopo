@@ -8,6 +8,7 @@ services:
       - MQTT_BROKER_PORT=1883
       - CALTOPO_CONNECT_KEY=test_key
       - CALTOPO_URL=http://mock-server:8080/api/v1/position/report
+      - ALLOW_NON_PROD_CALTOPO_URL=true
       - LOG_LEVEL=DEBUG
     depends_on:
       - mosquitto

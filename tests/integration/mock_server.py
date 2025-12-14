@@ -1,7 +1,8 @@
-from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
 import logging
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Type
+from urllib.parse import parse_qs, urlparse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -42,8 +43,6 @@ class MockHandler(BaseHTTPRequestHandler):
             self.wfile.write(b"Cleared")
         elif "/api/v1/position/report" in self.path:
             # Parse query params
-            from urllib.parse import urlparse, parse_qs
-
             parsed_url = urlparse(self.path)
             params = parse_qs(parsed_url.query)
 

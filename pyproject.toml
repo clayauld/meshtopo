@@ -29,7 +29,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "paho-mqtt==1.6.1",
+    "paho-mqtt==1.5.1",
     "requests==2.32.4",
     "pyyaml==6.0.1",
     "asyncio-mqtt==0.16.1",

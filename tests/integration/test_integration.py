@@ -1,10 +1,11 @@
-import pytest
-import time
-import subprocess
-import httpx
-import logging
 import json
-from paho.mqtt import client as mqtt_client
+import logging
+import subprocess
+import time
+
+import httpx
+import pytest
+from paho.mqtt import client as mqtt
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -31,9 +32,66 @@ TEST_MESSAGE_DICT = {
 TEST_MESSAGE = json.dumps(TEST_MESSAGE_DICT)
 
 
+def wait_for_services(timeout=60):
+    """
+    Wait for services to be ready by polling health endpoints.
+
+    Args:
+        timeout: Maximum seconds to wait for services
+    """
+    start_time = time.time()
+
+    # Wait for mock server
+    logger.info("Waiting for mock server to be ready...")
+    while time.time() - start_time < timeout:
+        try:
+            response = httpx.get(f"{MOCK_SERVER_URL}/reports", timeout=2.0)
+            if response.status_code == 200:
+                logger.info("Mock server is ready")
+                break
+        except (
+            httpx.ConnectError,
+            httpx.TimeoutException,
+            httpx.ReadError,
+            httpx.RemoteProtocolError,
+        ):
+            time.sleep(0.5)
+    else:
+        raise TimeoutError("Mock server did not become ready in time")
+
+    # Wait for MQTT broker
+    logger.info("Waiting for MQTT broker to be ready...")
+    while time.time() - start_time < timeout:
+        try:
+            test_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, "health_check")
+            test_client.connect(MQTT_BROKER, MQTT_PORT, 60)
+            test_client.disconnect()
+            logger.info("MQTT broker is ready")
+            break
+        except Exception:
+            time.sleep(0.5)
+    else:
+        raise TimeoutError("MQTT broker did not become ready in time")
+
+    # Give gateway a moment to initialize after dependencies are ready
+    logger.info("Services ready, waiting for gateway initialization...")
+    time.sleep(2)
+
+
 @pytest.fixture(scope="module")
 def docker_stack():
     """Fixture to spin up and tear down the integration test stack."""
+    subprocess.run(
+        [
+            "docker",
+            "compose",
+            "-f",
+            "deploy/docker-compose.integration.yml",
+            "down",
+            "-v",
+        ],
+        check=True,
+    )
     logger.info("Starting Docker Compose stack...")
     subprocess.run(
         [
@@ -43,6 +101,7 @@ def docker_stack():
             "deploy/docker-compose.integration.yml",
             "up",
             "-d",
+            "--force-recreate",
             "--build",
         ],
         check=True,
@@ -50,7 +109,7 @@ def docker_stack():
 
     # Wait for services to be ready
     logger.info("Waiting for services to initialize...")
-    time.sleep(10)  # Simple wait, could be improved with health checks
+    wait_for_services()
 
     yield
 
@@ -91,13 +150,13 @@ def test_end_to_end_flow(docker_stack):
     # 2. Publish MQTT Message
     logger.info(f"Publishing message to {TEST_TOPIC}...")
 
-    def on_connect(client, userdata, flags, rc):
-        if rc == 0:
-            logger.info("Connected to MQTT Broker!")
-        else:
-            logger.error(f"Failed to connect, return code {rc}")
+    def on_connect(client, userdata, flags, reason_code, properties):
+        if reason_code.is_failure:
+            logger.error(f"Failed to connect: {reason_code}")
+            return
+        logger.info("Connected to MQTT Broker!")
 
-    client = mqtt_client.Client("integration_test_publisher")
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, "integration_test_publisher")
     client.on_connect = on_connect
 
     try:

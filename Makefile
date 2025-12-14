@@ -10,19 +10,20 @@ help:
 	@echo "Meshtopo Gateway Service - Available Commands:"
 	@echo ""
 	@echo "Onboarding:"
-	@echo "  setup        Run the interactive setup wizard"
+	@echo "  setup                Run the interactive setup wizard"
 	@echo ""
 	@echo "Development:"
-	@echo "  install      Install dependencies"
-	@echo "  dev-setup    Setup development environment"
-	@echo "  test         Run tests (excludes slow integration tests)"
-	@echo "  test-full    Run all tests including integration tests"
-	@echo "  test-config  Run configuration tests"
-	@echo "  test-gateway Run gateway tests"
-	@echo "  test-mqtt    Run MQTT topic format tests"
-	@echo "  lint         Run linting checks"
-	@echo "  format       Format code with black and isort"
-	@echo "  clean        Clean up temporary files"
+	@echo "  install              Install dependencies"
+	@echo "  dev-setup            Setup development environment"
+	@echo "  test                 Run tests (excludes slow integration tests)"
+	@echo "  test-full            Run all tests including integration tests"
+	@echo "  test-integration     Run integration tests"
+	@echo "  test-config          Run configuration tests"
+	@echo "  test-gateway         Run gateway tests"
+	@echo "  test-mqtt            Run MQTT topic format tests"
+	@echo "  lint                 Run linting checks"
+	@echo "  format               Format code with black and isort"
+	@echo "  clean                Clean up temporary files"
 	@echo ""
 	@echo "Docker:"
 	@echo "  docker-setup        Set up Docker environment (.env file)"
@@ -51,36 +52,56 @@ help:
 setup:
 	python3 scripts/setup_wizard.py
 
+# Helper for virtual environment check
+VENV_CHECK := @if [ -z "$${VIRTUAL_ENV}" ]; then \
+	echo "Error: No Python virtual environment activated."; \
+	echo "Please create and activate a virtual environment (e.g., 'python3 -m venv .venv && source .venv/bin/activate')."; \
+	exit 1; \
+fi
+
 # Install dependencies
 install:
+	$(VENV_CHECK)
 	pip3 install -r requirements.txt
 
 # Setup development environment
 dev-setup: install
+	$(VENV_CHECK)
 	pip3 install -r requirements-dev.txt
 	python3 -m pre_commit install
 	@echo "Development environment setup complete!"
 
 # Run tests (excludes slow integration tests)
 test:
+	$(VENV_CHECK)
 	python3 -m pytest -m "not integration" tests/ -v --tb=short
 
 # Run all tests including integration tests
 test-full:
+	$(VENV_CHECK)
 	python3 -m pytest tests/ -v --tb=short
+
+# Run integration tests
+test-integration:
+	$(VENV_CHECK)
+	python3 -m pytest tests/integration/ -v --tb=short
 
 # Run specific test modules
 test-config:
+	$(VENV_CHECK)
 	python3 -m pytest tests/test_config.py -v
 
 test-gateway:
+	$(VENV_CHECK)
 	python3 -m pytest tests/test_gateway_app.py -v
 
 test-mqtt:
+	$(VENV_CHECK)
 	python3 -m pytest tests/test_mqtt_topic_format.py -v
 
 # Format and lint code using pre-commit
 format:
+	$(VENV_CHECK)
 	pre-commit run --all-files
 	@echo "Code formatting and linting complete!"
 
@@ -209,6 +230,7 @@ docker-push-default:
 
 # Run the gateway service
 run:
+	$(VENV_CHECK)
 	python3 src/gateway.py
 
 # Show configuration help
@@ -226,6 +248,7 @@ config:
 	@echo "3. Run the service:"
 	@echo "   make run          # Core gateway only"
 	@echo "   make docker-run   # Full stack with Docker"
+	@echo "   make test-integration # Run integration tests"
 	@echo ""
 	@echo "4. Setup internal MQTT broker:"
 	@echo "   make setup-broker # Setup and start internal broker"

@@ -7,8 +7,8 @@ import logging
 import os
 import re
 import secrets
-from typing import Any, Optional
-from urllib.parse import urlencode
+from typing import Any, Optional, cast
+from urllib.parse import urlencode, urlparse
 
 import httpx
 
@@ -18,7 +18,31 @@ class CalTopoReporter:
     Handles communication with the CalTopo Position Report API.
     """
 
-    BASE_URL = os.getenv("CALTOPO_URL", "https://caltopo.com/api/v1/position/report")
+    _raw_base_url = os.getenv(
+        "CALTOPO_URL", "https://caltopo.com/api/v1/position/report"
+    )
+    _parsed_url = urlparse(_raw_base_url)
+
+    # Allow non-production URLs for testing/development
+    _allow_non_prod = os.getenv("ALLOW_NON_PROD_CALTOPO_URL", "false").lower() in (
+        "true",
+        "1",
+        "yes",
+    )
+
+    if not _allow_non_prod:
+        # In production, enforce that hostname must be caltopo.com
+        if not (
+            _parsed_url.hostname == "caltopo.com"
+            or cast(str, _parsed_url.hostname).endswith(".caltopo.com")
+        ):
+            raise ValueError(
+                f"Invalid CALTOPO_URL: {_raw_base_url}. "
+                f"Hostname must be 'caltopo.com' or a subdomain thereof."
+            )
+
+    # Assign the validated URL to the class attribute
+    BASE_URL = _raw_base_url
 
     def __init__(self, config: Any) -> None:
         """
@@ -164,11 +188,8 @@ class CalTopoReporter:
         max_retries = 3
         base_delay = 1.0  # seconds
 
-        log_url = (
-            re.sub(f"({self.BASE_URL}/)[^?]+", r"\1<REDACTED>", url)
-            if endpoint_type == "connect_key"
-            else url
-        )
+        # Consistently redact sensitive path parameters for both endpoint types.
+        log_url = re.sub(f"({self.BASE_URL}/)[^?]+", r"\\1<REDACTED>", url)
 
         for attempt in range(max_retries + 1):
             try:

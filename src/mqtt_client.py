@@ -7,7 +7,7 @@ import json
 import logging
 from typing import Any, Awaitable, Callable, Dict, Optional
 
-import asyncio_mqtt as mqtt
+import aiomqtt as mqtt
 
 
 class MqttClient:
@@ -61,12 +61,13 @@ class MqttClient:
                     await client.subscribe(topic)
                     self.logger.info(f"Subscribed to topic: {topic}")
 
-                    async with client.messages() as messages:
-                        async for message in messages:
-                            await self._process_message(message)
+                    async for message in client.messages:
+                        await self._process_message(message)
 
             except mqtt.MqttError as e:
                 self.logger.error(f"MQTT error: {e}")
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
                 self.logger.error(f"Unexpected error in MQTT client: {e}")
             finally:

@@ -12,6 +12,7 @@ mypy>=1.0.0
 # Testing
 pytest>=7.0.0
 pytest-cov>=4.0.0
+paho-mqtt==1.6.1  # For integration tests
 
 # Pre-commit hooks
 pre-commit>=3.0.0
