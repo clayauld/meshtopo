@@ -44,12 +44,8 @@ class GatewayApp:
         }
 
         # Persistent state using sqlitedict
-        self.node_id_mapping: Dict[str, str] = SqliteDict(
-            "meshtopo_state.sqlite", tablename="node_id_mapping", autocommit=True
-        )
-        self.callsign_mapping: Dict[str, str] = SqliteDict(
-            "meshtopo_state.sqlite", tablename="callsign_mapping", autocommit=True
-        )
+        self.node_id_mapping: Optional[Dict[str, str]] = None
+        self.callsign_mapping: Optional[Dict[str, str]] = None
         self.configured_devices: set = (
             set()
         )  # Track which devices are in the nodes config
@@ -69,6 +65,14 @@ class GatewayApp:
             # Setup logging
             self.config.setup_logging()
             self.logger.info("Configuration loaded successfully")
+
+            # Initialize persistent state
+            self.node_id_mapping = SqliteDict(
+                "meshtopo_state.sqlite", tablename="node_id_mapping", autocommit=True
+            )
+            self.callsign_mapping = SqliteDict(
+                "meshtopo_state.sqlite", tablename="callsign_mapping", autocommit=True
+            )
 
             # Check if we should use internal MQTT broker
             if self.config.mqtt.use_internal_broker:
@@ -105,30 +109,30 @@ class GatewayApp:
         """
         Start the gateway service.
         """
-        if not self.initialize():
-            self.logger.error("Failed to initialize application. Exiting.")
-            sys.exit(1)
-
-        # Setup signal handlers for graceful shutdown
-        signal.signal(signal.SIGINT, self._signal_handler)
-        signal.signal(signal.SIGTERM, self._signal_handler)
-
-        self.logger.info("Starting Meshtopo gateway service...")
-        self.running = True
-        self.stats["start_time"] = time.time()
-
-        # Connect to MQTT broker
-        if self.mqtt_client is None:
-            self.logger.error("MQTT client not initialized. Exiting.")
-            sys.exit(1)
-
-        if not self.mqtt_client.connect():
-            self.logger.error("Failed to connect to MQTT broker. Exiting.")
-            sys.exit(1)
-
-        self.logger.info("Gateway service started successfully")
-
         try:
+            if not self.initialize():
+                self.logger.error("Failed to initialize application. Exiting.")
+                sys.exit(1)
+
+            # Setup signal handlers for graceful shutdown
+            signal.signal(signal.SIGINT, self._signal_handler)
+            signal.signal(signal.SIGTERM, self._signal_handler)
+
+            self.logger.info("Starting Meshtopo gateway service...")
+            self.running = True
+            self.stats["start_time"] = time.time()
+
+            # Connect to MQTT broker
+            if self.mqtt_client is None:
+                self.logger.error("MQTT client not initialized. Exiting.")
+                sys.exit(1)
+
+            if not self.mqtt_client.connect():
+                self.logger.error("Failed to connect to MQTT broker. Exiting.")
+                sys.exit(1)
+
+            self.logger.info("Gateway service started successfully")
+
             # Main loop
             while self.running:
                 time.sleep(1)
@@ -173,9 +177,9 @@ class GatewayApp:
     def close(self) -> None:
         """Close all resources."""
         self.logger.info("Closing database connections...")
-        if isinstance(self.node_id_mapping, SqliteDict):
+        if self.node_id_mapping and hasattr(self.node_id_mapping, "close"):
             self.node_id_mapping.close()
-        if isinstance(self.callsign_mapping, SqliteDict):
+        if self.callsign_mapping and hasattr(self.callsign_mapping, "close"):
             self.callsign_mapping.close()
 
     def _process_message(self, data: Dict[str, Any]) -> None:
@@ -232,6 +236,11 @@ class GatewayApp:
             data: JSON data from Meshtastic
             numeric_node_id: Numeric node ID from the message
         """
+        if self.node_id_mapping is None or self.callsign_mapping is None:
+            self.logger.error("State databases not initialized")
+            self.stats["errors"] += 1
+            return
+
         # Extract payload
         payload = data.get("payload")
         if not payload:
@@ -359,6 +368,10 @@ class GatewayApp:
             data: JSON data from Meshtastic
             numeric_node_id: Numeric node ID from the message
         """
+        if self.node_id_mapping is None or self.callsign_mapping is None:
+            self.logger.error("State databases not initialized")
+            return
+
         payload = data.get("payload")
         if not payload:
             self.logger.warning(
