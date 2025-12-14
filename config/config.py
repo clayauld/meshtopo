@@ -125,7 +125,7 @@ class Config(BaseModel):
             raise yaml.YAMLError(f"Failed to parse YAML configuration: {e}")
 
         if isinstance(data, dict):
-            return cls.model_validate(data)  # type: ignore
+            return cls.model_validate(data)  # type: ignore[no-any-return]
         else:
             raise TypeError("Config file must be a dictionary")
 
@@ -152,7 +152,9 @@ class Config(BaseModel):
         log_level = getattr(logging, self.logging.level.upper(), logging.INFO)
 
         logging.basicConfig(
-            level=log_level, format=self.logging.format, datefmt="%Y-%m-%d %H:%M:%S"
+            level=log_level,
+            format=self.logging.format,
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
 
         logging.getLogger("paho.mqtt").setLevel(logging.WARNING)

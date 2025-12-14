@@ -37,8 +37,8 @@ def app(mock_config):
 
         app = GatewayApp("dummy_config.yaml")
         app.config = mock_config
-        # We start with plain dicts, but the code checks isinstance against the class
-        # we patched
+        # We start with plain dicts, but the code checks isinstance
+        # against the class we patched
         app.node_id_mapping = MockSqliteDict()
         app.callsign_mapping = MockSqliteDict()
 
@@ -66,7 +66,8 @@ class TestGatewayApp:
 
     def test_initialize_failure(self, app):
         with patch(
-            "gateway_app.Config.from_file", side_effect=Exception("Config Error")
+            "gateway_app.Config.from_file",
+            side_effect=Exception("Config Error"),
         ):
             assert app.initialize() is False
 
@@ -205,18 +206,24 @@ class TestGatewayApp:
         app.configured_devices = set(["!known"])
         app.node_id_mapping["999"] = "!unknown"
 
-        msg = {"type": "position", "payload": {"latitude_i": 100, "longitude_i": 200}}
+        msg = {
+            "type": "position",
+            "payload": {"latitude_i": 100, "longitude_i": 200},
+        }
         app._process_position_message(msg, "999")
 
         app.caltopo_reporter.send_position_update.assert_not_called()
 
-    def test_process_position_unknown_device_allowed(self, app):
+    def test_process_position_unknown_device_allowed(self, app) -> None:
         app.caltopo_reporter = Mock()
         app.config.devices.allow_unknown_devices = True
         app.configured_devices = set(["!known"])
         app.node_id_mapping["999"] = "!unknown"
 
-        msg = {"type": "position", "payload": {"latitude_i": 100, "longitude_i": 200}}
+        msg = {
+            "type": "position",
+            "payload": {"latitude_i": 100, "longitude_i": 200},
+        }
         app._process_position_message(msg, "999")
 
         app.caltopo_reporter.send_position_update.assert_called_with(
