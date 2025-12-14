@@ -1,12 +1,9 @@
 import signal
-import sys
-from unittest.mock import Mock, patch, PropertyMock
+from unittest.mock import Mock, patch
 
 import pytest
 
 from gateway_app import GatewayApp
-from mqtt_client import MqttClient
-from caltopo_reporter import CalTopoReporter
 
 
 @pytest.fixture
@@ -40,7 +37,8 @@ def app(mock_config):
 
         app = GatewayApp("dummy_config.yaml")
         app.config = mock_config
-        # We start with plain dicts, but the code checks isinstance against the class we patched
+        # We start with plain dicts, but the code checks isinstance against the class
+        # we patched
         app.node_id_mapping = MockSqliteDict()
         app.callsign_mapping = MockSqliteDict()
 
