@@ -14,6 +14,65 @@ CONFIG_TEMPLATE = os.path.join(CONFIG_DIR, "config.yaml.basic")
 MOSQUITTO_PASSWD_FILE = "deploy/passwd"
 
 
+def _run_mosquitto_passwd(passwd_file: str, username: str, password: str) -> None:
+    """
+    Run mosquitto_passwd to set a password.
+    Falls back to Docker if the local command is missing.
+    """
+    # Try local executable first
+    try:
+        subprocess.run(
+            ["mosquitto_passwd", passwd_file, username],
+            input=f"{password}\n{password}\n",
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return
+    except FileNotFoundError:
+        pass  # Fallback to Docker
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Local mosquitto_passwd failed: {e.stderr}")
+
+    # Fallback: Try Docker
+    abs_passwd_file = os.path.abspath(passwd_file)
+    file_dir = os.path.dirname(abs_passwd_file)
+    file_name = os.path.basename(abs_passwd_file)
+
+    try:
+        # Check if docker is available
+        subprocess.run(["docker", "--version"], check=True, capture_output=True)
+
+        subprocess.run(
+            [
+                "docker",
+                "run",
+                "--rm",
+                "-i",
+                "-v",
+                f"{file_dir}:/data",
+                "eclipse-mosquitto:2.0",
+                "mosquitto_passwd",
+                f"/data/{file_name}",
+                username,
+            ],
+            input=f"{password}\n{password}\n",
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError as e:
+        raise RuntimeError(
+            "Neither 'mosquitto_passwd' nor 'docker' commands found."
+        ) from e
+    except subprocess.CalledProcessError as e:
+        # Check if it was the docker check or the container run
+        if "mosquitto_passwd" in e.cmd:
+            raise RuntimeError(f"Dockerized mosquitto_passwd failed: {e.stderr}")
+        else:
+            raise RuntimeError("Docker is available but failed to run.") from e
+
+
 def main() -> None:
     """The main function for the setup wizard."""
     print("--- Meshtopo Setup Wizard ---")
@@ -105,30 +164,10 @@ def main() -> None:
                     continue
 
                 try:
-                    subprocess.run(
-                        [
-                            "mosquitto_passwd",
-                            tmp_passwd_file,
-                            username,
-                        ],
-                        input=f"{password}\n{password}\n",
-                        check=True,
-                        capture_output=True,
-                        text=True,
-                    )
+                    _run_mosquitto_passwd(tmp_passwd_file, username, password)
                     print(f"Successfully staged password for user '{username}'.")
-                except FileNotFoundError:
-                    print(
-                        "ERROR: 'mosquitto_passwd' command not found. "
-                        "Is Mosquitto installed and in your PATH?"
-                    )
-                    all_users_processed_successfully = False
-                    break  # Abort if command is not found
-                except subprocess.CalledProcessError as e:
-                    print(
-                        f"ERROR: Failed to stage password for user '{username}': "
-                        f"{e.stderr}"
-                    )
+                except Exception as e:
+                    print(f"ERROR: Failed to stage password for user '{username}': {e}")
                     all_users_processed_successfully = False
                     # Continue to the next user to identify all potential issues
 
