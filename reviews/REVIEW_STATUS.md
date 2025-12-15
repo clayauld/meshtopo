@@ -9,8 +9,8 @@ This document consolidates and tracks the status of security issues identified a
 **Severity**: MEDIUM  
 **Files**:
 
--   `review_security_audit.md` (L5-L15)
--   `review-1765700805.md` (L7-L11)
+- `review_security_audit.md` (L5-L15)
+- `review-1765700805.md` (L7-L11)
 
 **Original Issue**: The `ALLOW_NON_PROD_CALTOPO_URL` environment variable allowed arbitrary URLs without proper validation, creating SSRF risk.
 
@@ -19,43 +19,43 @@ This document consolidates and tracks the status of security issues identified a
 
 Replaced the boolean flag with `CALTOPO_ALLOWED_URL_PATTERNS` explicit allowlist:
 
--   Test/development mode: URLs must match explicit patterns in the allowlist
--   Production mode: URLs must point to `caltopo.com` or subdomains
--   Uses pattern matching with wildcard support for flexible but controlled testing
+- Test/development mode: URLs must match explicit patterns in the allowlist
+- Production mode: URLs must point to `caltopo.com` or subdomains
+- Uses pattern matching with wildcard support for flexible but controlled testing
 
 **Review References**:
 
--   `review-1765700805.md`: Marked as `[x]` resolved
--   `review_src_20251213.md`: Marked as `[✔️]` with commendation for security control
--   `review_security_audit.md`: Needs status update
+- `review-1765700805.md`: Marked as `[x]` resolved
+- `review_src_20251213.md`: Marked as `[✔️]` with commendation for security control
+- `review_security_audit.md`: Needs status update
 
 ### 2. Hardcoded Container Names
 
 **Severity**: LOW (Nit)  
 **Files**:
 
--   `review-1765700805.md` (L30-L33)
+- `review-1765700805.md` (L30-L33)
 
 **Original Issue**: Integration test fixture hardcoded container name `deploy-gateway-1`, making it brittle.
 
 **Resolution**: ✅ **RESOLVED**  
 **Implementation**:
 
--   [tests/integration/test_integration.py:L116-L127](file:///home/clayauld/meshtopo/tests/integration/test_integration.py#L116-L127)
--   [.github/workflows/ci.yml:L273-L281](file:///home/clayauld/meshtopo/.github/workflows/ci.yml#L273-L281)
+- [tests/integration/test_integration.py:L116-L127](file:///home/clayauld/meshtopo/tests/integration/test_integration.py#L116-L127)
+- [.github/workflows/ci.yml:L273-L281](file:///home/clayauld/meshtopo/.github/workflows/ci.yml#L273-L281)
 
 Changed from `docker logs <container-name>` to `docker compose logs <service-name>` for more robust service log retrieval.
 
 **Review References**:
 
--   `review-1765700805.md`: Needs status update to mark as `[x]`
+- `review-1765700805.md`: Needs status update to mark as `[x]`
 
 ### 3. Dependency Management Conflicts
 
 **Severity**: MAJOR  
 **Files**:
 
--   `review-1765700805.md` (L23-L28)
+- `review-1765700805.md` (L23-L28)
 
 **Original Issue**: Conflicting dependency definitions across `pyproject.toml`, `requirements.txt`, and `requirements-dev.txt`.
 
@@ -64,14 +64,14 @@ Changed from `docker logs <container-name>` to `docker compose logs <service-nam
 
 **Review References**:
 
--   `review-1765700805.md`: Marked as `[x]` resolved
+- `review-1765700805.md`: Marked as `[x]` resolved
 
 ### 4. Regex Replacement String Error
 
 **Severity**: MEDIUM  
 **Files**:
 
--   `review-1765700805.md` (L15-L19)
+- `review-1765700805.md` (L15-L19)
 
 **Original Issue**: Double backslash in regex replacement string causing literal backslash in logs.
 
@@ -82,57 +82,70 @@ Fixed to use single backslash for proper backreference: `r"\1<REDACTED>"`
 
 **Review References**:
 
--   `review-1765700805.md`: Marked as `[x]` resolved
+- `review-1765700805.md`: Marked as `[x]` resolved
 
-## ⚠️ Outstanding Issues
-
-### 1. Log Injection Vulnerability
+### 5. Log Injection Vulnerability
 
 **Severity**: MEDIUM  
 **Files**:
 
--   `review_security_audit.md` (L17-L28)
+- `review_security_audit.md` (L17-L28)
 
-**Issue**: Data received from MQTT broker is logged directly without sanitization, allowing potential log injection attacks.
+**Original Issue**: Data received from MQTT broker is logged directly without sanitization, allowing potential log injection attacks.
 
-**Location**: `src/gateway_app.py:L434` and throughout `_process_*` methods
+**Resolution**: ✅ **RESOLVED**  
+**Implementation**: [src/gateway_app.py](file:///home/clayauld/meshtopo/src/gateway_app.py)
 
-**Recommendation**: Sanitize external data before logging by removing/escaping control characters and ANSI escape codes.
+Implemented `_sanitize_for_log` method to escape control characters and non-printable characters. Applied this sanitization to all logging statements in `src/gateway_app.py` that handle external data.
 
-**Status**: ⚠️ **OPEN** - Needs implementation
+**Review References**:
 
-### 2. Fragile sys.path Manipulation
+- `review_security_audit.md`: Marked as resolved
 
-**Severity**: MINOR  
-**Files**:
-
--   `review_src_20251213.md` (L31-L34)
-
-**Issue**: `src/gateway.py` uses `sys.path.insert()` for import resolution instead of proper editable install.
-
-**Recommendation**: Replace with `pip install -e .` instructions in development guide.
-
-**Status**: ⚠️ **OPEN** - Low priority maintainability issue
-
-### 3. Complex Callsign Resolution Logic
-
-**Severity**: MINOR (Nit)  
-**Files**:
-
--   `review_src_20251213.md` (L36-L39)
-
-**Issue**: Nested if/else statements for callsign resolution make code harder to follow.
-
-**Recommendation**: Refactor into separate `_get_or_create_callsign()` method.
-
-**Status**: ⚠️ **OPEN** - Low priority code clarity enhancement
-
-### 4. Implicit Fallback Logic
+### 6. Fragile sys.path Manipulation
 
 **Severity**: MINOR  
 **Files**:
 
--   `review_src_20251213.md` (L24-L27)
+- `review_src_20251213.md` (L31-L34)
+
+**Original Issue**: `src/gateway.py` uses `sys.path.insert()` for import resolution instead of proper editable install.
+
+**Resolution**: ✅ **RESOLVED**  
+**Implementation**: [src/gateway.py](file:///home/clayauld/meshtopo/src/gateway.py)
+
+Removed `sys.path.insert` hack from `src/gateway.py` and updated `GEMINI.md` to explicitly recommend editable install (`pip install -e '.[dev]'`) for development.
+
+**Review References**:
+
+- `review_src_20251213.md`: Marked as resolved
+
+### 7. Complex Callsign Resolution Logic
+
+**Severity**: MINOR (Nit)
+**Files**:
+
+- `review_src_20251213.md` (L36-L39)
+
+**Original Issue**: Nested if/else statements for callsign resolution make code harder to follow.
+
+**Resolution**: ✅ **RESOLVED**
+**Implementation**: [src/gateway_app.py](file:///home/clayauld/meshtopo/src/gateway_app.py)
+
+Refactored callsign resolution logic into a new `_get_or_create_callsign` method to improve readability and reduce nesting in `_process_position_message`.
+
+**Review References**:
+
+- `review_src_20251213.md`: Marked as resolved
+
+## ⚠️ Outstanding Issues
+
+### 1. Implicit Fallback Logic
+
+**Severity**: MINOR  
+**Files**:
+
+- `review_src_20251213.md` (L24-L27)
 
 **Issue**: Implicit contract between `gateway_app.py` and `caltopo_reporter.py` for group fallback logic.
 
@@ -150,16 +163,16 @@ Fixed to use single backslash for proper backreference: `r"\1<REDACTED>"`
 
 ### Recommendations
 
--   **Update** `review_security_audit.md` to mark SSRF issue as resolved
--   **Update** `review-1765700805.md` to mark hardcoded container names issue as resolved
--   Consider using consistent naming convention (suggest timestamp-based for traceability)
--   Archive older reviews once all issues are resolved or transferred to this status document
+- **Update** `review_security_audit.md` to mark SSRF issue as resolved
+- **Update** `review-1765700805.md` to mark hardcoded container names issue as resolved
+- Consider using consistent naming convention (suggest timestamp-based for traceability)
+- Archive older reviews once all issues are resolved or transferred to this status document
 
 ## 🎯 Summary
 
 **Total Issues Identified**: 8  
-**Resolved**: 4 (50%)  
-**Outstanding**: 4 (50%)
+**Resolved**: 7 (87.5%)  
+**Outstanding**: 1 (12.5%)
 
-**Critical/High Priority Outstanding**: 1 (Log Injection)  
-**Low Priority Outstanding**: 3 (Maintainability improvements)
+**Critical/High Priority Outstanding**: 0  
+**Low Priority Outstanding**: 1 (Maintainability improvements)

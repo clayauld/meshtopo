@@ -18,7 +18,7 @@ Resolution: Replaced ALLOW_NON_PROD_CALTOPO_URL boolean with CALTOPO_ALLOWED_URL
 
 File: src/gateway_app.py
 
-L434: [MEDIUM] Log Injection
+L434: [MEDIUM] Log Injection - ✅ RESOLVED
 
 Throughout the _process_\* methods, data received from the MQTT broker is logged directly without sanitization. An attacker who can publish messages to the MQTT topic could craft payloads containing special
 characters (e.g., newline characters, ANSI escape codes) to inject fake log entries, corrupt the log file, or manipulate a terminal that is viewing the logs. This can be used to hide malicious activity or trick
@@ -28,3 +28,5 @@ Suggested change:
 Before logging any data that originates from an external source, sanitize it to remove or escape control characters and other potentially dangerous sequences. A simple approach is to replace newline characters
 and other non-printable characters. A more robust solution would be to use a logging formatter that is specifically designed to handle untrusted data. For example, you could replace non-printable characters
 before logging: sanitized_longname = longname.encode('utf-8', 'replace').decode('utf-8').
+
+Resolution: Implemented `_sanitize_for_log` method to escape control characters and non-printable characters. Applied this sanitization to all logging statements in `src/gateway_app.py` that handle external data (nodeinfo, telemetry, traceroute).

@@ -191,6 +191,23 @@ class GatewayApp:
         if self.callsign_mapping and hasattr(self.callsign_mapping, "close"):
             self.callsign_mapping.close()
 
+    def _sanitize_for_log(self, text: Any) -> str:
+        """
+        Sanitize text for logging to prevent log injection.
+
+        Args:
+            text: Text to sanitize
+
+        Returns:
+            Sanitized string
+        """
+        if text is None:
+            return "None"
+
+        # Convert to string and replace non-printable characters
+        s = str(text)
+        return "".join(c if c.isprintable() else f"\\x{ord(c):02x}" for c in s)
+
     async def _process_message(self, data: Dict[str, Any]) -> None:
         """
         Process a message received from MQTT.
@@ -234,6 +251,69 @@ class GatewayApp:
         except Exception as e:
             self.logger.error(f"Error processing message: {e}")
             self.stats["errors"] += 1
+
+    def _get_or_create_callsign(self, hardware_id: str) -> Optional[str]:
+        """
+        Resolve or create a callsign for a given hardware ID.
+
+        Args:
+            hardware_id: The hardware ID to resolve.
+
+        Returns:
+            The resolved callsign, or None if it cannot be resolved.
+        """
+        if self.callsign_mapping is None:
+            self.logger.error("Callsign mapping database not initialized")
+            return None
+
+        # Check mapping first
+        callsign = self.callsign_mapping.get(hardware_id)
+        if callsign:
+            return callsign
+
+        if self.config is None:
+            self.logger.error("Configuration not loaded")
+            return None
+
+        # Check configured devices
+        configured_device_id = self.config.get_node_device_id(hardware_id)
+        if configured_device_id:
+            callsign = configured_device_id
+            self.callsign_mapping[hardware_id] = callsign
+            self.logger.debug(
+                f"Using configured device_id as callsign: "
+                f"{hardware_id} -> {callsign}"
+            )
+            return callsign
+
+        # Handle unknown/unconfigured devices
+        is_unknown_device = hardware_id not in self.configured_devices
+
+        if is_unknown_device:
+            if self.config.devices.allow_unknown_devices:
+                # Allow unknown device but use hardware_id as callsign
+                callsign = hardware_id
+                self.callsign_mapping[hardware_id] = callsign
+                self.logger.info(
+                    f"Allowing unknown device {hardware_id} "
+                    f"(allow_unknown_devices=True). Using hardware_id as callsign."
+                )
+                return callsign
+            else:
+                self.logger.warning(
+                    f"Unknown device {hardware_id} position update blocked "
+                    f"(allow_unknown_devices=False). Device is tracked but no "
+                    f"position sent."
+                )
+                return None
+
+        # Known device but no callsign mapping
+        self.logger.warning(
+            f"No callsign mapping found for known hardware ID "
+            f"{hardware_id}. Position update will be skipped until "
+            f"nodeinfo message is received."
+        )
+        return None
 
     async def _process_position_message(
         self, data: Dict[str, Any], numeric_node_id: str
@@ -311,52 +391,16 @@ class GatewayApp:
                 return
 
         # Get callsign for this hardware ID
-        callsign = self.callsign_mapping.get(hardware_id)
+        callsign = self._get_or_create_callsign(hardware_id)
         if not callsign:
-            # Check if we have a configured device_id for this hardware ID
             if self.config is None:
-                self.logger.error("Configuration not loaded")
                 self.stats["errors"] += 1
-                return
-            configured_device_id = self.config.get_node_device_id(hardware_id)
-            if configured_device_id:
-                callsign = configured_device_id
-                self.callsign_mapping[hardware_id] = callsign
-                self.logger.debug(
-                    f"Using configured device_id as callsign: "
-                    f"{hardware_id} -> {callsign}"
-                )
-            else:
-                # Check if this is an unknown device and if we should allow it
-                is_unknown_device = hardware_id not in self.configured_devices
-                if is_unknown_device and not self.config.devices.allow_unknown_devices:
-                    self.logger.warning(
-                        f"Unknown device {hardware_id} position update blocked "
-                        f"(allow_unknown_devices=False). Device is tracked but no "
-                        f"position sent."
-                    )
-                    return
-                elif is_unknown_device and self.config.devices.allow_unknown_devices:
-                    # Allow unknown device but use hardware_id as callsign
-                    callsign = hardware_id
-                    self.callsign_mapping[hardware_id] = callsign
-                    self.logger.info(
-                        f"Allowing unknown device {hardware_id} "
-                        f"(allow_unknown_devices=True). Using hardware_id as callsign."
-                    )
-                else:
-                    # Known device but no callsign mapping - this shouldn't happen
-                    self.logger.warning(
-                        f"No callsign mapping found for known hardware ID "
-                        f"{hardware_id}. Position update will be skipped until "
-                        f"nodeinfo message is received."
-                    )
-                    return
+            return
 
         # Get GROUP for this device (if using group-based API)
         group = None
         if self.config is not None and self.config.caltopo.has_group:
-            group = self.config.get_node_group(hardware_id)
+            group = self.config.get_node_group(hardware_id) or self.config.caltopo.group
 
         success = await self.caltopo_reporter.send_position_update(
             callsign, latitude, longitude, group
@@ -432,8 +476,12 @@ class GatewayApp:
                 )
 
         self.logger.info(
-            f"Node info from {numeric_node_id}: ID={node_id_from_payload}, "
-            f"Name={longname} ({shortname}), Hardware={hardware}, Role={role}"
+            f"Node info from {self._sanitize_for_log(numeric_node_id)}: "
+            f"ID={self._sanitize_for_log(node_id_from_payload)}, "
+            f"Name={self._sanitize_for_log(longname)} "
+            f"({self._sanitize_for_log(shortname)}), "
+            f"Hardware={self._sanitize_for_log(hardware)}, "
+            f"Role={self._sanitize_for_log(role)}"
         )
 
     def _process_telemetry_message(
@@ -461,9 +509,12 @@ class GatewayApp:
         channel_utilization = payload.get("channel_utilization")
 
         self.logger.info(
-            f"Telemetry from {numeric_node_id}: Battery={battery_level}%, "
-            f"Voltage={voltage}V, Uptime={uptime_seconds}s, "
-            f"Air util TX={air_util_tx}, Channel util={channel_utilization}%"
+            f"Telemetry from {self._sanitize_for_log(numeric_node_id)}: "
+            f"Battery={self._sanitize_for_log(battery_level)}%, "
+            f"Voltage={self._sanitize_for_log(voltage)}V, "
+            f"Uptime={self._sanitize_for_log(uptime_seconds)}s, "
+            f"Air util TX={self._sanitize_for_log(air_util_tx)}, "
+            f"Channel util={self._sanitize_for_log(channel_utilization)}%"
         )
 
     def _process_traceroute_message(
@@ -486,7 +537,10 @@ class GatewayApp:
         # Extract route information
         route = payload.get("route", [])
 
-        self.logger.info(f"Traceroute from {numeric_node_id}: Route={route}")
+        self.logger.info(
+            f"Traceroute from {self._sanitize_for_log(numeric_node_id)}: "
+            f"Route={self._sanitize_for_log(route)}"
+        )
 
     def _log_statistics(self) -> None:
         """Log current statistics."""

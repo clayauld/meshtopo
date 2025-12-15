@@ -3,7 +3,9 @@
 Meshtopo Gateway Service
 
 A lightweight Python gateway service that bridges Meshtastic LoRa mesh networks
-with CalTopo mapping platforms, enabling real-time position tracking of field assets.
+with CalTopo mapping platforms, enabling real-time position tracking of field
+assets.
+
 
 Usage:
     python gateway.py [config_file]
@@ -16,16 +18,16 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from gateway_app import GatewayApp  # noqa: E402
 
 
 def main() -> None:
     """Main entry point for the gateway service."""
     # Get configuration file path from command line argument
-    config_path = sys.argv[1] if len(sys.argv) > 1 else "config/config.yaml"
+    if len(sys.argv) > 1:
+        config_path = sys.argv[1]
+    else:
+        config_path = "config/config.yaml"
 
     # Check if config file exists
     if not Path(config_path).exists():
