@@ -315,6 +315,29 @@ class GatewayApp:
         )
         return None
 
+    def _convert_numeric_to_id(self, numeric_id: Union[int, str]) -> str:
+        """
+        Convert a numeric node ID to its standard Meshtastic string representation.
+
+        The standard format is an 8-character hex string prefixed with '!',
+        derived directly from the numeric ID.
+
+        Args:
+            numeric_id: The numeric node ID (e.g., 24896776 or "24896776")
+
+        Returns:
+            The formatted string ID (e.g., "!017bd508")
+        """
+        try:
+            # Ensure we have an integer
+            val = int(numeric_id)
+            # Format as 8-character lowercase hex with ! prefix
+            return f"!{val:08x}"
+        except (ValueError, TypeError):
+            # Fallback for invalid inputs, though unlikely with correct upstream parsing
+            self.logger.warning(f"Could not convert numeric ID to string: {numeric_id}")
+            return f"!{str(numeric_id)}"
+
     async def _process_position_message(
         self, data: Dict[str, Any], numeric_node_id: str
     ) -> None:
@@ -364,31 +387,16 @@ class GatewayApp:
 
         # Get the hardware ID for this numeric node ID
         hardware_id = self.node_id_mapping.get(str(numeric_node_id))
+
+        # If we haven't seen this node before, calculate its ID deterministically
         if not hardware_id:
-            # Try to use sender field as fallback (contains hardware ID)
-            sender = data.get("sender")
-            if sender and sender.startswith("!"):
-                # Validate that sender is a string
-                if not isinstance(sender, str):
-                    self.logger.error(
-                        f"Invalid sender type: expected string, got {type(sender)}"
-                    )
-                    self.stats["errors"] += 1
-                    return
-                hardware_id = sender
-                # Build the mapping for future use
-                self.node_id_mapping[str(numeric_node_id)] = hardware_id
-                self.logger.debug(
-                    f"Built mapping from sender field: {numeric_node_id} -> "
-                    f"{hardware_id}"
-                )
-            else:
-                self.logger.warning(
-                    f"No hardware ID mapping found for numeric node ID "
-                    f"{numeric_node_id}. Position update will be skipped until "
-                    f"nodeinfo message is received."
-                )
-                return
+            hardware_id = self._convert_numeric_to_id(numeric_node_id)
+
+            # Save this calculated mapping to the database
+            self.node_id_mapping[str(numeric_node_id)] = hardware_id
+            self.logger.debug(
+                f"Calculated ID for new node: {numeric_node_id} -> {hardware_id}"
+            )
 
         # Get callsign for this hardware ID
         callsign = self._get_or_create_callsign(hardware_id)

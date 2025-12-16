@@ -208,19 +208,23 @@ class TestGatewayApp:
         app.caltopo_reporter.send_position_update.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_process_position_sender_fallback(self, app):
+    async def test_process_position_deterministic_id(self, app):
         app.caltopo_reporter = Mock()
         app.caltopo_reporter.send_position_update = AsyncMock(return_value=True)
-        # Not in mapping, but sender field present
+        # Allow unknown devices so the new deterministic ID is accepted
+        app.config.devices.allow_unknown_devices = True
+
+        # Not in mapping, sender field ignored
         msg = {
             "type": "position",
-            "sender": "!823a4edc",
+            "sender": "!823a4edc",  # Should be ignored now
             "payload": {"latitude_i": 100000000, "longitude_i": 200000000},
         }
 
+        # 123 -> !0000007b
         await app._process_position_message(msg, "123")
 
-        assert app.node_id_mapping["123"] == "!823a4edc"
+        assert app.node_id_mapping["123"] == "!0000007b"
         app.caltopo_reporter.send_position_update.assert_called()
 
     @pytest.mark.asyncio
