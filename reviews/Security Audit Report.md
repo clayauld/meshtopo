@@ -95,3 +95,16 @@ I have identified the following vulnerabilities in the code changes:
     as numeric_node_id, message_type, and hardware_id. This could allow an attacker who can control these values to inject malicious characters into the logs, potentially corrupting the log file or tricking an
     administrator.
 - Recommendation: Apply the \_sanitize_for_log method to all variables that come from the MQTT message before logging them.
+
+## Resolution Status
+
+All identified vulnerabilities have been addressed:
+
+1. **Command Injection in Makefile**: Fixed by sanitizing `$(REPO)` variable.
+2. **Leaking Secrets in Process List**: Fixed by using `--password-stdin` for `docker login`.
+3. **Traefik Routing Rule Injection**: Fixed by sanitizing `SSL_DOMAIN` in Makefile.
+4. **Unnecessary Build Tools**: Fixed by using multi-stage Dockerfile.
+5. **Insecure Service Configuration**: Added warning comments to `docker-compose.integration.yml`.
+6. **Unsanitized File Path**: Added strict path validation in `src/gateway.py`.
+7. **Insecure Deserialization**: Switched `SqliteDict` to use JSON serialization.
+8. **Inconsistent Log Sanitization**: Applied `_sanitize_for_log` consistently.

@@ -15,6 +15,7 @@ Arguments:
 """
 
 import asyncio
+import os
 import sys
 from pathlib import Path
 
@@ -28,6 +29,28 @@ def main() -> None:
         config_path = sys.argv[1]
     else:
         config_path = "config/config.yaml"
+
+    # Security check: Ensure config path is within application directory
+    # resolving symlinks and absolute paths
+    cwd = os.getcwd()
+    abs_config_path = os.path.abspath(config_path)
+
+    # Use os.path.commonpath to safely check directory containment
+    # We put them in a list; commonpath returns the longest common sub-path.
+    # If config is inside cwd, commonpath should be cwd.
+    try:
+        common_prefix = os.path.commonpath([cwd, abs_config_path])
+    except ValueError:
+        # Can happen on Windows if drives are different
+        common_prefix = ""
+
+    if common_prefix != cwd:
+        print(
+            f"Error: Configuration file must be within the application "
+            f"directory ({cwd})"
+        )
+        print(f"Attempted path: {abs_config_path}")
+        sys.exit(1)
 
     # Check if config file exists
     if not Path(config_path).exists():

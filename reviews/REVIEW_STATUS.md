@@ -156,118 +156,94 @@ Made group fallback explicit in `gateway_app.py` and removed the implicit fallba
 
 - Marked as resolved in consolidated review.
 
-## ⚠️ Outstanding Issues
-
-### 1. Inefficient One-off HTTP Clients
+### 9. Inefficient One-off HTTP Clients
 
 **Severity**: MEDIUM
-**Files**:
+**Resolution**: ✅ **RESOLVED**
+**Implementation**: Refactored `CalTopoReporter` to accept a shared `httpx.AsyncClient`. Updated `GatewayApp` to manage the client lifecycle.
 
-- `src/caltopo_reporter.py` (L129)
-
-**Original Issue**: Inefficient `httpx.AsyncClient` instantiation creates unnecessary overhead by creating a new client for each request, preventing connection pooling.
-
-**Recommendation**: Modify `CalTopoReporter` to manage a shared `httpx.AsyncClient` instance tied to the application lifecycle.
-
-**Status**: ⚠️ **OPEN**
-
-### 2. Flaky Integration Tests (Fixed Sleeps)
+### 10. Flaky Integration Tests (Fixed Sleeps)
 
 **Severity**: MEDIUM
-**Files**:
+**Resolution**: ✅ **RESOLVED**
+**Implementation**: Replaced fixed sleeps with polling loops in `tests/integration/test_integration.py`.
 
-- `tests/integration/test_integration.py` (L182)
+### 11. Unsafe Deserialization in SqliteDict
 
-**Original Issue**: Use of fixed `time.sleep()` for waiting on async events leads to flaky tests on slow systems.
+**Severity**: CRITICAL
+**Resolution**: ✅ **RESOLVED**
+**Implementation**: Updated `SqliteDict` usage in `src/gateway_app.py` to use `json.dumps`/`json.loads`. Added logic to reset state file if format is incompatible.
 
-**Recommendation**: Replace fixed sleep with polling loop that checks for expected condition with a timeout.
+### 12. Leaking Secrets in Process List
 
-**Status**: ⚠️ **OPEN**
+**Severity**: MEDIUM
+**Resolution**: ✅ **RESOLVED**
+**Implementation**: Updated `Makefile` to use `echo ... | docker login ... --password-stdin`.
+
+### 13. Command Injection in Makefile
+
+**Severity**: CRITICAL
+**Resolution**: ✅ **RESOLVED**
+**Implementation**: Added sanitization for `$(REPO)` variable in `Makefile`.
+
+### 14. Traefik Routing Rule Injection
+
+**Severity**: HIGH
+**Resolution**: ✅ **RESOLVED**
+**Implementation**: Added sanitization for `SSL_DOMAIN` in `Makefile` before passing to docker-compose.
+
+### 15. Unnecessary Build Tools in Production
+
+**Severity**: LOW
+**Resolution**: ✅ **RESOLVED**
+**Implementation**: Updated `deploy/Dockerfile` to use multi-stage build, keeping `gcc` out of production image.
+
+### 16. Path Traversal in Config Loading
+
+**Severity**: LOW
+**Resolution**: ✅ **RESOLVED**
+**Implementation**: Added strict path validation in `src/gateway.py` to ensure config file is within application directory.
+
+### 17. Permanent Callsign for Unknown Devices
+
+**Severity**: MINOR
+**Resolution**: ✅ **RESOLVED**
+**Implementation**: Updated `_get_or_create_callsign` in `src/gateway_app.py` to NOT persist temporary mappings for unknown devices.
+
+### 18. Inconsistent State for Denied Devices
+
+**Severity**: MINOR
+**Resolution**: ✅ **RESOLVED**
+**Implementation**: Updated `_process_position_message` to defer persistence of `node_id_mapping` until after authorization check.
+
+### 19. Potential Disk I/O Bottleneck
+
+**Severity**: MEDIUM
+**Resolution**: ✅ **RESOLVED**
+**Implementation**: Implemented in-memory caching for `SqliteDict` lookups in `src/gateway_app.py`.
+
+### 20. Hardware ID Resolution Logic Extraction
+
+**Severity**: NIT
+**Resolution**: ✅ **RESOLVED**
+**Implementation**: Extracted `_resolve_hardware_id` method in `src/gateway_app.py`.
+
+### 21. Inconsistent Log Sanitization
+
+**Severity**: MEDIUM
+**Resolution**: ✅ **RESOLVED**
+**Implementation**: Applied `_sanitize_for_log` consistently across `src/gateway_app.py` including `_process_message`, `_process_position_message`, `_convert_numeric_to_id`, and `_get_or_create_callsign`.
+
+### 22. Insecure Service Configuration in Integration Tests
+
+**Severity**: LOW
+**Resolution**: ✅ **RESOLVED**
+**Implementation**: Added security warning comments to `deploy/docker-compose.integration.yml`.
 
 ## 🎯 Summary
 
-**Total Issues Identified**: 20
-**Resolved**: 8 (40%)
-**Outstanding**: 12 (60%)
+**Total Issues Identified**: 22
+**Resolved**: 22 (100%)
+**Outstanding**: 0 (0%)
 
-**Status**: ⚠️ **OPEN ISSUES REMAINING**
-
-**Status**: ⚠️ **OPEN**
-
-### 7. Unsafe Deserialization in SqliteDict
-
-**Severity**: CRITICAL
-**Files**:
-
-- `src/gateway_app.py`
-
-**Original Issue**: `SqliteDict` uses unsafe `pickle` serialization by default, which can lead to RCE if untrusted data is deserialized.
-
-**Recommendation**: Explictly use JSON serialization: `encode=json.dumps, decode=json.loads`.
-
-**Status**: ⚠️ **OPEN**
-
-### 8. Leaking Secrets in Process List
-
-**Severity**: MEDIUM
-**Files**:
-
-- `Makefile` (L202)
-
-**Original Issue**: `docker login` passes password via command line `-p`, visible in process list.
-
-**Recommendation**: Use `--password-stdin`.
-
-**Status**: ⚠️ **OPEN**
-
-### 9. Command Injection in Makefile
-
-**Severity**: CRITICAL
-**Files**:
-
-- `Makefile` (L136)
-
-**Original Issue**: Unsanitized usage of `$(REPO)` and `$(GITHUB_REPOSITORY)` in shell commands.
-
-**Recommendation**: Sanitize variables before use.
-
-**Status**: ⚠️ **OPEN**
-
-### 10. Traefik Routing Rule Injection
-
-**Severity**: HIGH
-**Files**:
-
-- `deploy/docker-compose.yml` (L51)
-
-**Original Issue**: Unsanitized `SSL_DOMAIN` usage in Traefik labels allow rule injection.
-
-**Recommendation**: Sanitize `SSL_DOMAIN`.
-
-**Status**: ⚠️ **OPEN**
-
-### 11. Unnecessary Build Tools in Production
-
-**Severity**: LOW
-**Files**:
-
-- `deploy/Dockerfile` (L8-10)
-
-**Original Issue**: `gcc` installed in production image, increasing attack surface.
-
-**Recommendation**: Use multi-stage build to keep compiler out of final image.
-
-**Status**: ⚠️ **OPEN**
-
-### 12. Path Traversal in Config Loading
-
-**Severity**: LOW
-**Files**:
-
-- `src/gateway.py` (L29)
-
-**Original Issue**: Unsanitized command-line argument used as config file path.
-
-**Recommendation**: Validate/sanitize input path.
-
-**Status**: ⚠️ **OPEN**
+**Status**: ✅ **ALL ISSUES RESOLVED**

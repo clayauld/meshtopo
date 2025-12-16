@@ -13,6 +13,8 @@ services:
 
   mosquitto:
     image: eclipse-mosquitto:2.0
+    # SECURITY WARNING: This configuration uses anonymous access for testing purposes ONLY.
+    # Do NOT use this configuration in production.
     command: mosquitto -c /mosquitto-no-auth.conf
     volumes:
        - ./mosquitto-no-auth.conf:/mosquitto-no-auth.conf

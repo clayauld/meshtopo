@@ -173,10 +173,12 @@ def test_end_to_end_flow(docker_stack):
         logger.info(f"Connecting to MQTT broker at {MQTT_BROKER}:{MQTT_PORT}...")
         client.connect(MQTT_BROKER, MQTT_PORT)
         logger.info("Publishing message...")
-        client.publish(TEST_TOPIC, TEST_MESSAGE)
+        msg_info = client.publish(TEST_TOPIC, TEST_MESSAGE)
+        msg_info.wait_for_publish(timeout=5)
         client.loop_start()
         logger.info("Waiting for message processing...")
-        time.sleep(5)  # Increased wait time
+        # Reduce fixed sleep, rely on polling validation
+        time.sleep(1)
         client.loop_stop()
         logger.info("MQTT publish complete.")
     except Exception as e:
@@ -184,15 +186,26 @@ def test_end_to_end_flow(docker_stack):
 
     # 3. Verify Report
     logger.info("Verifying report reception...")
-    # Give the gateway some time to process
-    time.sleep(2)
+
+    # Poll for reports with timeout
+    start_time = time.time()
+    timeout = 15
+    reports = []
+
+    while time.time() - start_time < timeout:
+        try:
+            response = httpx.get(f"{MOCK_SERVER_URL}/reports", timeout=1.0)
+            if response.status_code == 200:
+                data = response.json()
+                if data:
+                    reports = data
+                    break
+        except Exception:
+            pass
+        time.sleep(0.5)
 
     try:
-        logger.info("Querying mock server for reports...")
-        response = httpx.get(f"{MOCK_SERVER_URL}/reports", timeout=5.0)
-        reports = response.json()
-
-        assert len(reports) > 0, "No reports received by mock server"
+        assert len(reports) > 0, "No reports received by mock server within timeout"
         last_report = reports[-1]
 
         # Basic validation of the forwarded report

@@ -3,12 +3,14 @@ Main gateway application that orchestrates MQTT and CalTopo communication.
 """
 
 import asyncio
+import json
 import logging
 import os
 import sys
 import time
 from typing import Any, Dict, Optional, Union
 
+import httpx
 from sqlitedict import SqliteDict
 
 from caltopo_reporter import CalTopoReporter
@@ -32,6 +34,7 @@ class GatewayApp:
         self.config: Optional[Config] = None
         self.mqtt_client: Optional[MqttClient] = None
         self.caltopo_reporter: Optional[CalTopoReporter] = None
+        self.http_client: Optional[httpx.AsyncClient] = None
         self.stop_event: Optional[asyncio.Event] = None
         self.logger = logging.getLogger(__name__)
 
@@ -45,8 +48,12 @@ class GatewayApp:
         }
 
         # Persistent state using sqlitedict
-        self.node_id_mapping: Optional[Dict[str, str]] = None
-        self.callsign_mapping: Optional[Dict[str, str]] = None
+        self.node_id_mapping: Any = None
+        self.callsign_mapping: Any = None
+        # In-memory caches for performance
+        self._node_id_cache: Dict[str, str] = {}
+        self._callsign_cache: Dict[str, str] = {}
+
         self.configured_devices: set = (
             set()
         )  # Track which devices are in the nodes config
@@ -82,12 +89,77 @@ class GatewayApp:
                     )
                     # We continue, letting SqliteDict fail if it must, or maybe it works
 
-            self.node_id_mapping = SqliteDict(
-                db_path, tablename="node_id_mapping", autocommit=True
-            )
-            self.callsign_mapping = SqliteDict(
-                db_path, tablename="callsign_mapping", autocommit=True
-            )
+            try:
+                self.node_id_mapping = SqliteDict(
+                    db_path,
+                    tablename="node_id_mapping",
+                    autocommit=True,
+                    encode=json.dumps,
+                    decode=json.loads,
+                )
+                # Trigger a read to ensure the file format is valid
+                # This will raise an exception if the file contains legacy pickle data
+                _ = len(self.node_id_mapping)
+
+                self.callsign_mapping = SqliteDict(
+                    db_path,
+                    tablename="callsign_mapping",
+                    autocommit=True,
+                    encode=json.dumps,
+                    decode=json.loads,
+                )
+                _ = len(self.callsign_mapping)
+
+                # Load into memory cache
+                self.logger.info("Loading state into memory cache...")
+                self._node_id_cache = dict(self.node_id_mapping)
+                self._callsign_cache = dict(self.callsign_mapping)
+
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to load state database (likely due to format change): "
+                    f"{e}. Resetting state file."
+                )
+                # Close potentially open connections
+                if self.node_id_mapping:
+                    try:
+                        self.node_id_mapping.close()
+                    except Exception:
+                        pass  # nosec
+                if self.callsign_mapping:
+                    try:
+                        self.callsign_mapping.close()
+                    except Exception:
+                        pass  # nosec
+
+                # Delete the incompatible file
+                if os.path.exists(db_path):
+                    try:
+                        os.remove(db_path)
+                    except OSError as remove_error:
+                        self.logger.error(
+                            f"Failed to remove incompatible database file: {remove_error}"
+                        )
+
+                # Re-initialize with new format
+                self.node_id_mapping = SqliteDict(
+                    db_path,
+                    tablename="node_id_mapping",
+                    autocommit=True,
+                    encode=json.dumps,
+                    decode=json.loads,
+                )
+                self.callsign_mapping = SqliteDict(
+                    db_path,
+                    tablename="callsign_mapping",
+                    autocommit=True,
+                    encode=json.dumps,
+                    decode=json.loads,
+                )
+
+                # Load into memory cache (empty or after reset)
+                self._node_id_cache = dict(self.node_id_mapping)
+                self._callsign_cache = dict(self.callsign_mapping)
 
             # Check if we should use internal MQTT broker
             if self.config.mqtt.use_internal_broker:
@@ -95,9 +167,12 @@ class GatewayApp:
                 # Update broker hostname to use internal service name
                 self.config.mqtt.broker = "mosquitto"
 
+            # Initialize Shared HTTP Client
+            self.http_client = httpx.AsyncClient(timeout=10)
+
             # Initialize CalTopo reporter
             self.logger.info("Initializing CalTopo reporter...")
-            self.caltopo_reporter = CalTopoReporter(self.config)
+            self.caltopo_reporter = CalTopoReporter(self.config, self.http_client)
 
             # Test CalTopo connectivity
             if not await self.caltopo_reporter.test_connection():
@@ -191,6 +266,10 @@ class GatewayApp:
         if self.caltopo_reporter:
             await self.caltopo_reporter.close()
 
+        # Close HTTP client
+        if self.http_client:
+            await self.http_client.aclose()
+
         # Close database connections
         self.close()
 
@@ -223,6 +302,34 @@ class GatewayApp:
         s = str(text)
         return "".join(c if c.isprintable() else f"\\x{ord(c):02x}" for c in s)
 
+    def _resolve_hardware_id(self, numeric_node_id: str) -> str:
+        """
+        Resolve hardware ID from numeric node ID using cache or calculation.
+        Does not persist new mappings.
+        """
+        if numeric_node_id in self._node_id_cache:
+            return self._node_id_cache[numeric_node_id]
+
+        return self._convert_numeric_to_id(numeric_node_id)
+
+    def _persist_node_id_mapping(self, numeric_node_id: str, hardware_id: str) -> None:
+        """Persist node ID mapping to cache and database."""
+        if self._node_id_cache.get(numeric_node_id) == hardware_id:
+            return
+
+        self._node_id_cache[numeric_node_id] = hardware_id
+        if self.node_id_mapping is not None:
+            self.node_id_mapping[numeric_node_id] = hardware_id
+
+    def _persist_callsign_mapping(self, hardware_id: str, callsign: str) -> None:
+        """Persist callsign mapping to cache and database."""
+        if self._callsign_cache.get(hardware_id) == callsign:
+            return
+
+        self._callsign_cache[hardware_id] = callsign
+        if self.callsign_mapping is not None:
+            self.callsign_mapping[hardware_id] = callsign
+
     async def _process_message(self, data: Dict[str, Any]) -> None:
         """
         Process a message received from MQTT.
@@ -251,13 +358,15 @@ class GatewayApp:
                 self._process_traceroute_message(data, numeric_node_id)
             elif message_type == "":
                 self.logger.debug(
-                    f"Received message with empty type from {numeric_node_id}, skipping"
+                    f"Received message with empty type from "
+                    f"{self._sanitize_for_log(numeric_node_id)}, skipping"
                 )
                 return
             else:
                 self.logger.debug(
-                    f"Received unsupported message type from {numeric_node_id}: "
-                    f"{message_type}"
+                    f"Received unsupported message type from "
+                    f"{self._sanitize_for_log(numeric_node_id)}: "
+                    f"{self._sanitize_for_log(message_type)}"
                 )
                 return
 
@@ -290,17 +399,15 @@ class GatewayApp:
             # config.yaml.
             self.logger.debug(
                 f"Using configured device_id as callsign: "
-                f"{hardware_id} -> {configured_device_id}"
+                f"{self._sanitize_for_log(hardware_id)} -> "
+                f"{self._sanitize_for_log(configured_device_id)}"
             )
             return configured_device_id
 
-        # Check mapping database SECOND (for learned/discovered nodes)
-        if self.callsign_mapping:
-            callsign = self.callsign_mapping.get(hardware_id)
-            if callsign:
-                return callsign
-        else:
-            self.logger.warning("Callsign mapping database not initialized")
+        # Check cache SECOND (for learned/discovered nodes)
+        callsign = self._callsign_cache.get(hardware_id)
+        if callsign:
+            return callsign
 
         # Handle unknown/unconfigured devices
         is_unknown_device = hardware_id not in self.configured_devices
@@ -308,27 +415,26 @@ class GatewayApp:
         if is_unknown_device:
             if self.config.devices.allow_unknown_devices:
                 # Allow unknown device but use hardware_id as callsign
-                callsign = hardware_id
-                if self.callsign_mapping is not None:
-                    self.callsign_mapping[hardware_id] = callsign
+                # Fix: Do NOT persist this temporary mapping to avoid "Permanent Callsign"
+                # issue. If nodeinfo arrives later, it will be persisted then.
                 self.logger.info(
-                    f"Allowing unknown device {hardware_id} "
+                    f"Allowing unknown device {self._sanitize_for_log(hardware_id)} "
                     f"(allow_unknown_devices=True). Using hardware_id as callsign."
                 )
-                return callsign
+                return hardware_id
             else:
                 self.logger.warning(
-                    f"Unknown device {hardware_id} position update blocked "
-                    f"(allow_unknown_devices=False). Device is tracked but no "
-                    f"position sent."
+                    f"Unknown device {self._sanitize_for_log(hardware_id)} "
+                    f"position update blocked (allow_unknown_devices=False). "
+                    f"Device is tracked but no position sent."
                 )
                 return None
 
         # Known device but no callsign mapping
         self.logger.warning(
             f"No callsign mapping found for known hardware ID "
-            f"{hardware_id}. Position update will be skipped until "
-            f"nodeinfo message is received."
+            f"{self._sanitize_for_log(hardware_id)}. Position update will be "
+            f"skipped until nodeinfo message is received."
         )
         return None
 
@@ -352,7 +458,10 @@ class GatewayApp:
             return f"!{val:08x}"
         except (ValueError, TypeError):
             # Fallback for invalid inputs, though unlikely with correct upstream parsing
-            self.logger.warning(f"Could not convert numeric ID to string: {numeric_id}")
+            self.logger.warning(
+                f"Could not convert numeric ID to string: "
+                f"{self._sanitize_for_log(numeric_id)}"
+            )
             return f"!{str(numeric_id)}"
 
     async def _process_position_message(
@@ -373,7 +482,8 @@ class GatewayApp:
         # Check for retained message
         if data.get("_mqtt_retain"):
             self.logger.info(
-                f"Skipping retained position message from {numeric_node_id}"
+                f"Skipping retained position message from "
+                f"{self._sanitize_for_log(numeric_node_id)}"
             )
             return
 
@@ -381,7 +491,8 @@ class GatewayApp:
         payload = data.get("payload")
         if not payload:
             self.logger.warning(
-                f"Received position message from {numeric_node_id} without payload"
+                f"Received position message from "
+                f"{self._sanitize_for_log(numeric_node_id)} without payload"
             )
             return
 
@@ -391,7 +502,8 @@ class GatewayApp:
 
         if latitude_i is None or longitude_i is None:
             self.logger.warning(
-                f"Received position message from {numeric_node_id} without coordinates"
+                f"Received position message from "
+                f"{self._sanitize_for_log(numeric_node_id)} without coordinates"
             )
             return
 
@@ -400,7 +512,8 @@ class GatewayApp:
         longitude = longitude_i / 1e7
 
         self.logger.debug(
-            f"Processing position from {numeric_node_id}: {latitude}, {longitude}"
+            f"Processing position from {self._sanitize_for_log(numeric_node_id)}: "
+            f"{latitude}, {longitude}"
         )
 
         # Send to CalTopo
@@ -410,24 +523,29 @@ class GatewayApp:
             return
 
         # Get the hardware ID for this numeric node ID
-        hardware_id = self.node_id_mapping.get(str(numeric_node_id))
+        # We don't persist it yet, waiting for authorization
+        hardware_id = self._resolve_hardware_id(str(numeric_node_id))
+        is_new_mapping = str(numeric_node_id) not in self._node_id_cache
 
-        # If we haven't seen this node before, calculate its ID deterministically
-        if not hardware_id:
-            hardware_id = self._convert_numeric_to_id(numeric_node_id)
-
-            # Save this calculated mapping to the database
-            self.node_id_mapping[str(numeric_node_id)] = hardware_id
+        if is_new_mapping:
             self.logger.debug(
-                f"Calculated ID for new node: {numeric_node_id} -> {hardware_id}"
+                f"Calculated ID for new node: "
+                f"{self._sanitize_for_log(numeric_node_id)} -> "
+                f"{self._sanitize_for_log(hardware_id)}"
             )
 
         # Get callsign for this hardware ID
         callsign = self._get_or_create_callsign(hardware_id)
         if not callsign:
+            # Device denied or configured but not identified
             if self.config is None:
                 self.stats["errors"] += 1
             return
+
+        # Device is allowed (we have a callsign). Now we can persist the node ID mapping
+        # if it was new.
+        if is_new_mapping:
+            self._persist_node_id_mapping(str(numeric_node_id), hardware_id)
 
         # Get GROUP for this device (if using group-based API)
         group = None
@@ -473,10 +591,10 @@ class GatewayApp:
 
         # Build mapping from numeric node ID to hardware ID
         if node_id_from_payload:
-            self.node_id_mapping[str(numeric_node_id)] = node_id_from_payload
+            self._persist_node_id_mapping(str(numeric_node_id), node_id_from_payload)
             self.logger.debug(
-                f"Mapped numeric node ID {numeric_node_id} to hardware ID "
-                f"{node_id_from_payload}"
+                f"Mapped numeric node ID {self._sanitize_for_log(numeric_node_id)} "
+                f"to hardware ID {self._sanitize_for_log(node_id_from_payload)}"
             )
 
             # Extract and store callsign - prioritize configured device_id over
@@ -487,24 +605,27 @@ class GatewayApp:
             configured_device_id = self.config.get_node_device_id(node_id_from_payload)
             if configured_device_id:
                 # Use configured device_id as callsign
-                self.callsign_mapping[node_id_from_payload] = configured_device_id
+                self._persist_callsign_mapping(
+                    node_id_from_payload, configured_device_id
+                )
                 self.logger.debug(
-                    f"Mapped hardware ID {node_id_from_payload} to configured "
-                    f"callsign {configured_device_id}"
+                    f"Mapped hardware ID {self._sanitize_for_log(node_id_from_payload)} "
+                    f"to configured callsign "
+                    f"{self._sanitize_for_log(configured_device_id)}"
                 )
             elif longname:
                 # Fallback to Meshtastic longname if no configured device_id
-                self.callsign_mapping[node_id_from_payload] = longname
+                self._persist_callsign_mapping(node_id_from_payload, longname)
                 self.logger.debug(
-                    f"Mapped hardware ID {node_id_from_payload} to callsign "
-                    f"{longname} (from longname)"
+                    f"Mapped hardware ID {self._sanitize_for_log(node_id_from_payload)} "
+                    f"to callsign {self._sanitize_for_log(longname)} (from longname)"
                 )
             elif shortname:
                 # Final fallback to shortname if longname not available
-                self.callsign_mapping[node_id_from_payload] = shortname
+                self._persist_callsign_mapping(node_id_from_payload, shortname)
                 self.logger.debug(
-                    f"Mapped hardware ID {node_id_from_payload} to callsign "
-                    f"{shortname} (from shortname)"
+                    f"Mapped hardware ID {self._sanitize_for_log(node_id_from_payload)} "
+                    f"to callsign {self._sanitize_for_log(shortname)} (from shortname)"
                 )
 
         self.logger.info(

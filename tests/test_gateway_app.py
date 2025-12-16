@@ -1,4 +1,5 @@
 import asyncio
+import json
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -85,7 +86,11 @@ class TestGatewayApp:
         # Verify DB initialization with configured path in MockSqliteDict
         # The SqliteDict constructor should have been called with our test path
         app._MockSqliteDictClass.assert_any_call(
-            "test_db.sqlite", tablename="node_id_mapping", autocommit=True
+            "test_db.sqlite",
+            tablename="node_id_mapping",
+            autocommit=True,
+            encode=json.dumps,
+            decode=json.loads,
         )
 
     @pytest.mark.asyncio
@@ -200,7 +205,9 @@ class TestGatewayApp:
         # send_position_update is async
         app.caltopo_reporter.send_position_update = AsyncMock(return_value=True)
         app.node_id_mapping["123"] = "!823a4edc"
+        app._node_id_cache["123"] = "!823a4edc"
         app.callsign_mapping["!823a4edc"] = "TEAM-LEAD"
+        app._callsign_cache["!823a4edc"] = "TEAM-LEAD"
 
         msg = {
             "type": "position",
@@ -264,6 +271,7 @@ class TestGatewayApp:
         app.config.devices.allow_unknown_devices = True
         app.configured_devices = set(["!known"])
         app.node_id_mapping["999"] = "!unknown"
+        app._node_id_cache["999"] = "!unknown"
 
         msg = {
             "type": "position",

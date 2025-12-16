@@ -183,3 +183,10 @@ Suggested change:
 49 + assert (
 50 + "id" in last_report or "geometry" in last_report
 51 + ), "Report missing expected keys"
+
+## Resolution Status
+
+Issues addressed:
+
+1. **Inefficient HTTP Client**: Refactored `CalTopoReporter` to use a shared `httpx.AsyncClient` managed by `GatewayApp`.
+2. **Flaky Integration Tests**: Replaced fixed sleeps with polling in `tests/integration/test_integration.py`.

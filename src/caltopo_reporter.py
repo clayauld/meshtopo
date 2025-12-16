@@ -74,24 +74,18 @@ class CalTopoReporter:
     # Assign the validated URL to the class attribute
     BASE_URL = _raw_base_url
 
-    def __init__(self, config: Any) -> None:
+    def __init__(self, config: Any, client: Optional[httpx.AsyncClient] = None) -> None:
         """
         Initialize CalTopo reporter.
 
         Args:
             config: Configuration object containing CalTopo settings
+            client: Optional shared httpx.AsyncClient. If not provided, a new client
+                   will be created for each request.
         """
         self.config = config
         self.logger = logging.getLogger(__name__)
-        # We will use an async client context manager in methods or a persistent one if
-        # managed externally. For simplicity and resource management in this refactor,
-        # we'll instantiate per request or use a shared client if we can manage its
-        # lifecycle. Given the usage pattern, a shared client is better but requires
-        # open/close management. We'll initialize it in a start method or just use a
-        # context manager for each request if the frequency is low (which it is for
-        # position updates). However, for efficiency, let's keep a client but we need
-        # to ensure it's closed. For now, let's use a context manager per request to
-        # be safe with lifecycle.
+        self._client = client
         self.timeout = 10  # seconds
 
     def _is_valid_caltopo_identifier(self, identifier: str) -> bool:
@@ -145,26 +139,42 @@ class CalTopoReporter:
         Returns:
             bool: True if at least one endpoint was successful, False otherwise
         """
+        if self._client:
+            return await self._send_position_update_internal(
+                self._client, callsign, latitude, longitude, group
+            )
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            return await self._send_position_update_internal(
+                client, callsign, latitude, longitude, group
+            )
+
+    async def _send_position_update_internal(
+        self,
+        client: httpx.AsyncClient,
+        callsign: str,
+        latitude: float,
+        longitude: float,
+        group: Optional[str] = None,
+    ) -> bool:
+        """Internal implementation using a provided client."""
         success_count = 0
         total_attempts = 0
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            # Send to connect_key endpoint if configured
-            if self.config.caltopo.has_connect_key:
-                total_attempts += 1
-                if await self._send_to_connect_key(
-                    client, callsign, latitude, longitude
-                ):
-                    success_count += 1
+        # Send to connect_key endpoint if configured
+        if self.config.caltopo.has_connect_key:
+            total_attempts += 1
+            if await self._send_to_connect_key(client, callsign, latitude, longitude):
+                success_count += 1
 
-            # Send to group endpoint if configured
-            if self.config.caltopo.has_group:
-                total_attempts += 1
-                group_to_use = group or self.config.caltopo.group
-                if await self._send_to_group(
-                    client, callsign, latitude, longitude, group_to_use
-                ):
-                    success_count += 1
+        # Send to group endpoint if configured
+        if self.config.caltopo.has_group:
+            total_attempts += 1
+            group_to_use = group or self.config.caltopo.group
+            if await self._send_to_group(
+                client, callsign, latitude, longitude, group_to_use
+            ):
+                success_count += 1
 
         # Return True if at least one endpoint was successful
         return success_count > 0
@@ -284,21 +294,28 @@ class CalTopoReporter:
             bool: True if at least one endpoint connection test successful,
                 False otherwise
         """
+        if self._client:
+            return await self._test_connection_internal(self._client)
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            return await self._test_connection_internal(client)
+
+    async def _test_connection_internal(self, client: httpx.AsyncClient) -> bool:
+        """Internal implementation of connection test."""
         success_count = 0
         total_attempts = 0
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            # Test connect_key endpoint if configured
-            if self.config.caltopo.has_connect_key:
-                total_attempts += 1
-                if await self._test_connect_key_endpoint(client):
-                    success_count += 1
+        # Test connect_key endpoint if configured
+        if self.config.caltopo.has_connect_key:
+            total_attempts += 1
+            if await self._test_connect_key_endpoint(client):
+                success_count += 1
 
-            # Test group endpoint if configured
-            if self.config.caltopo.has_group:
-                total_attempts += 1
-                if await self._test_group_endpoint(client):
-                    success_count += 1
+        # Test group endpoint if configured
+        if self.config.caltopo.has_group:
+            total_attempts += 1
+            if await self._test_group_endpoint(client):
+                success_count += 1
 
         if success_count > 0:
             self.logger.info(
