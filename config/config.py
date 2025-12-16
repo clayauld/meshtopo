@@ -168,10 +168,48 @@ class Config(BaseModel):
         """
         log_level = getattr(logging, self.logging.level.upper(), logging.INFO)
 
+        handlers: List[logging.Handler] = [logging.StreamHandler()]
+
+        if self.logging.file.enabled:
+            log_path = Path(self.logging.file.path)
+            # Ensure log directory exists
+            try:
+                log_path.parent.mkdir(parents=True, exist_ok=True)
+
+                # Parse max size (e.g. 10MB -> bytes)
+                max_bytes = 10 * 1024 * 1024  # Default 10MB
+                if self.logging.file.max_size:
+                    # Simple parser for KB, MB
+                    size_str = self.logging.file.max_size.upper()
+                    if size_str.endswith("K") or size_str.endswith("KB"):
+                        max_bytes = int(float(size_str.rstrip("KB")) * 1024)
+                    elif size_str.endswith("M") or size_str.endswith("MB"):
+                        max_bytes = int(float(size_str.rstrip("MB")) * 1024 * 1024)
+                    else:
+                        try:
+                            max_bytes = int(size_str)
+                        except ValueError:
+                            pass
+
+                from logging.handlers import RotatingFileHandler
+
+                file_handler = RotatingFileHandler(
+                    log_path,
+                    maxBytes=max_bytes,
+                    backupCount=self.logging.file.backup_count,
+                )
+                file_handler.setFormatter(logging.Formatter(self.logging.format))
+                handlers.append(file_handler)
+            except Exception as e:
+                # Fallback to stderr if file logging fails (e.g. permissions)
+                print(f"Failed to setup file logging: {e}")
+
         logging.basicConfig(
             level=log_level,
             format=self.logging.format,
             datefmt="%Y-%m-%d %H:%M:%S",
+            handlers=handlers,
+            force=True,  # Ensure we override any existing config
         )
 
         logging.getLogger("paho.mqtt").setLevel(logging.WARNING)

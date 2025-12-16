@@ -4,6 +4,7 @@ Main gateway application that orchestrates MQTT and CalTopo communication.
 
 import asyncio
 import logging
+import os
 import sys
 import time
 from typing import Any, Dict, Optional, Union
@@ -69,6 +70,17 @@ class GatewayApp:
             # Initialize persistent state
             db_path = self.config.storage.db_path
             self.logger.info(f"Using database file: {db_path}")
+
+            # Ensure database directory exists
+            db_dir = os.path.dirname(db_path)
+            if db_dir:
+                try:
+                    os.makedirs(db_dir, exist_ok=True)
+                except OSError as e:
+                    self.logger.error(
+                        f"Failed to create database directory {db_dir}: {e}"
+                    )
+                    # We continue, letting SqliteDict fail if it must, or maybe it works
 
             self.node_id_mapping = SqliteDict(
                 db_path, tablename="node_id_mapping", autocommit=True
