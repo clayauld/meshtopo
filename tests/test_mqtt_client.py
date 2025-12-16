@@ -155,10 +155,24 @@ class TestMqttClient:
         message.payload = b'{"key": "value"}'
         # aiomqtt topic is an object with value attribute
         message.topic.value = "test/topic"
+        del message.retain
 
         await client._process_message(message)
 
         client.message_callback.assert_called_with({"key": "value"})
+
+    @pytest.mark.asyncio
+    async def test_process_message_retained(self, client):
+        message = Mock()
+        message.payload = b'{"key": "value"}'
+        message.topic.value = "test/topic"
+        message.retain = True
+
+        await client._process_message(message)
+
+        client.message_callback.assert_called_with(
+            {"key": "value", "_mqtt_retain": True}
+        )
 
     @pytest.mark.asyncio
     async def test_process_message_invalid_json(self, client):

@@ -108,15 +108,22 @@ class DeviceConfig(BaseModel):
     allow_unknown_devices: bool = True
 
 
+class StorageConfig(BaseModel):
+    """Storage configuration."""
+
+    db_path: str = "meshtopo_state.sqlite"
+
+
 class Config(BaseModel):
     """Main configuration class."""
 
     mqtt: MqttConfig
     caltopo: CalTopoConfig
-    nodes: Dict[str, NodeMapping]
+    nodes: Dict[str, NodeMapping] = Field(default_factory=dict)
     logging: LoggingConfig
     mqtt_broker: MqttBrokerConfig = Field(default_factory=MqttBrokerConfig)
     devices: DeviceConfig = Field(default_factory=DeviceConfig)
+    storage: StorageConfig = Field(default_factory=StorageConfig)
 
     @classmethod
     def from_file(cls, config_path: str) -> "Config":

@@ -67,11 +67,14 @@ class GatewayApp:
             self.logger.info("Configuration loaded successfully")
 
             # Initialize persistent state
+            db_path = self.config.storage.db_path
+            self.logger.info(f"Using database file: {db_path}")
+
             self.node_id_mapping = SqliteDict(
-                "meshtopo_state.sqlite", tablename="node_id_mapping", autocommit=True
+                db_path, tablename="node_id_mapping", autocommit=True
             )
             self.callsign_mapping = SqliteDict(
-                "meshtopo_state.sqlite", tablename="callsign_mapping", autocommit=True
+                db_path, tablename="callsign_mapping", autocommit=True
             )
 
             # Check if we should use internal MQTT broker
@@ -351,6 +354,13 @@ class GatewayApp:
         if self.node_id_mapping is None or self.callsign_mapping is None:
             self.logger.error("State databases not initialized")
             self.stats["errors"] += 1
+            return
+
+        # Check for retained message
+        if data.get("_mqtt_retain"):
+            self.logger.info(
+                f"Skipping retained position message from {numeric_node_id}"
+            )
             return
 
         # Extract payload

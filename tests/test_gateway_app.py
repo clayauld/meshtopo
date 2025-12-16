@@ -18,6 +18,7 @@ def mock_config():
     config.caltopo.has_group = False
     config.caltopo.connect_key = "key"
     config.caltopo.has_connect_key = True
+    config.storage.db_path = "test_db.sqlite"
     return config
 
 
@@ -33,17 +34,24 @@ class MockSqliteDict(dict):
 def app(mock_config):
     with (
         patch("gateway_app.Config") as MockConfig,
-        patch("gateway_app.SqliteDict", new=MockSqliteDict),
+        patch("gateway_app.SqliteDict") as MockSqliteDictClass,
     ):
 
         MockConfig.from_file.return_value = mock_config
+
+        # Setup MockSqliteDict behavior
+        mock_db_instance = MockSqliteDict()
+        MockSqliteDictClass.return_value = mock_db_instance
 
         app = GatewayApp("dummy_config.yaml")
         app.config = mock_config
         # We start with plain dicts, but the code checks isinstance
         # against the class we patched
-        app.node_id_mapping = MockSqliteDict()
-        app.callsign_mapping = MockSqliteDict()
+        app.node_id_mapping = mock_db_instance
+        app.callsign_mapping = mock_db_instance
+
+        # Attach for testing
+        app._MockSqliteDictClass = MockSqliteDictClass
 
         yield app
 
@@ -73,6 +81,12 @@ class TestGatewayApp:
         assert app.mqtt_client is not None
         assert app.caltopo_reporter is not None
         assert "!823a4edc" in app.configured_devices
+
+        # Verify DB initialization with configured path in MockSqliteDict
+        # The SqliteDict constructor should have been called with our test path
+        app._MockSqliteDictClass.assert_any_call(
+            "test_db.sqlite", tablename="node_id_mapping", autocommit=True
+        )
 
     @pytest.mark.asyncio
     async def test_initialize_failure(self, app):

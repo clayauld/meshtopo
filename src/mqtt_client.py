@@ -93,6 +93,10 @@ class MqttClient:
             # Parse JSON
             data = json.loads(payload)
 
+            # Inject retain flag
+            if hasattr(message, "retain"):
+                data["_mqtt_retain"] = message.retain
+
             # Await the async message callback
             await self.message_callback(data)
 

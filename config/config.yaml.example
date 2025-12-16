@@ -84,3 +84,7 @@ logging:
 # logging:
 #     file:
 #         path: "/app/logs/meshtopo.log"
+
+# Storage Configuration
+# storage:
+#     db_path: "meshtopo_state.sqlite"  # Path to SQLite database file
