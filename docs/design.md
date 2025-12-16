@@ -1,9 +1,9 @@
 # **Software Design Document: Meshtastic-to-CalTopo Gateway**
 
--   **Project:** `meshtopo`
--   **Version:** 1.0
--   **Date:** October 9, 2025
--   **Author:** Clayton Auld
+- **Project:** `meshtopo`
+- **Version:** 1.0
+- **Date:** October 9, 2025
+- **Author:** Clayton Auld
 
 ---
 
@@ -19,8 +19,8 @@ Backcountry coordinators, event organizers, and response teams often use a mix o
 
 ### 1.3 Scope
 
--   **In-Scope:** The gateway will connect to an MQTT broker, subscribe to Meshtastic position topics, parse the data, and forward it to the CalTopo Position Report API. The application will be configurable, log its status, and be deployable as a Docker container.
--   **Out-of-Scope:** This project will not involve any modification of the Meshtastic firmware. It will not provide a user interface beyond terminal logging. Two-way communication from CalTopo back to Meshtastic is a potential future enhancement but is not part of this version.
+- **In-Scope:** The gateway will connect to an MQTT broker, subscribe to Meshtastic position topics, parse the data, and forward it to the CalTopo Position Report API. The application will be configurable, log its status, and be deployable as a Docker container.
+- **Out-of-Scope:** This project will not involve any modification of the Meshtastic firmware. It will not provide a user interface beyond terminal logging. Two-way communication from CalTopo back to Meshtastic is a potential future enhancement but is not part of this version.
 
 ### 1.4 License
 
@@ -49,9 +49,9 @@ The system can be enhanced with additional optional components to provide a comp
 
 This enhanced architecture supports three deployment modes:
 
--   **Minimal**: Core gateway service only (existing functionality)
--   **Standard**: Gateway + integrated MQTT broker
--   **Full**: Gateway + MQTT + SSL (complete solution)
+- **Minimal**: Core gateway service only (existing functionality)
+- **Standard**: Gateway + integrated MQTT broker
+- **Full**: Gateway + MQTT + SSL (complete solution)
 
 ---
 
@@ -59,20 +59,20 @@ This enhanced architecture supports three deployment modes:
 
 ### 3.1 Functional Requirements (FR)
 
--   **FR-1**: The system **shall** connect to an MQTT broker using credentials provided in a configuration file.
--   **FR-2**: The system **shall** subscribe to a configurable MQTT topic pattern to capture Meshtastic JSON packets.
--   **FR-3**: The system **shall** parse incoming JSON payloads to extract node ID, latitude, longitude, and timestamp.
--   **FR-4**: The system **shall** maintain a mapping of Meshtastic Node IDs to CalTopo callsigns, as defined in the configuration file. The system **shall** support automatic callsign discovery using Meshtastic longname/shortname fields as fallback when explicit mappings are not available. The system **shall** support configurable control over unknown device behavior (allow/block position updates).
--   **FR-5**: The system **shall** construct a valid CalTopo Position Report API URL using either Team Account connect_key or GROUP-based authentication methods.
--   **FR-6**: The system **shall** send an HTTP GET request to the constructed URL for each valid position packet received from a mapped node.
+- **FR-1**: The system **shall** connect to an MQTT broker using credentials provided in a configuration file.
+- **FR-2**: The system **shall** subscribe to a configurable MQTT topic pattern to capture Meshtastic JSON packets.
+- **FR-3**: The system **shall** parse incoming JSON payloads to extract node ID, latitude, longitude, and timestamp.
+- **FR-4**: The system **shall** maintain a mapping of Meshtastic Node IDs to CalTopo callsigns, as defined in the configuration file. The system **shall** support automatic callsign discovery using Meshtastic longname/shortname fields as fallback when explicit mappings are not available. The system **shall** support configurable control over unknown device behavior (allow/block position updates).
+- **FR-5**: The system **shall** construct a valid CalTopo Position Report API URL using either Team Account connect_key or GROUP-based authentication methods.
+- **FR-6**: The system **shall** send an HTTP GET request to the constructed URL for each valid position packet received from a mapped node.
 
 ### 3.2 Non-Functional Requirements (NFR)
 
--   **NFR-1**: All operational parameters (MQTT/CalTopo details, node mappings) **shall** be externally configurable via a `config.yaml` file.
--   **NFR-2**: The application **shall** log key events, including successful connections, data processing, and API submissions.
--   **NFR-3**: The application **shall** handle and log common errors gracefully (e.g., MQTT disconnection, API unavailability, malformed data).
--   **NFR-4**: The application **shall** be deployable as a self-contained Docker container.
--   **NFR-5**: The application **shall** be lightweight, with minimal CPU and memory footprint.
+- **NFR-1**: All operational parameters (MQTT/CalTopo details, node mappings) **shall** be externally configurable via a `config.yaml` file.
+- **NFR-2**: The application **shall** log key events, including successful connections, data processing, and API submissions.
+- **NFR-3**: The application **shall** handle and log common errors gracefully (e.g., MQTT disconnection, API unavailability, malformed data).
+- **NFR-4**: The application **shall** be deployable as a self-contained Docker container.
+- **NFR-5**: The application **shall** be lightweight, with minimal CPU and memory footprint.
 
 ---
 
@@ -80,23 +80,23 @@ This enhanced architecture supports three deployment modes:
 
 ### 4.1 Software Stack
 
--   **Language**: **Python 3.9+**. Chosen for its rapid development, excellent library support, and suitability for I/O-bound tasks.
--   **Key Libraries**:
-    -   `paho-mqtt`: The de facto standard for MQTT communication in Python.
-    -   `requests`: Simplifies making HTTP requests to the CalTopo endpoint.
-    -   `PyYAML`: For safe and easy loading of the `config.yaml` file.
+- **Language**: **Python 3.9+**. Chosen for its rapid development, excellent library support, and suitability for I/O-bound tasks.
+- **Key Libraries**:
+  - `paho-mqtt`: The de facto standard for MQTT communication in Python.
+  - `requests`: Simplifies making HTTP requests to the CalTopo endpoint.
+  - `PyYAML`: For safe and easy loading of the `config.yaml` file.
 
 ### 4.2 Class Structure
 
 The application will be built using an object-oriented approach to separate concerns.
 
--   `**GatewayApp**`: The main class and entry point.
-    -   Responsibilities: Orchestrates the application lifecycle. Initializes all other components, starts the MQTT client, and handles graceful shutdown.
--   `**Config**`: A data class to hold validated configuration loaded from `config.yaml`.
--   `**MqttClient**`:
-    -   Responsibilities: Manages the entire lifecycle of the MQTT connection, including connecting, subscribing, and handling the `on_message` callback.
--   `**CalTopoReporter**`:
-    -   Responsibilities: Contains the logic for interacting with the CalTopo API. It receives parsed position data, looks up the correct Device ID, constructs the API URL using either connect_key or GROUP-based authentication, and executes the HTTP GET request. Supports both Team Account and custom integration API modes.
+- `**GatewayApp**`: The main class and entry point.
+  - Responsibilities: Orchestrates the application lifecycle. Initializes all other components, starts the MQTT client, and handles graceful shutdown.
+- `**Config**`: A data class to hold validated configuration loaded from `config.yaml`.
+- `**MqttClient**`:
+  - Responsibilities: Manages the entire lifecycle of the MQTT connection, including connecting, subscribing, and handling the `on_message` callback.
+- `**CalTopoReporter**`:
+  - Responsibilities: Contains the logic for interacting with the CalTopo API. It receives parsed position data, looks up the correct Device ID, constructs the API URL using either connect_key or GROUP-based authentication, and executes the HTTP GET request. Supports both Team Account and custom integration API modes.
 
 ### 4.3 Sequence Diagram
 
@@ -127,11 +127,11 @@ The optional internal MQTT broker provides a complete, self-contained MQTT infra
 
 The internal broker is configured through the `mqtt_broker` section in `config.yaml`:
 
--   **Dynamic Configuration**: Mosquitto configuration files are generated from `config.yaml` settings
--   **User Management**: MQTT users defined in configuration with automatic password file generation
--   **Security**: No anonymous access by default, with optional ACL support
--   **Persistence**: Configurable message persistence and logging
--   **WebSocket Support**: Built-in WebSocket support for web clients
+- **Dynamic Configuration**: Mosquitto configuration files are generated from `config.yaml` settings
+- **User Management**: MQTT users defined in configuration with automatic password file generation
+- **Security**: No anonymous access by default, with optional ACL support
+- **Persistence**: Configurable message persistence and logging
+- **WebSocket Support**: Built-in WebSocket support for web clients
 
 #### 4.4.2 Configuration Generation
 
@@ -145,10 +145,10 @@ The system automatically generates Mosquitto configuration files:
 
 The internal broker integrates seamlessly with Docker Compose:
 
--   **Service Definition**: Mosquitto service defined in docker-compose.yml
--   **Volume Mounts**: Generated configuration files mounted into container
--   **Health Checks**: Built-in health monitoring and connectivity testing
--   **Networking**: Automatic network configuration for service communication
+- **Service Definition**: Mosquitto service defined in docker-compose.yml
+- **Volume Mounts**: Generated configuration files mounted into container
+- **Health Checks**: Built-in health monitoring and connectivity testing
+- **Networking**: Automatic network configuration for service communication
 
 ---
 
@@ -160,11 +160,11 @@ The gateway will process JSON objects from the `msh/REGION/2/json/+/+` topic. It
 
 **Note**: Replace `REGION` with the appropriate LoRa region code for your country. See the [Meshtastic LoRa Region by Country documentation](https://meshtastic.org/docs/configuration/region-by-country/) for the correct region code. Common region codes include:
 
--   `US` - United States
--   `EU_868` - European Union (868 MHz)
--   `ANZ` - Australia/New Zealand
--   `CN` - China
--   `JP` - Japan
+- `US` - United States
+- `EU_868` - European Union (868 MHz)
+- `ANZ` - Australia/New Zealand
+- `CN` - China
+- `JP` - Japan
 
 ### 5.1.1 Node ID Mapping Mechanism
 
@@ -224,13 +224,13 @@ _Note: `latitude_i` and `longitude_i` must be divided by `1e7` to get decimal de
 
 The service will make an HTTP GET request to the following endpoint.
 
--   **Method**: `GET`
--   **Endpoint**: `https://caltopo.com/api/v1/position/report/{CONNECT_KEY}`
--   **Query Parameters**:
-    -   `id`: The callsign of the device (from Meshtastic longname or config mapping).
-    -   `lat`: Latitude in decimal degrees.
-    -   `lng`: Longitude in decimal degrees.
--   **Example URL**: `https://caltopo.com/api/v1/position/report/aoJpFiwnxxgGEuaMY6W0gcqdeQ3T2bjoQfzvWbduT9LjJ?id=TEAM-LEAD&lat=61.2188460&lng=-149.9001320`
+- **Method**: `GET`
+- **Endpoint**: `https://caltopo.com/api/v1/position/report/{CONNECT_KEY}`
+- **Query Parameters**:
+  - `id`: The callsign of the device (from Meshtastic longname or config mapping).
+  - `lat`: Latitude in decimal degrees.
+  - `lng`: Longitude in decimal degrees.
+- **Example URL**: `https://caltopo.com/api/v1/position/report/aoJpFiwnxxgGEuaMY6W0gcqdeQ3T2bjoQfzvWbduT9LjJ?id=TEAM-LEAD&lat=61.2188460&lng=-149.9001320`
 
 ---
 
@@ -575,10 +575,10 @@ SSL_DOMAIN=meshtopo.example.com
 
 Traefik is configured via command-line arguments in the Docker Compose file:
 
--   **HTTP Challenge**: Uses port 80 for domain validation
--   **DNS Challenge**: Uses DNS provider API for validation (supports Cloudflare, Route53, etc.)
--   **Certificate Storage**: Persistent volume for certificate storage
--   **Dashboard**: Optional web dashboard for monitoring
+- **HTTP Challenge**: Uses port 80 for domain validation
+- **DNS Challenge**: Uses DNS provider API for validation (supports Cloudflare, Route53, etc.)
+- **Certificate Storage**: Persistent volume for certificate storage
+- **Dashboard**: Optional web dashboard for monitoring
 
 #### 8.3.3 Service Labels
 
@@ -687,24 +687,24 @@ The following enhancements are planned for future releases:
 
 The following features have been implemented in the enhanced architecture:
 
--   **CalTopo Connect Key Integration**: Simplified integration using CalTopo Team Account access URLs
--   **Automatic Device Registration**: Devices automatically appear in CalTopo using callsigns
--   **Integrated MQTT Broker**: Optional Mosquitto broker included in Docker Compose stack
--   **SSL/TLS Support**: Automatic SSL certificate provisioning with Traefik and Let's Encrypt
--   **Enhanced Configuration**: Comprehensive configuration management for all optional components
--   **Dynamic Broker Configuration**: Automatic generation of Mosquitto configuration files
--   **Callsign Mapping**: Automatic mapping from Meshtastic longname to CalTopo callsigns
+- **CalTopo Connect Key Integration**: Simplified integration using CalTopo Team Account access URLs
+- **Automatic Device Registration**: Devices automatically appear in CalTopo using callsigns
+- **Integrated MQTT Broker**: Optional Mosquitto broker included in Docker Compose stack
+- **SSL/TLS Support**: Automatic SSL certificate provisioning with Traefik and Let's Encrypt
+- **Enhanced Configuration**: Comprehensive configuration management for all optional components
+- **Dynamic Broker Configuration**: Automatic generation of Mosquitto configuration files
+- **Callsign Mapping**: Automatic mapping from Meshtastic longname to CalTopo callsigns
 
 ### 9.2 Planned (Potential) Enhancements
 
--   **Two-Way Messaging**: Implement a mechanism to send short text messages back to the Meshtastic network from CalTopo.
--   **Status Reporting**: Forward additional Meshtastic telemetry (e.g., battery level, signal strength) to CalTopo.
--   **Advanced Analytics**: Position history tracking, movement patterns, and performance analytics.
--   **Multiple CalTopo Group Support**: Support for multiple CalTopo groups and dynamic group switching.
--   **Mobile App**: Native mobile application for field operators to monitor and configure the system.
--   **Advanced Security**: Multi-factor authentication, role-based access control, and audit logging.
--   **High Availability**: Clustering support, load balancing, and automatic failover capabilities.
--   **Custom Integrations**: Plugin system for integrating with other mapping platforms and communication systems.
+- **Two-Way Messaging**: Implement a mechanism to send short text messages back to the Meshtastic network from CalTopo.
+- **Status Reporting**: Forward additional Meshtastic telemetry (e.g., battery level, signal strength) to CalTopo.
+- **Advanced Analytics**: Position history tracking, movement patterns, and performance analytics.
+- **Multiple CalTopo Group Support**: Support for multiple CalTopo groups and dynamic group switching.
+- **Mobile App**: Native mobile application for field operators to monitor and configure the system.
+- **Advanced Security**: Multi-factor authentication, role-based access control, and audit logging.
+- **High Availability**: Clustering support, load balancing, and automatic failover capabilities.
+- **Custom Integrations**: Plugin system for integrating with other mapping platforms and communication systems.
 
 ### 9.3 Internal MQTT Broker Features
 
@@ -712,31 +712,31 @@ The internal MQTT broker provides comprehensive MQTT infrastructure:
 
 #### 9.3.1 Configuration Management
 
--   **Dynamic Configuration**: Mosquitto configuration generated from `config.yaml`
--   **User Management**: MQTT users defined in configuration with automatic password hashing
--   **ACL Support**: Optional access control lists for fine-grained permissions
--   **Persistence**: Configurable message persistence and retention
+- **Dynamic Configuration**: Mosquitto configuration generated from `config.yaml`
+- **User Management**: MQTT users defined in configuration with automatic password hashing
+- **ACL Support**: Optional access control lists for fine-grained permissions
+- **Persistence**: Configurable message persistence and retention
 
 #### 9.3.2 Security Features
 
--   **No Anonymous Access**: All connections require authentication by default
--   **Password Hashing**: MQTT passwords hashed using Mosquitto's PBKDF2/SHA512 format
--   **ACL Control**: Optional access control lists for topic-level permissions
--   **WebSocket Security**: Secure WebSocket connections with authentication
+- **No Anonymous Access**: All connections require authentication by default
+- **Password Hashing**: MQTT passwords hashed using Mosquitto's PBKDF2/SHA512 format
+- **ACL Control**: Optional access control lists for topic-level permissions
+- **WebSocket Security**: Secure WebSocket connections with authentication
 
 #### 9.3.3 Docker Integration
 
--   **Service Definition**: Mosquitto service defined in docker-compose.yml
--   **Volume Mounts**: Generated configuration files mounted into container
--   **Health Checks**: Built-in health monitoring and connectivity testing
--   **Networking**: Automatic network configuration for service communication
+- **Service Definition**: Mosquitto service defined in docker-compose.yml
+- **Volume Mounts**: Generated configuration files mounted into container
+- **Health Checks**: Built-in health monitoring and connectivity testing
+- **Networking**: Automatic network configuration for service communication
 
 #### 9.3.4 Monitoring and Management
 
--   **Health Checks**: Docker health checks for broker connectivity
--   **Logging**: Comprehensive logging with configurable levels
--   **Metrics**: Connection counts, message rates, and performance metrics
--   **Configuration Validation**: Automatic validation of broker settings
+- **Health Checks**: Docker health checks for broker connectivity
+- **Logging**: Comprehensive logging with configurable levels
+- **Metrics**: Connection counts, message rates, and performance metrics
+- **Configuration Validation**: Automatic validation of broker settings
 
 ### 9.4 Integration Examples
 

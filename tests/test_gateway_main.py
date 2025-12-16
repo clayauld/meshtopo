@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import Mock, patch
 
 from gateway import main
 
@@ -12,7 +12,9 @@ def test_main():
     ):
 
         mock_app_instance = MockApp.return_value
-        mock_app_instance.start = AsyncMock()
+        # Use Mock instead of AsyncMock for start() because we mock asyncio.run
+        # and thus won't actually await the coroutine.
+        mock_app_instance.start = Mock()
 
         main()
 
@@ -30,6 +32,8 @@ def test_main_default_args(mock_exit):
         patch("gateway.Path.exists", return_value=True),
         patch("sys.argv", ["gateway.py"]),
     ):
+        # start() should return a non-coroutine since we mock asyncio.run
+        MockApp.return_value.start = Mock()
 
         main()
 
