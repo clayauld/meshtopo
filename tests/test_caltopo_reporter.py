@@ -193,3 +193,33 @@ async def test_test_connection(mock_client_cls, reporter):
     reporter.config.caltopo.connect_key = "key"
     reporter.config.caltopo.has_connect_key = True
     assert await reporter.test_connection()
+
+
+@pytest.mark.asyncio
+async def test_make_api_request_network_error(reporter, mock_client):
+    """Test handling of network errors in _make_api_request."""
+    # Mock httpx.AsyncClient to raise RequestError
+    mock_client.get.side_effect = httpx.RequestError("Network down")
+
+    # Should return False on exception
+    result = await reporter._make_api_request(
+        mock_client, "http://test.com", "TEST-CALLSIGN", "test_endpoint"
+    )
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_make_api_request_http_error_404(reporter, mock_client):
+    """Test handling of HTTP errors (e.g. 404)."""
+    # Mock httpx response with error status
+    mock_response = Mock()
+    mock_response.status_code = 404
+    mock_response.text = "Not Found"
+
+    mock_client.get.return_value = mock_response
+
+    # Should return False on exception/error status
+    result = await reporter._make_api_request(
+        mock_client, "http://test.com", "TEST-CALLSIGN", "test_endpoint"
+    )
+    assert result is False
