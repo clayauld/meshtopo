@@ -277,28 +277,24 @@ class GatewayApp:
         Returns:
             The resolved callsign, or None if it cannot be resolved.
         """
-        if self.callsign_mapping is None:
-            self.logger.error("Callsign mapping database not initialized")
-            return None
-
-        # Check mapping first
-        callsign = self.callsign_mapping.get(hardware_id)
-        if callsign:
-            return callsign
-
         if self.config is None:
             self.logger.error("Configuration not loaded")
             return None
 
-        # Check configured devices
+        # Check configured devices FIRST - Configuration always overrides persistence
         configured_device_id = self.config.get_node_device_id(hardware_id)
         if configured_device_id:
-            callsign = configured_device_id
-            self.callsign_mapping[hardware_id] = callsign
+            # We do NOT write this to the database anymore. configuration is the source of truth.
+            # This prevents stale config from persisting if removed from config.yaml.
             self.logger.debug(
                 f"Using configured device_id as callsign: "
-                f"{hardware_id} -> {callsign}"
+                f"{hardware_id} -> {configured_device_id}"
             )
+            return configured_device_id
+
+        # Check mapping database SECOND (for learned/discovered nodes)
+        callsign = self.callsign_mapping.get(hardware_id)
+        if callsign:
             return callsign
 
         # Handle unknown/unconfigured devices
