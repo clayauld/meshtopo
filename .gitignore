@@ -81,4 +81,4 @@ archived/
 .beads/*.db
 .beads/*.db-*
 meshtopo_state.sqlite
-.mypy_cache/
+.mypy_cache

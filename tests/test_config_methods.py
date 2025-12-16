@@ -60,3 +60,23 @@ class TestConfigMethods:
 
             with pytest.raises(TypeError, match="must be a dictionary"):
                 Config.from_file("config.yaml")
+
+    def test_get_node_device_id_robustness(self):
+        """Test robust node ID lookup (handling optional '!')."""
+        config = Config(
+            mqtt=MqttConfig(broker="test"),
+            caltopo=CalTopoConfig(connect_key="test"),
+            logging=LoggingConfig(),
+            nodes={
+                "!1234": NodeMapping(device_id="WITH-BANG"),
+                "5678": NodeMapping(device_id="WITHOUT-BANG"),
+            },
+        )
+
+        # Lookup with '!'
+        assert config.get_node_device_id("!1234") == "WITH-BANG"
+        assert config.get_node_device_id("!5678") == "WITHOUT-BANG"
+
+        # Lookup without '!'
+        assert config.get_node_device_id("1234") == "WITH-BANG"
+        assert config.get_node_device_id("5678") == "WITHOUT-BANG"
