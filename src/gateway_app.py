@@ -284,8 +284,10 @@ class GatewayApp:
         # Check configured devices FIRST - Configuration always overrides persistence
         configured_device_id = self.config.get_node_device_id(hardware_id)
         if configured_device_id:
-            # We do NOT write this to the database anymore. configuration is the source of truth.
-            # This prevents stale config from persisting if removed from config.yaml.
+            # We do NOT write this to the database anymore.
+            # Configuration is the source of truth.
+            # This prevents stale config from persisting if removed from
+            # config.yaml.
             self.logger.debug(
                 f"Using configured device_id as callsign: "
                 f"{hardware_id} -> {configured_device_id}"
@@ -293,9 +295,12 @@ class GatewayApp:
             return configured_device_id
 
         # Check mapping database SECOND (for learned/discovered nodes)
-        callsign = self.callsign_mapping.get(hardware_id)
-        if callsign:
-            return callsign
+        if self.callsign_mapping:
+            callsign = self.callsign_mapping.get(hardware_id)
+            if callsign:
+                return callsign
+        else:
+            self.logger.warning("Callsign mapping database not initialized")
 
         # Handle unknown/unconfigured devices
         is_unknown_device = hardware_id not in self.configured_devices
@@ -304,7 +309,8 @@ class GatewayApp:
             if self.config.devices.allow_unknown_devices:
                 # Allow unknown device but use hardware_id as callsign
                 callsign = hardware_id
-                self.callsign_mapping[hardware_id] = callsign
+                if self.callsign_mapping is not None:
+                    self.callsign_mapping[hardware_id] = callsign
                 self.logger.info(
                     f"Allowing unknown device {hardware_id} "
                     f"(allow_unknown_devices=True). Using hardware_id as callsign."
