@@ -83,16 +83,14 @@ class CalTopoReporter:
         """
         self.config = config
         self.logger = logging.getLogger(__name__)
-        # We will use an async client context manager in methods or a persistent one if
-        # managed externally. For simplicity and resource management in this refactor,
-        # we'll instantiate per request or use a shared client if we can manage its
-        # lifecycle. Given the usage pattern, a shared client is better but requires
-        # open/close management. We'll initialize it in a start method or just use a
-        # context manager for each request if the frequency is low (which it is for
-        # position updates). However, for efficiency, let's keep a client but we need
-        # to ensure it's closed. For now, let's use a context manager per request to
-        # be safe with lifecycle.
+        # Use a persistent client for efficiency (connection reuse)
+        self.client: Optional[httpx.AsyncClient] = None
         self.timeout = 10  # seconds
+
+    async def start(self) -> None:
+        """Initialize the persistent HTTP client."""
+        if self.client is None:
+            self.client = httpx.AsyncClient(timeout=self.timeout)
 
     def _is_valid_caltopo_identifier(self, identifier: str) -> bool:
         """
@@ -145,26 +143,32 @@ class CalTopoReporter:
         Returns:
             bool: True if at least one endpoint was successful, False otherwise
         """
+        # Ensure client is initialized
+        if self.client is None:
+            await self.start()
+
+        # We can safely assume client is not None after start(), but type checker might complain
+        # So we use a local variable or assert
+        client = self.client
+        assert client is not None
+
         success_count = 0
         total_attempts = 0
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            # Send to connect_key endpoint if configured
-            if self.config.caltopo.has_connect_key:
-                total_attempts += 1
-                if await self._send_to_connect_key(
-                    client, callsign, latitude, longitude
-                ):
-                    success_count += 1
+        # Send to connect_key endpoint if configured
+        if self.config.caltopo.has_connect_key:
+            total_attempts += 1
+            if await self._send_to_connect_key(client, callsign, latitude, longitude):
+                success_count += 1
 
-            # Send to group endpoint if configured
-            if self.config.caltopo.has_group:
-                total_attempts += 1
-                group_to_use = group or self.config.caltopo.group
-                if await self._send_to_group(
-                    client, callsign, latitude, longitude, group_to_use
-                ):
-                    success_count += 1
+        # Send to group endpoint if configured
+        if self.config.caltopo.has_group:
+            total_attempts += 1
+            group_to_use = group or self.config.caltopo.group
+            if await self._send_to_group(
+                client, callsign, latitude, longitude, group_to_use
+            ):
+                success_count += 1
 
         # Return True if at least one endpoint was successful
         return success_count > 0
@@ -284,21 +288,27 @@ class CalTopoReporter:
             bool: True if at least one endpoint connection test successful,
                 False otherwise
         """
+        # Ensure client is initialized
+        if self.client is None:
+            await self.start()
+
+        client = self.client
+        assert client is not None
+
         success_count = 0
         total_attempts = 0
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            # Test connect_key endpoint if configured
-            if self.config.caltopo.has_connect_key:
-                total_attempts += 1
-                if await self._test_connect_key_endpoint(client):
-                    success_count += 1
+        # Test connect_key endpoint if configured
+        if self.config.caltopo.has_connect_key:
+            total_attempts += 1
+            if await self._test_connect_key_endpoint(client):
+                success_count += 1
 
-            # Test group endpoint if configured
-            if self.config.caltopo.has_group:
-                total_attempts += 1
-                if await self._test_group_endpoint(client):
-                    success_count += 1
+        # Test group endpoint if configured
+        if self.config.caltopo.has_group:
+            total_attempts += 1
+            if await self._test_group_endpoint(client):
+                success_count += 1
 
         if success_count > 0:
             self.logger.info(
@@ -356,7 +366,8 @@ class CalTopoReporter:
 
     async def close(self) -> None:
         """
-        Close the reporter.
-        No persistent session is maintained in this implementation.
+        Close the reporter and the underlying HTTP client.
         """
-        pass
+        if self.client:
+            await self.client.aclose()
+            self.client = None
