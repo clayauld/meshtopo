@@ -2,7 +2,7 @@ import asyncio
 import logging
 from unittest.mock import AsyncMock, Mock, patch
 
-import asyncio_mqtt as aiomqtt
+import aiomqtt
 import pytest
 
 from mqtt_client import MqttClient

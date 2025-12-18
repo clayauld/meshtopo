@@ -3,6 +3,7 @@ Main gateway application that orchestrates MQTT and CalTopo communication.
 """
 
 import asyncio
+import json
 import logging
 import os
 import sys
@@ -83,10 +84,18 @@ class GatewayApp:
                     # We continue, letting SqliteDict fail if it must, or maybe it works
 
             self.node_id_mapping = SqliteDict(
-                db_path, tablename="node_id_mapping", autocommit=True
+                db_path,
+                tablename="node_id_mapping_v2",
+                autocommit=True,
+                encode=json.dumps,
+                decode=json.loads,
             )
             self.callsign_mapping = SqliteDict(
-                db_path, tablename="callsign_mapping", autocommit=True
+                db_path,
+                tablename="callsign_mapping_v2",
+                autocommit=True,
+                encode=json.dumps,
+                decode=json.loads,
             )
 
             # Check if we should use internal MQTT broker

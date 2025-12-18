@@ -1,4 +1,5 @@
 import asyncio
+import json
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -86,7 +87,11 @@ class TestGatewayApp:
         # Verify DB initialization with configured path in MockSqliteDict
         # The SqliteDict constructor should have been called with our test path
         app._MockSqliteDictClass.assert_any_call(
-            "test_db.sqlite", tablename="node_id_mapping", autocommit=True
+            "test_db.sqlite",
+            tablename="node_id_mapping_v2",
+            autocommit=True,
+            encode=json.dumps,
+            decode=json.loads,
         )
 
     @pytest.mark.asyncio
