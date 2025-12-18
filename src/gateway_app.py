@@ -98,6 +98,7 @@ class GatewayApp:
             # Initialize CalTopo reporter
             self.logger.info("Initializing CalTopo reporter...")
             self.caltopo_reporter = CalTopoReporter(self.config)
+            await self.caltopo_reporter.start()
 
             # Test CalTopo connectivity
             if not await self.caltopo_reporter.test_connection():

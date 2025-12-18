@@ -72,6 +72,7 @@ class TestGatewayApp:
         # Mock Reporter
         mock_reporter_instance = MockReporter.return_value
         mock_reporter_instance.test_connection = AsyncMock(return_value=True)
+        mock_reporter_instance.start = AsyncMock()
 
         # Mock Mqtt Client
         MockMqtt.return_value = Mock()  # The init is sync
@@ -318,6 +319,7 @@ class TestGatewayApp:
             MockConfig.from_file.return_value = mock_config
             mock_reporter = MockReporterClass.return_value
             mock_reporter.test_connection = AsyncMock(return_value=False)
+            mock_reporter.start = AsyncMock()
 
             app = GatewayApp("dummy_config.yaml")
             success = await app.initialize()
