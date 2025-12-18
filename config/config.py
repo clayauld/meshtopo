@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 
 # Constants
 _LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -17,7 +17,7 @@ class MqttUser(BaseModel):
     """MQTT user configuration."""
 
     username: str
-    password: str
+    password: SecretStr
     acl: str = "readwrite"
 
 
@@ -27,7 +27,7 @@ class MqttConfig(BaseModel):
     broker: str
     port: int = 1883
     username: str = ""
-    password: str = ""
+    password: SecretStr = SecretStr("")
     topic: str = "msh/US/2/json/+/+"
     keepalive: int = 60
     use_internal_broker: bool = False
