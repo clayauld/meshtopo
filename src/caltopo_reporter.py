@@ -152,23 +152,29 @@ class CalTopoReporter:
         client = self.client
         assert client is not None
 
-        success_count = 0
-        total_attempts = 0
+        tasks = []
 
         # Send to connect_key endpoint if configured
         if self.config.caltopo.has_connect_key:
-            total_attempts += 1
-            if await self._send_to_connect_key(client, callsign, latitude, longitude):
-                success_count += 1
+            tasks.append(
+                self._send_to_connect_key(client, callsign, latitude, longitude)
+            )
 
         # Send to group endpoint if configured
         if self.config.caltopo.has_group:
-            total_attempts += 1
             group_to_use = group or self.config.caltopo.group
-            if await self._send_to_group(
-                client, callsign, latitude, longitude, group_to_use
-            ):
-                success_count += 1
+            tasks.append(
+                self._send_to_group(client, callsign, latitude, longitude, group_to_use)
+            )
+
+        if not tasks:
+            return False
+
+        # Run requests concurrently
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Count successes (ignoring exceptions which shouldn't happen but safe to filter)
+        success_count = sum(1 for r in results if not isinstance(r, Exception) and r)
 
         # Return True if at least one endpoint was successful
         return success_count > 0
@@ -295,20 +301,24 @@ class CalTopoReporter:
         client = self.client
         assert client is not None
 
-        success_count = 0
-        total_attempts = 0
+        tasks = []
 
         # Test connect_key endpoint if configured
         if self.config.caltopo.has_connect_key:
-            total_attempts += 1
-            if await self._test_connect_key_endpoint(client):
-                success_count += 1
+            tasks.append(self._test_connect_key_endpoint(client))
 
         # Test group endpoint if configured
         if self.config.caltopo.has_group:
-            total_attempts += 1
-            if await self._test_group_endpoint(client):
-                success_count += 1
+            tasks.append(self._test_group_endpoint(client))
+
+        if not tasks:
+            return False
+
+        # Run tests concurrently
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        success_count = sum(1 for r in results if not isinstance(r, Exception) and r)
+        total_attempts = len(tasks)
 
         if success_count > 0:
             self.logger.info(
