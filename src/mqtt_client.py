@@ -9,6 +9,8 @@ from typing import Any, Awaitable, Callable, Dict, Optional
 
 import aiomqtt as mqtt
 
+from utils import sanitize_for_log
+
 
 class MqttClient:
     """
@@ -88,7 +90,9 @@ class MqttClient:
         """
         try:
             payload = message.payload.decode("utf-8")
-            self.logger.debug(f"Received message on topic {message.topic}: {payload}")
+            self.logger.debug(
+                f"Received message on topic {sanitize_for_log(message.topic)}: {sanitize_for_log(payload)}"
+            )
 
             # Parse JSON
             data = json.loads(payload)
@@ -102,7 +106,7 @@ class MqttClient:
 
         except json.JSONDecodeError as e:
             self.logger.warning(
-                f"Failed to parse JSON message: {e}. Payload: {message.payload}"
+                f"Failed to parse JSON message: {e}. Payload: {sanitize_for_log(message.payload)}"
             )
         except Exception as e:
             self.logger.error(f"Error processing message: {e}")

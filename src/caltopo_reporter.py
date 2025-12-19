@@ -12,6 +12,8 @@ from urllib.parse import urlencode, urlparse
 
 import httpx
 
+from utils import sanitize_for_log
+
 
 def _matches_url_pattern(url: str, pattern: str) -> bool:
     """
@@ -120,7 +122,9 @@ class CalTopoReporter:
             bool: True if the identifier is valid, False otherwise
         """
         if not self._is_valid_caltopo_identifier(identifier):
-            self.logger.error(f"Invalid CalTopo {identifier_type}: {identifier}")
+            self.logger.error(
+                f"Invalid CalTopo {identifier_type}: {sanitize_for_log(identifier)}"
+            )
             return False
         return True
 
@@ -228,7 +232,7 @@ class CalTopoReporter:
         for attempt in range(max_retries + 1):
             try:
                 self.logger.debug(
-                    f"Sending position update for {callsign} to {endpoint_type} "
+                    f"Sending position update for {sanitize_for_log(callsign)} to {endpoint_type} "
                     f"(attempt {attempt + 1}): {log_url}"
                 )
 
@@ -236,32 +240,32 @@ class CalTopoReporter:
 
                 if response.status_code == 200:
                     self.logger.info(
-                        f"Successfully sent position update for {callsign} to "
+                        f"Successfully sent position update for {sanitize_for_log(callsign)} to "
                         f"{endpoint_type}"
                     )
                     return True
                 elif 500 <= response.status_code < 600 or response.status_code == 429:
                     # Retry on server errors or rate limits
                     self.logger.warning(
-                        f"CalTopo API error for {callsign} ({endpoint_type}): "
-                        f"HTTP {response.status_code} - {response.text}. Retrying..."
+                        f"CalTopo API error for {sanitize_for_log(callsign)} ({endpoint_type}): "
+                        f"HTTP {response.status_code} - {sanitize_for_log(response.text)}. Retrying..."
                     )
                 else:
                     # Don't retry on other client errors (e.g., 400, 401, 404)
                     self.logger.error(
-                        f"CalTopo API error for {callsign} ({endpoint_type}): "
-                        f"HTTP {response.status_code} - {response.text}"
+                        f"CalTopo API error for {sanitize_for_log(callsign)} ({endpoint_type}): "
+                        f"HTTP {response.status_code} - {sanitize_for_log(response.text)}"
                     )
                     return False
 
             except (httpx.ConnectError, httpx.TimeoutException) as e:
                 self.logger.warning(
-                    f"CalTopo API connection/timeout error for {callsign} "
+                    f"CalTopo API connection/timeout error for {sanitize_for_log(callsign)} "
                     f"({endpoint_type}): {e}. Retrying..."
                 )
             except Exception as e:
                 self.logger.error(
-                    f"Unexpected error sending position update for {callsign} "
+                    f"Unexpected error sending position update for {sanitize_for_log(callsign)} "
                     f"({endpoint_type}): {e}"
                 )
                 return False
@@ -275,7 +279,7 @@ class CalTopoReporter:
                 await asyncio.sleep(delay)
 
         self.logger.error(
-            f"Failed to send position update for {callsign} ({endpoint_type}) "
+            f"Failed to send position update for {sanitize_for_log(callsign)} ({endpoint_type}) "
             f"after {max_retries + 1} attempts"
         )
         return False
