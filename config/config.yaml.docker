@@ -51,3 +51,6 @@ logging:
         path: "/app/logs/meshtopo.log"
         max_size: "10MB"
         backup_count: 5
+
+storage:
+    db_path: "/app/data/meshtopo_state.sqlite"

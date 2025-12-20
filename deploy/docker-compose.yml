@@ -4,54 +4,29 @@ networks:
 
 volumes:
     mosquitto_data:
-    traefik_certs:
-    traefik_logs:
+    caddy_data:
+    caddy_config:
 
 services:
-    # Traefik reverse proxy with SSL termination (conditional)
-    traefik:
-        image: traefik:v2.10
-        container_name: traefik
+    # Caddy reverse proxy with SSL termination (conditional)
+    caddy:
+        image: caddy:2-alpine
+        container_name: caddy
         restart: unless-stopped
-        command:
-            - --api.dashboard=true
-            - --api.insecure=false
-            - --providers.docker=true
-            - --providers.docker.exposedbydefault=false
-            - --entrypoints.web.address=:80
-            - --entrypoints.websecure.address=:443
-            # HTTP Challenge (default)
-            - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
-            - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
-            - --certificatesresolvers.letsencrypt.acme.email=${SSL_EMAIL}
-            - --certificatesresolvers.letsencrypt.acme.storage=/certs/acme.json
-            # DNS Challenge (if DNS_PROVIDER is set)
-            - --certificatesresolvers.letsencrypt.acme.dnschallenge=true
-            - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=${DNS_PROVIDER:-}
-            - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
-            - --log.level=INFO
-            - --accesslog=true
         ports:
             - "80:80"
             - "443:443"
-            - "8080:8080"  # Traefik dashboard
+            - "443:443/udp"
         volumes:
-            - /var/run/docker.sock:/var/run/docker.sock:ro
-            - traefik_certs:/certs
-            - traefik_logs:/logs
+            - ./Caddyfile:/etc/caddy/Caddyfile
+            - caddy_data:/data
+            - caddy_config:/config
         environment:
+            - SSL_DOMAIN=${SSL_DOMAIN}
+            - SSL_EMAIL=${SSL_EMAIL}
             - TZ=UTC
-            - CF_API_EMAIL=${DNS_EMAIL:-}
-            - CF_API_KEY=${DNS_API_TOKEN:-}
-            - CF_ZONE_API_TOKEN=${DNS_ZONE_API_TOKEN:-}
         networks:
             - meshtopo
-        labels:
-            - "traefik.enable=true"
-            - "traefik.http.routers.traefik.rule=Host(`traefik.${SSL_DOMAIN}`)"
-            - "traefik.http.routers.traefik.entrypoints=websecure"
-            - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
-            - "traefik.http.routers.traefik.service=api@internal"
         profiles:
             - ssl
 
@@ -93,13 +68,6 @@ services:
             timeout: 10s
             retries: 3
             start_period: 10s
-        labels:
-            - "traefik.enable=true"
-            - "traefik.http.routers.mosquitto-ws.rule=Host(`mqtt.${SSL_DOMAIN}`)"
-            - "traefik.http.routers.mosquitto-ws.entrypoints=websecure"
-            - "traefik.http.routers.mosquitto-ws.tls.certresolver=letsencrypt"
-            - "traefik.http.routers.mosquitto-ws.service=mosquitto-ws"
-            - "traefik.http.services.mosquitto-ws.loadbalancer.server.port=9001"
 
     # Core Meshtopo gateway service
     meshtopo-gateway:

@@ -65,3 +65,25 @@ class TestCase(unittest.TestCase):
     def tearDown(self) -> None:
         """Clean up test fixtures."""
         cleanup_test_config(self.test_config_path)
+
+
+class TestConfig(TestCase):
+    """Test configuration loading."""
+
+    def test_load_storage_config(self):
+        """Test loading storage configuration."""
+        from config.config import Config
+
+        # Append storage config to the test file
+        with open(self.test_config_path, "a") as f:
+            f.write("\nstorage:\n    db_path: /custom/path.sqlite\n")
+
+        config = Config.from_file(self.test_config_path)
+        assert config.storage.db_path == "/custom/path.sqlite"
+
+    def test_storage_defaults(self):
+        """Test default storage configuration."""
+        from config.config import Config
+
+        config = Config.from_file(self.test_config_path)
+        assert config.storage.db_path == "meshtopo_state.sqlite"

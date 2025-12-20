@@ -25,6 +25,7 @@ MANIFEST
 
 # Virtual environments
 .env
+.env.*
 .venv
 env/
 venv/
@@ -80,3 +81,4 @@ archived/
 .beads/*.db
 .beads/*.db-*
 meshtopo_state.sqlite
+.mypy_cache

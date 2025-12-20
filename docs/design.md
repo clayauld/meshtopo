@@ -43,7 +43,7 @@ The system can be enhanced with additional optional components to provide a comp
 
 1. **Integrated MQTT Broker**: An optional Mosquitto MQTT broker service included in the Docker Compose stack, eliminating the need for external MQTT infrastructure.
 
-2. **SSL/TLS Termination**: An optional Traefik reverse proxy service that provides automatic SSL certificate provisioning and renewal using Let's Encrypt, securing web-based components.
+2. **SSL/TLS Termination**: An optional Caddy reverse proxy service that provides automatic SSL certificate provisioning and renewal using Let's Encrypt, securing web-based components.
 
 3. **Enhanced Configuration Management**: Centralized configuration via `config.yaml` that controls all optional components, enabling users to customize their deployment based on specific needs.
 
@@ -419,11 +419,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc=4:14.2.0-1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy project definition for dependency installation
+COPY pyproject.toml .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir .
 
 # Copy application code
 COPY . .
@@ -461,35 +461,26 @@ networks:
 
 volumes:
     mosquitto_data:
-    traefik_certs:
-    traefik_logs:
+    caddy_data:
+    caddy_config:
 
 services:
-    # Traefik reverse proxy with SSL termination (conditional)
-    traefik:
-        image: traefik:v2.10
-        container_name: traefik
+    # Caddy reverse proxy with SSL termination (conditional)
+    caddy:
+        image: caddy:2-alpine
+        container_name: caddy
         restart: unless-stopped
-        command:
-            - --api.dashboard=true
-            - --api.insecure=false
-            - --providers.docker=true
-            - --providers.docker.exposedbydefault=false
-            - --entrypoints.web.address=:80
-            - --entrypoints.websecure.address=:443
-            - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
-            - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
-            - --certificatesresolvers.letsencrypt.acme.email=${SSL_EMAIL}
-            - --certificatesresolvers.letsencrypt.acme.storage=/certs/acme.json
-            - --log.level=INFO
-            - --accesslog=true
         ports:
             - "80:80"
             - "443:443"
         volumes:
-            - /var/run/docker.sock:/var/run/docker.sock:ro
-            - traefik_certs:/certs
-            - traefik_logs:/logs
+            - ./deploy/Caddyfile:/etc/caddy/Caddyfile
+            - caddy_data:/data
+            - caddy_config:/config
+        environment:
+            - SSL_DOMAIN=${SSL_DOMAIN}
+            - SSL_EMAIL=${SSL_EMAIL}
+            - TZ=UTC
         networks:
             - meshtopo
         profiles:
@@ -518,8 +509,11 @@ services:
         container_name: meshtopo-gateway
         restart: unless-stopped
         volumes:
-            - ./config/config.yaml:/app/config/config.yaml:ro
+            - ../config/config.yaml:/app/config/config.yaml:ro
+            # Logs are mounted to /app/logs
             - ./logs:/app/logs
+            # Data is mounted to /app/data for database file
+            - ./data:/app/data
         environment:
             - TZ=UTC
         deploy:
@@ -549,9 +543,9 @@ services:
             - core
 ```
 
-### 8.3 SSL/TLS Configuration with Traefik
+### 8.3 SSL/TLS Configuration with Caddy
 
-Traefik provides automatic SSL certificate provisioning and renewal using Let's Encrypt. The configuration supports both HTTP and DNS challenges.
+Caddy provides automatic SSL certificate provisioning and renewal using Let's Encrypt. It is configured via a `Caddyfile`.
 
 #### 8.3.1 Environment Variables
 
@@ -568,26 +562,23 @@ SSL_DOMAIN=meshtopo.example.com
 # DNS_API_TOKEN=your_api_token
 ```
 
-#### 8.3.2 Traefik Configuration
+#### 8.3.2 Caddy Configuration
 
-Traefik is configured via command-line arguments in the Docker Compose file:
+Caddy is configured via a `Caddyfile` in the `deploy` directory:
 
-- **HTTP Challenge**: Uses port 80 for domain validation
-- **DNS Challenge**: Uses DNS provider API for validation (supports Cloudflare, Route53, etc.)
-- **Certificate Storage**: Persistent volume for certificate storage
-- **Dashboard**: Optional web dashboard for monitoring
+```caddy
+{
+    email {$SSL_EMAIL}
+}
 
-#### 8.3.3 Service Labels
-
-Services are automatically configured for SSL using Docker labels:
-
-```yaml
-labels:
-    - "traefik.enable=true"
-    - "traefik.http.routers.service-name.rule=Host(`subdomain.example.com`)"
-    - "traefik.http.routers.service-name.entrypoints=websecure"
-    - "traefik.http.routers.service-name.tls.certresolver=letsencrypt"
+mqtt.{$SSL_DOMAIN} {
+    reverse_proxy mosquitto:9001
+}
 ```
+
+- **Automatic SSL**: Caddy automatically provisions and renews certificates for the specified domains.
+- **Reverse Proxy**: Proxies WebSocket traffic for the MQTT broker.
+- **UDP support**: Caddy supports HTTP/3 (QUIC) which uses UDP.
 
 ### 8.4 Deployment Profiles
 
@@ -687,7 +678,7 @@ The following features have been implemented in the enhanced architecture:
 - **CalTopo Connect Key Integration**: Simplified integration using CalTopo Team Account access URLs
 - **Automatic Device Registration**: Devices automatically appear in CalTopo using callsigns
 - **Integrated MQTT Broker**: Optional Mosquitto broker included in Docker Compose stack
-- **SSL/TLS Support**: Automatic SSL certificate provisioning with Traefik and Let's Encrypt
+- **SSL/TLS Support**: Automatic SSL certificate provisioning with Caddy and Let's Encrypt
 - **Enhanced Configuration**: Comprehensive configuration management for all optional components
 - **Dynamic Broker Configuration**: Automatic generation of Mosquitto configuration files
 - **Callsign Mapping**: Automatic mapping from Meshtastic longname to CalTopo callsigns

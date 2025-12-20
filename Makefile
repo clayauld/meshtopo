@@ -10,18 +10,20 @@ help:
 	@echo "Meshtopo Gateway Service - Available Commands:"
 	@echo ""
 	@echo "Onboarding:"
-	@echo "  setup        Run the interactive setup wizard"
+	@echo "  setup                Run the interactive setup wizard"
 	@echo ""
 	@echo "Development:"
-	@echo "  install      Install dependencies"
-	@echo "  dev-setup    Setup development environment"
-	@echo "  test         Run all tests"
-	@echo "  test-config  Run configuration tests"
-	@echo "  test-gateway Run gateway tests"
-	@echo "  test-mqtt    Run MQTT topic format tests"
-	@echo "  lint         Run linting checks"
-	@echo "  format       Format code with black and isort"
-	@echo "  clean        Clean up temporary files"
+	@echo "  install              Install dependencies"
+	@echo "  dev-setup            Setup development environment"
+	@echo "  test                 Run tests (excludes slow integration tests)"
+	@echo "  test-full            Run all tests including integration tests"
+	@echo "  test-integration     Run integration tests"
+	@echo "  test-config          Run configuration tests"
+	@echo "  test-gateway         Run gateway tests"
+	@echo "  test-mqtt            Run MQTT topic format tests"
+	@echo "  lint                 Run linting checks"
+	@echo "  format               Format code with black and isort"
+	@echo "  clean                Clean up temporary files"
 	@echo ""
 	@echo "Docker:"
 	@echo "  docker-setup        Set up Docker environment (.env file)"
@@ -29,7 +31,7 @@ help:
 	@echo "  docker-pull         Pull Docker images from ghcr.io"
 	@echo "  docker-run          Run full stack with Docker Compose"
 	@echo "  docker-run-minimal  Run minimal gateway only"
-	@echo "  docker-run-ssl      Run with SSL/Traefik (requires SSL_DOMAIN)"
+	@echo "  docker-run-ssl      Run with SSL/Caddy (requires SSL_DOMAIN)"
 	@echo "  docker-stop         Stop Docker containers"
 	@echo "  docker-status       Show container status"
 	@echo "  docker-logs         Show container logs"
@@ -50,32 +52,55 @@ help:
 setup:
 	python3 scripts/setup_wizard.py
 
+# Helper for virtual environment check
+VENV_CHECK := @if [ -z "$${VIRTUAL_ENV}" ]; then \
+	echo "Error: No Python virtual environment activated."; \
+	echo "Please create and activate a virtual environment (e.g., 'python3 -m venv .venv && source .venv/bin/activate')."; \
+	exit 1; \
+fi
+
 # Install dependencies
 install:
-	pip3 install -r requirements.txt
+	$(VENV_CHECK)
+	pip3 install .
 
 # Setup development environment
 dev-setup: install
-	pip3 install -r requirements-dev.txt
+	$(VENV_CHECK)
+	pip3 install ".[dev]"
 	python3 -m pre_commit install
 	@echo "Development environment setup complete!"
 
-# Run tests
+# Run tests (excludes slow integration tests)
 test:
-	python3 -m pytest tests/ -v --tb=short
+	$(VENV_CHECK)
+	python3 -m pytest -m "not integration" tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=html --cov-report=xml
 
+# Run all tests including integration tests
+test-full:
+	$(VENV_CHECK)
+	python3 -m pytest tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=html --cov-report=xml
+
+# Run integration tests
+test-integration:
+	$(VENV_CHECK)
+	python3 -m pytest tests/integration/ -v --tb=short
 # Run specific test modules
 test-config:
+	$(VENV_CHECK)
 	python3 -m pytest tests/test_config.py -v
 
 test-gateway:
+	$(VENV_CHECK)
 	python3 -m pytest tests/test_gateway_app.py -v
 
 test-mqtt:
+	$(VENV_CHECK)
 	python3 -m pytest tests/test_mqtt_topic_format.py -v
 
 # Format and lint code using pre-commit
 format:
+	$(VENV_CHECK)
 	pre-commit run --all-files
 	@echo "Code formatting and linting complete!"
 
@@ -135,9 +160,9 @@ docker-run-minimal:
 	cd deploy && docker compose -f docker-compose-minimal.yaml up -d
 	@echo "Minimal services started! Check status with: make docker-status"
 
-# Run with Docker Compose (with SSL/Traefik)
+# Run with Docker Compose (with SSL/Caddy)
 docker-run-ssl:
-	@echo "Starting Meshtopo services with SSL/Traefik..."
+	@echo "Starting Meshtopo services with SSL/Caddy..."
 	@if [ -z "$(SSL_DOMAIN)" ]; then echo "Error: SSL_DOMAIN environment variable required"; exit 1; fi
 	cd deploy && docker compose --profile core --profile mqtt --profile ssl up -d
 	@echo "SSL services started! Check status with: make docker-status"
@@ -204,6 +229,7 @@ docker-push-default:
 
 # Run the gateway service
 run:
+	$(VENV_CHECK)
 	python3 src/gateway.py
 
 # Show configuration help
@@ -221,6 +247,7 @@ config:
 	@echo "3. Run the service:"
 	@echo "   make run          # Core gateway only"
 	@echo "   make docker-run   # Full stack with Docker"
+	@echo "   make test-integration # Run integration tests"
 	@echo ""
 	@echo "4. Setup internal MQTT broker:"
 	@echo "   make setup-broker # Setup and start internal broker"

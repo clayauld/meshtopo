@@ -43,7 +43,7 @@ CMD ["python", "src/gateway.py"]
 
 ```bash
 # Install test dependencies
-pip install -r requirements-test.txt
+pip install ".[dev]"
 # Run tests
 python -m pytest tests/ -v
 ```
@@ -82,8 +82,7 @@ The CI pipeline now:
 ## File Structure
 
 ```
-├── requirements.txt          # Production dependencies only
-├── requirements-test.txt     # Test dependencies (includes requirements.txt)
+├── pyproject.toml            # Single source of truth for all dependencies
 ├── deploy/Dockerfile         # Multi-stage Dockerfile
 └── .github/workflows/ci.yml  # Updated CI pipeline
 ```
@@ -91,7 +90,7 @@ The CI pipeline now:
 ## Best Practices
 
 1. **Keep Production Images Minimal**: Only include what's needed for runtime
-2. **Separate Test Dependencies**: Use requirements-test.txt for testing
+2. **Separate Test Dependencies**: Use `[project.optional-dependencies].dev` in pyproject.toml for testing
 3. **Multi-Stage Builds**: Leverage Docker's multi-stage feature
 4. **Smoke Testing**: Verify production images can start
 5. **Security First**: Use non-root users in production images
@@ -99,7 +98,7 @@ The CI pipeline now:
 
 ## Migration Notes
 
-- Removed pytest from requirements.txt
-- Created requirements-test.txt for test dependencies
-- Updated Dockerfile to use multi-stage builds
+- Consolidated all dependencies into `pyproject.toml`
+- Development/test dependencies in `[project.optional-dependencies].dev` section
+- Updated Dockerfile to use `pip install .` for production and `pip install ".[dev]"` for tests
 - Modified GitHub Actions to test both stages appropriately

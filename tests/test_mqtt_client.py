@@ -2,22 +2,10 @@ import asyncio
 import logging
 from unittest.mock import AsyncMock, Mock, patch
 
-import asyncio_mqtt as aiomqtt
+import aiomqtt
 import pytest
 
 from mqtt_client import MqttClient
-
-
-# Helper to make the iterator a context manager
-class AsyncContextManagerIterator:
-    def __init__(self, iterator):
-        self.iterator = iterator
-
-    async def __aenter__(self):
-        return self.iterator
-
-    async def __aexit__(self, exc_type, exc, tb):
-        pass
 
 
 @pytest.fixture
@@ -26,7 +14,8 @@ def mock_config():
     config.mqtt.broker = "localhost"
     config.mqtt.port = 1883
     config.mqtt.username = "testuser"
-    config.mqtt.password = "testpass"
+    config.mqtt.password = Mock()
+    config.mqtt.password.get_secret_value.return_value = "testpass"
     config.mqtt.topic = "test/topic"
     return config
 
@@ -50,64 +39,72 @@ class TestMqttClient:
         assert client.message_callback == message_callback
 
     @pytest.mark.asyncio
-    async def test_run_success(self, client):
+    async def test_run_success(self, client, message_callback):
+        # Import mqtt_client to access its mqtt module
+        import mqtt_client
+
         # Mock aiomqtt Client context manager
         mock_client_instance = AsyncMock()
         mock_client_instance.__aenter__.return_value = mock_client_instance
         mock_client_instance.__aexit__.return_value = None
 
-        # Mock messages iterator
-        mock_msg = Mock()
+        # Mock messages iterator using a queue
+        incoming_messages = asyncio.Queue()
+        mock_msg = Mock(spec=aiomqtt.Message)
         mock_msg.payload = b'{"test": 1}'
-        mock_msg.topic = "test/topic"
+        # aiomqtt messages have a topic object with a value attribute
+        mock_msg.topic = Mock()
+        mock_msg.topic.value = "test/topic"
 
-        # Setup iterator to yield one message then raise CancelledError (or just stop)
-        # But run() loops forever on messages().
-        # We can simulate the iterator yielding items.
-        mock_client_instance.messages = Mock()
+        # Create an async iterable for messages
+        class AsyncMessages:
+            def __aiter__(self):
+                return self
 
-        async def message_iterator():
-            yield mock_msg
-            # Raise CancelledError to exit the run loop cleanly (simulating
-            # cancellation)
-            raise asyncio.CancelledError()
+            async def __anext__(self):
+                return await incoming_messages.get()
 
-        mock_client_instance.messages.return_value = AsyncContextManagerIterator(
-            message_iterator()
-        )
+        mock_client_instance.messages = AsyncMessages()
 
-        # Mock sleep to prevent waiting and allow breaking if loop continues
-        mock_sleep = AsyncMock()
-        mock_sleep.side_effect = asyncio.CancelledError("Force exit if looped")
-
-        # Spy on _process_message
-        with (
-            patch("asyncio_mqtt.Client", return_value=mock_client_instance),
-            patch("asyncio.sleep", mock_sleep),
-            patch.object(
-                client, "_process_message", wraps=client._process_message
-            ) as mock_process,
+        # Mock the aiomqtt.Client class to return our
+        # mock_client_instance when instantiated
+        with patch.object(
+            mqtt_client.mqtt,
+            "Client",
+            new=Mock(return_value=mock_client_instance),
         ):
+            # Run the client in a background task
+            run_task = asyncio.create_task(client.run())
+
+            # Give the client a moment to connect and subscribe
+            await asyncio.sleep(0.1)
+
+            # Put a message into the queue for the client to process
+            await incoming_messages.put(mock_msg)
+
+            # Wait for the callback to be called
+            await asyncio.sleep(0.1)
+
+            # Cancel the client task
+            run_task.cancel()
             try:
-                await client.run()
+                await run_task
             except asyncio.CancelledError:
                 pass
 
-        print(f"Process message called: {mock_process.called}")
-        if mock_process.called:
-            print(f"Process message args: {mock_process.call_args}")
-
         # Verify interactions
-        assert mock_client_instance.subscribe.called
-        assert client.message_callback.called
-        client.message_callback.assert_called_with({"test": 1})
+        mock_client_instance.subscribe.assert_called_once_with("test/topic")
+        message_callback.assert_called_once_with({"test": 1})
 
     @pytest.mark.asyncio
     async def test_run_connection_failure_retry(self, client):
+        # Import mqtt_client to access its mqtt module
+        import mqtt_client
+
         # Simulate connection failure then success
         mock_client_instance = AsyncMock()
 
-        # First attempt raises MqttError, second succeeds (and then we cancel)
+        # Track connection attempts
         call_count = 0
 
         async def side_effect_enter():
@@ -118,46 +115,65 @@ class TestMqttClient:
             return mock_client_instance
 
         mock_client_instance.__aenter__.side_effect = side_effect_enter
-        mock_client_instance.__aenter__.side_effect = side_effect_enter
         mock_client_instance.__aexit__.return_value = None
 
-        # Fix: messages should not be an async mock that returns a coroutine
-        mock_client_instance.messages = Mock()
+        # Create an async iterable for messages that hangs
+        class AsyncMessages:
+            def __aiter__(self):
+                return self
 
-        # Messages for successful connection
-        async def message_iterator():
-            if False:
-                yield
-            raise asyncio.CancelledError()  # Stop immediately after connect
+            async def __anext__(self):
+                # Hang forever until canceled
+                await asyncio.Event().wait()
 
-        mock_client_instance.messages.return_value = AsyncContextManagerIterator(
-            message_iterator()
-        )
+        mock_client_instance.messages = AsyncMessages()
 
-        # Mock sleep to speed up test
-        with (
-            patch("asyncio_mqtt.Client", return_value=mock_client_instance),
-            patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+        with patch.object(
+            mqtt_client.mqtt,
+            "Client",
+            new=Mock(return_value=mock_client_instance),
         ):
+            # Run the client in a background task
+            run_task = asyncio.create_task(client.run())
 
+            # Wait for connection failure and retry
+            # First attempt fails, sleeps for 1 second, then retries
+            await asyncio.sleep(1.5)
+
+            # Cancel the client task to stop the infinite loop
+            run_task.cancel()
             try:
-                await client.run()
+                await run_task
             except asyncio.CancelledError:
                 pass
 
         # Should have attempted connection twice
         assert call_count >= 2
-        mock_sleep.assert_called()
 
     @pytest.mark.asyncio
     async def test_process_message_valid(self, client):
         message = Mock()
         message.payload = b'{"key": "value"}'
-        message.topic.value = "test/topic"  # aiomqtt topic is an object string-like
+        # aiomqtt topic is an object with value attribute
+        message.topic.value = "test/topic"
+        del message.retain
 
         await client._process_message(message)
 
         client.message_callback.assert_called_with({"key": "value"})
+
+    @pytest.mark.asyncio
+    async def test_process_message_retained(self, client):
+        message = Mock()
+        message.payload = b'{"key": "value"}'
+        message.topic.value = "test/topic"
+        message.retain = True
+
+        await client._process_message(message)
+
+        client.message_callback.assert_called_with(
+            {"key": "value", "_mqtt_retain": True}
+        )
 
     @pytest.mark.asyncio
     async def test_process_message_invalid_json(self, client):

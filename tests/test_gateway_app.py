@@ -1,5 +1,6 @@
 import asyncio
-from unittest.mock import AsyncMock, Mock, patch
+import json
+from unittest.mock import ANY, AsyncMock, Mock, patch
 
 import pytest
 
@@ -18,6 +19,7 @@ def mock_config():
     config.caltopo.has_group = False
     config.caltopo.connect_key = "key"
     config.caltopo.has_connect_key = True
+    config.storage.db_path = "test_db.sqlite"
     return config
 
 
@@ -33,17 +35,24 @@ class MockSqliteDict(dict):
 def app(mock_config):
     with (
         patch("gateway_app.Config") as MockConfig,
-        patch("gateway_app.SqliteDict", new=MockSqliteDict),
+        patch("gateway_app.SqliteDict") as MockSqliteDictClass,
     ):
 
         MockConfig.from_file.return_value = mock_config
+
+        # Setup MockSqliteDict behavior
+        mock_db_instance = MockSqliteDict()
+        MockSqliteDictClass.return_value = mock_db_instance
 
         app = GatewayApp("dummy_config.yaml")
         app.config = mock_config
         # We start with plain dicts, but the code checks isinstance
         # against the class we patched
-        app.node_id_mapping = MockSqliteDict()
-        app.callsign_mapping = MockSqliteDict()
+        app.node_id_mapping = mock_db_instance
+        app.callsign_mapping = mock_db_instance
+
+        # Attach for testing
+        app._MockSqliteDictClass = MockSqliteDictClass
 
         yield app
 
@@ -52,7 +61,7 @@ class TestGatewayApp:
     def test_init(self):
         app = GatewayApp("config.yaml")
         assert app.config_path == "config.yaml"
-        assert not app.stop_event.is_set()
+        assert app.stop_event is None
         assert app.stats["messages_received"] == 0
 
     @patch("gateway_app.MqttClient")
@@ -64,6 +73,7 @@ class TestGatewayApp:
         # Mock Reporter
         mock_reporter_instance = MockReporter.return_value
         mock_reporter_instance.test_connection = AsyncMock(return_value=True)
+        mock_reporter_instance.start = AsyncMock()
 
         # Mock Mqtt Client
         MockMqtt.return_value = Mock()  # The init is sync
@@ -73,6 +83,16 @@ class TestGatewayApp:
         assert app.mqtt_client is not None
         assert app.caltopo_reporter is not None
         assert "!823a4edc" in app.configured_devices
+
+        # Verify DB initialization with configured path in MockSqliteDict
+        # The SqliteDict constructor should have been called with our test path
+        app._MockSqliteDictClass.assert_any_call(
+            "test_db.sqlite",
+            tablename="node_id_mapping",
+            autocommit=True,
+            encode=json.dumps,
+            decode=ANY,
+        )
 
     @pytest.mark.asyncio
     async def test_initialize_failure(self, app):
@@ -126,6 +146,7 @@ class TestGatewayApp:
     async def test_stop(self, app):
         app.mqtt_client = Mock()
         app.caltopo_reporter = AsyncMock()  # async close
+        app.stop_event = asyncio.Event()
 
         await app.stop()
 
@@ -185,7 +206,9 @@ class TestGatewayApp:
         # send_position_update is async
         app.caltopo_reporter.send_position_update = AsyncMock(return_value=True)
         app.node_id_mapping["123"] = "!823a4edc"
+        app._node_id_cache["123"] = "!823a4edc"
         app.callsign_mapping["!823a4edc"] = "TEAM-LEAD"
+        app._callsign_cache["!823a4edc"] = "TEAM-LEAD"
 
         msg = {
             "type": "position",
@@ -207,19 +230,23 @@ class TestGatewayApp:
         app.caltopo_reporter.send_position_update.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_process_position_sender_fallback(self, app):
+    async def test_process_position_deterministic_id(self, app):
         app.caltopo_reporter = Mock()
         app.caltopo_reporter.send_position_update = AsyncMock(return_value=True)
-        # Not in mapping, but sender field present
+        # Allow unknown devices so the new deterministic ID is accepted
+        app.config.devices.allow_unknown_devices = True
+
+        # Not in mapping, sender field ignored
         msg = {
             "type": "position",
-            "sender": "!823a4edc",
+            "sender": "!823a4edc",  # Should be ignored now
             "payload": {"latitude_i": 100000000, "longitude_i": 200000000},
         }
 
+        # 123 -> !0000007b
         await app._process_position_message(msg, "123")
 
-        assert app.node_id_mapping["123"] == "!823a4edc"
+        assert app.node_id_mapping["123"] == "!0000007b"
         app.caltopo_reporter.send_position_update.assert_called()
 
     @pytest.mark.asyncio
@@ -245,6 +272,7 @@ class TestGatewayApp:
         app.config.devices.allow_unknown_devices = True
         app.configured_devices = set(["!known"])
         app.node_id_mapping["999"] = "!unknown"
+        app._node_id_cache["999"] = "!unknown"
 
         msg = {
             "type": "position",
@@ -265,3 +293,82 @@ class TestGatewayApp:
         msg = {"type": "traceroute", "payload": {"route": []}}
         # Just ensure no exception
         app._process_traceroute_message(msg, "123")
+
+    @pytest.mark.asyncio
+    async def test_db_directory_creation_failure(self, mock_config):
+        """Test error handling when creating database directory fails."""
+        with (
+            patch("gateway_app.Config") as MockConfig,
+            patch("gateway_app.SqliteDict"),
+            patch("gateway_app.os.makedirs", side_effect=OSError("Permission denied")),
+            patch("gateway_app.os.path.dirname", return_value="/protected/dir"),
+        ):
+            MockConfig.from_file.return_value = mock_config
+            app = GatewayApp("dummy_config.yaml")
+
+            # This should log an error but not raise exception (fail open/continue)
+            # The code catches OSError
+            await app.initialize()
+
+            # Verify we tried to create dir
+            import gateway_app
+
+            gateway_app.os.makedirs.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_caltopo_connection_fail_continue(self, mock_config):
+        """Test that initialization continues even if CalTopo test fails."""
+        with (
+            patch("gateway_app.Config") as MockConfig,
+            patch("gateway_app.SqliteDict"),
+            patch("gateway_app.CalTopoReporter") as MockReporterClass,
+            patch("gateway_app.MqttClient"),
+        ):
+            MockConfig.from_file.return_value = mock_config
+            mock_reporter = MockReporterClass.return_value
+            mock_reporter.test_connection = AsyncMock(return_value=False)
+            mock_reporter.start = AsyncMock()
+
+            app = GatewayApp("dummy_config.yaml")
+            success = await app.initialize()
+
+            assert success is True
+
+    @pytest.mark.asyncio
+    async def test_process_message_exceptions(self, app):
+        """Test exception handling in message processing."""
+        # Using app fixture for convenience, but resetting stats
+        app.stats = {"messages_processed": 0, "errors": 0, "messages_received": 0}
+
+        # 1. Empty message type
+        await app._process_message({"type": "", "from": 123})
+        assert app.stats["messages_processed"] == 0
+
+        # 2. Unsupported message type
+        await app._process_message({"type": "unknown_type", "from": 123})
+        assert app.stats["messages_processed"] == 0
+
+        # 3. Exception during processing (simulated by malformed data causing error)
+        with patch.object(
+            app, "_process_position_message", side_effect=ValueError("Boom")
+        ):
+            await app._process_message({"type": "position", "from": 123})
+            assert app.stats["errors"] == 1
+
+    @pytest.mark.asyncio
+    async def test_stats_loop_cancellation(self, app):
+        """Test that stats loop runs and handles cancellation."""
+        app.stop_event = asyncio.Event()
+
+        # Start stats loop task
+        task = asyncio.create_task(app._stats_loop())
+
+        # Let it run a bit
+        await asyncio.sleep(0.1)
+        app.stop_event.set()
+        task.cancel()
+
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass

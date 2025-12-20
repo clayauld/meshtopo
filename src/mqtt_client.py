@@ -7,7 +7,9 @@ import json
 import logging
 from typing import Any, Awaitable, Callable, Dict, Optional
 
-import asyncio_mqtt as mqtt
+import aiomqtt as mqtt
+
+from utils import sanitize_for_log
 
 
 class MqttClient:
@@ -50,7 +52,7 @@ class MqttClient:
                     hostname=self.config.mqtt.broker,
                     port=self.config.mqtt.port,
                     username=self.config.mqtt.username,
-                    password=self.config.mqtt.password,
+                    password=self.config.mqtt.password.get_secret_value(),
                     keepalive=60,
                 ) as client:
                     self.client = client
@@ -61,12 +63,13 @@ class MqttClient:
                     await client.subscribe(topic)
                     self.logger.info(f"Subscribed to topic: {topic}")
 
-                    async with client.messages() as messages:
-                        async for message in messages:
-                            await self._process_message(message)
+                    async for message in client.messages:
+                        await self._process_message(message)
 
             except mqtt.MqttError as e:
                 self.logger.error(f"MQTT error: {e}")
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
                 self.logger.error(f"Unexpected error in MQTT client: {e}")
             finally:
@@ -87,17 +90,25 @@ class MqttClient:
         """
         try:
             payload = message.payload.decode("utf-8")
-            self.logger.debug(f"Received message on topic {message.topic}: {payload}")
+            self.logger.debug(
+                f"Received message on topic {sanitize_for_log(message.topic)}: "
+                f"{sanitize_for_log(payload)}"
+            )
 
             # Parse JSON
             data = json.loads(payload)
+
+            # Inject retain flag
+            if hasattr(message, "retain"):
+                data["_mqtt_retain"] = message.retain
 
             # Await the async message callback
             await self.message_callback(data)
 
         except json.JSONDecodeError as e:
             self.logger.warning(
-                f"Failed to parse JSON message: {e}. Payload: {message.payload}"
+                f"Failed to parse JSON message: {e}. "
+                f"Payload: {sanitize_for_log(message.payload)}"
             )
         except Exception as e:
             self.logger.error(f"Error processing message: {e}")
