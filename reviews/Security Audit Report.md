@@ -1,4 +1,4 @@
-Security Audit Report
+# Security Audit Report
 
 I have identified the following vulnerabilities in the code changes:
 

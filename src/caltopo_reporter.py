@@ -5,8 +5,8 @@ CalTopo API integration for sending position reports.
 import asyncio
 import logging
 import os
-import re
 import random
+import re
 from typing import Any, Optional, cast
 from urllib.parse import urlencode, urlparse
 
@@ -153,19 +153,17 @@ class CalTopoReporter:
         if self.client is None:
             await self.start()
 
-        # We can safely assume client is not None after start(), but type checker might complain
+        # We can safely assume client is not None after start(),
+        # but type checker might complain
         # So we use a local variable or assert
         client = self.client
-        assert client is not None
+        if client is None:
+            raise RuntimeError("httpx.AsyncClient failed to initialize")
 
-        tasks = []
         tasks = []
 
         # Send to connect_key endpoint if configured
         if self.config.caltopo.has_connect_key:
-            tasks.append(
-                self._send_to_connect_key(client, callsign, latitude, longitude)
-            )
             tasks.append(
                 self._send_to_connect_key(client, callsign, latitude, longitude)
             )
@@ -243,54 +241,57 @@ class CalTopoReporter:
         for attempt in range(max_retries + 1):
             try:
                 self.logger.debug(
-                    f"Sending position update for {sanitize_for_log(callsign)} to {endpoint_type} "
-                    f"(attempt {attempt + 1}): {log_url}"
+                    f"Sending position update for {sanitize_for_log(callsign)} "
+                    f"to {endpoint_type} (attempt {attempt + 1}): {log_url}"
                 )
 
                 response = await client.get(url)
 
                 if response.status_code == 200:
                     self.logger.info(
-                        f"Successfully sent position update for {sanitize_for_log(callsign)} to "
-                        f"{endpoint_type}"
+                        f"Successfully sent position update for "
+                        f"{sanitize_for_log(callsign)} to {endpoint_type}"
                     )
                     return True
                 elif 500 <= response.status_code < 600 or response.status_code == 429:
                     # Retry on server errors or rate limits
                     self.logger.warning(
-                        f"CalTopo API error for {sanitize_for_log(callsign)} ({endpoint_type}): "
-                        f"HTTP {response.status_code} - {sanitize_for_log(response.text)}. Retrying..."
+                        f"CalTopo API error for {sanitize_for_log(callsign)} "
+                        f"({endpoint_type}): HTTP {response.status_code} - "
+                        f"{sanitize_for_log(response.text)}. Retrying..."
                     )
                 else:
                     # Don't retry on other client errors (e.g., 400, 401, 404)
                     self.logger.error(
-                        f"CalTopo API error for {sanitize_for_log(callsign)} ({endpoint_type}): "
-                        f"HTTP {response.status_code} - {sanitize_for_log(response.text)}"
+                        f"CalTopo API error for {sanitize_for_log(callsign)} "
+                        f"({endpoint_type}): HTTP {response.status_code} - "
+                        f"{sanitize_for_log(response.text)}"
                     )
                     return False
 
             except (httpx.ConnectError, httpx.TimeoutException) as e:
                 self.logger.warning(
-                    f"CalTopo API connection/timeout error for {sanitize_for_log(callsign)} "
-                    f"({endpoint_type}): {e}. Retrying..."
+                    f"CalTopo API connection/timeout error for "
+                    f"{sanitize_for_log(callsign)} ({endpoint_type}): {e}. Retrying..."
                 )
             except Exception as e:
                 self.logger.error(
-                    f"Unexpected error sending position update for {sanitize_for_log(callsign)} "
-                    f"({endpoint_type}): {e}"
+                    f"Unexpected error sending position update for "
+                    f"{sanitize_for_log(callsign)} ({endpoint_type}): {e}"
                 )
                 return False
 
             if attempt < max_retries:
                 # Exponential backoff with jitter
-                # Use standard random for performance (CSPRNG not needed here)
-                delay = (base_delay * (2**attempt)) + (random.uniform(0, 0.5))
+                delay = (base_delay * (2**attempt)) + (
+                    random.SystemRandom().uniform(0, 0.5)
+                )
                 self.logger.info(f"Retrying in {delay:.2f} seconds...")
                 await asyncio.sleep(delay)
 
         self.logger.error(
-            f"Failed to send position update for {sanitize_for_log(callsign)} ({endpoint_type}) "
-            f"after {max_retries + 1} attempts"
+            f"Failed to send position update for {sanitize_for_log(callsign)} "
+            f"({endpoint_type}) after {max_retries + 1} attempts"
         )
         return False
 
@@ -307,7 +308,8 @@ class CalTopoReporter:
             await self.start()
 
         client = self.client
-        assert client is not None
+        if client is None:
+            raise RuntimeError("httpx.AsyncClient failed to initialize")
 
         tasks = []
 

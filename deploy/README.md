@@ -50,7 +50,7 @@ Docker Compose uses profiles to control which services start:
 
 - `core`: Meshtopo gateway service
 - `mqtt`: MQTT broker service
-- `ssl`: Traefik reverse proxy with SSL
+- `ssl`: Caddy reverse proxy with SSL
 
 ## Deployment Options
 

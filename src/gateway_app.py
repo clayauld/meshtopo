@@ -139,7 +139,8 @@ class GatewayApp:
                         os.remove(db_path)
                     except OSError as remove_error:
                         self.logger.error(
-                            f"Failed to remove incompatible database file: {remove_error}"
+                            f"Failed to remove incompatible database file: "
+                            f"{remove_error}"
                         )
 
                 # Re-initialize with new format
@@ -417,8 +418,9 @@ class GatewayApp:
         if is_unknown_device:
             if self.config.devices.allow_unknown_devices:
                 # Allow unknown device but use hardware_id as callsign
-                # Fix: Do NOT persist this temporary mapping to avoid "Permanent Callsign"
-                # issue. If nodeinfo arrives later, it will be persisted then.
+                # Fix: Do NOT persist this temporary mapping to avoid
+                # "Permanent Callsign" issue. If nodeinfo arrives later,
+                # it will be persisted then.
                 self.logger.info(
                     f"Allowing unknown device {self._sanitize_for_log(hardware_id)} "
                     f"(allow_unknown_devices=True). Using hardware_id as callsign."
@@ -611,7 +613,8 @@ class GatewayApp:
                     node_id_from_payload, configured_device_id
                 )
                 self.logger.debug(
-                    f"Mapped hardware ID {self._sanitize_for_log(node_id_from_payload)} "
+                    f"Mapped hardware ID "
+                    f"{self._sanitize_for_log(node_id_from_payload)} "
                     f"to configured callsign "
                     f"{self._sanitize_for_log(configured_device_id)}"
                 )
@@ -619,15 +622,19 @@ class GatewayApp:
                 # Fallback to Meshtastic longname if no configured device_id
                 self._persist_callsign_mapping(node_id_from_payload, longname)
                 self.logger.debug(
-                    f"Mapped hardware ID {self._sanitize_for_log(node_id_from_payload)} "
-                    f"to callsign {self._sanitize_for_log(longname)} (from longname)"
+                    f"Mapped hardware ID "
+                    f"{self._sanitize_for_log(node_id_from_payload)} "
+                    f"to callsign {self._sanitize_for_log(longname)} "
+                    f"(from longname)"
                 )
             elif shortname:
                 # Final fallback to shortname if longname not available
                 self._persist_callsign_mapping(node_id_from_payload, shortname)
                 self.logger.debug(
-                    f"Mapped hardware ID {self._sanitize_for_log(node_id_from_payload)} "
-                    f"to callsign {self._sanitize_for_log(shortname)} (from shortname)"
+                    f"Mapped hardware ID "
+                    f"{self._sanitize_for_log(node_id_from_payload)} "
+                    f"to callsign {self._sanitize_for_log(shortname)} "
+                    f"(from shortname)"
                 )
 
         self.logger.info(

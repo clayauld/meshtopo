@@ -31,7 +31,7 @@ help:
 	@echo "  docker-pull         Pull Docker images from ghcr.io"
 	@echo "  docker-run          Run full stack with Docker Compose"
 	@echo "  docker-run-minimal  Run minimal gateway only"
-	@echo "  docker-run-ssl      Run with SSL/Traefik (requires SSL_DOMAIN)"
+	@echo "  docker-run-ssl      Run with SSL/Caddy (requires SSL_DOMAIN)"
 	@echo "  docker-stop         Stop Docker containers"
 	@echo "  docker-status       Show container status"
 	@echo "  docker-logs         Show container logs"
@@ -160,9 +160,9 @@ docker-run-minimal:
 	cd deploy && docker compose -f docker-compose-minimal.yaml up -d
 	@echo "Minimal services started! Check status with: make docker-status"
 
-# Run with Docker Compose (with SSL/Traefik)
+# Run with Docker Compose (with SSL/Caddy)
 docker-run-ssl:
-	@echo "Starting Meshtopo services with SSL/Traefik..."
+	@echo "Starting Meshtopo services with SSL/Caddy..."
 	@if [ -z "$(SSL_DOMAIN)" ]; then echo "Error: SSL_DOMAIN environment variable required"; exit 1; fi
 	cd deploy && docker compose --profile core --profile mqtt --profile ssl up -d
 	@echo "SSL services started! Check status with: make docker-status"

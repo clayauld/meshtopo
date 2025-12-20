@@ -1,3 +1,5 @@
+# Code Review
+
 Change summary: This change is a major architectural refactoring that migrates the application from a synchronous, thread-based model to a fully asynchronous design using asyncio, consolidates dependency
 management into pyproject.toml, and significantly overhauls the CI/CD pipeline with automated releases and integration testing.
 
@@ -145,7 +147,7 @@ Suggested change:
 11
 12 - try:
 13 - logger.info("Querying mock server for reports...")
-14 - response = httpx.get(f"{MOCK_SERVER_URL}/reports", timeout=5.0)
+14 - response = httpx.get(f"{MOCK*SERVER_URL}/reports", timeout=5.0)
 15 - reports = response.json()
 16 + # Poll for the report to arrive with a timeout
 17 + reports = []
@@ -170,7 +172,7 @@ Suggested change:
 36
 37 - # Basic validation of the forwarded report
 38 - # Note: The actual content depends on how the gateway translates the protobuf
-39 - # For this test, we just ensure _something_ valid reached the server
+39 - # For this test, we just ensure \_something* valid reached the server
 40 - logger.info(f"Received report: {last_report}")
 41 - assert (
 42 - "id" in last_report or "geometry" in last_report

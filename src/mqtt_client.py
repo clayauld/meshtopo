@@ -91,7 +91,8 @@ class MqttClient:
         try:
             payload = message.payload.decode("utf-8")
             self.logger.debug(
-                f"Received message on topic {sanitize_for_log(message.topic)}: {sanitize_for_log(payload)}"
+                f"Received message on topic {sanitize_for_log(message.topic)}: "
+                f"{sanitize_for_log(payload)}"
             )
 
             # Parse JSON
@@ -106,7 +107,8 @@ class MqttClient:
 
         except json.JSONDecodeError as e:
             self.logger.warning(
-                f"Failed to parse JSON message: {e}. Payload: {sanitize_for_log(message.payload)}"
+                f"Failed to parse JSON message: {e}. "
+                f"Payload: {sanitize_for_log(message.payload)}"
             )
         except Exception as e:
             self.logger.error(f"Error processing message: {e}")

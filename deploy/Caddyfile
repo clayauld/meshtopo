@@ -1,0 +1,7 @@
+{
+    email {$SSL_EMAIL}
+}
+
+mqtt.{$SSL_DOMAIN} {
+    reverse_proxy mosquitto:9001
+}

@@ -88,7 +88,7 @@ class TestGatewayApp:
         # The SqliteDict constructor should have been called with our test path
         app._MockSqliteDictClass.assert_any_call(
             "test_db.sqlite",
-            tablename="node_id_mapping_v2",
+            tablename="node_id_mapping",
             autocommit=True,
             encode=json.dumps,
             decode=json.loads,
