@@ -1,42 +1,41 @@
-# Meshtopo Gateway Service Dockerfile
-FROM python:3.9-slim AS base
+# Build stage
+FROM python:3.9-slim AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc=4:14.2.0-1 \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy project definition
 COPY pyproject.toml .
+COPY README.md .
+COPY src/ src/
+COPY config/ config/
 
-# Install Python dependencies from pyproject.toml
-# This installs the project and its production dependencies
-RUN pip install --no-cache-dir .
-
-# Copy application code
-COPY . .
-
-# Test stage
-FROM base AS test
-# Install testing dependencies
-# hadolint ignore=DL3013
-RUN pip install --no-cache-dir ".[dev]"
-CMD ["python", "-m", "pytest", "tests/", "-v", "--tb=short"]
+# Install dependencies into a temporary directory
+RUN pip install --no-cache-dir --prefix=/install .
 
 # Production stage
-FROM base AS production
+FROM python:3.9-slim AS production
 
-# Create non-root user for security
+WORKDIR /app
+
+# Create non-root user
 RUN useradd --create-home --shell /bin/bash meshtopo && \
     chown -R meshtopo:meshtopo /app
+
+# Copy installed dependencies from builder
+COPY --from=builder /install /usr/local
+
+# Copy application code
+COPY src/ src/
+COPY config/ config/
 
 # Switch to non-root user
 USER meshtopo
 
-# Expose port (if needed for health checks in the future)
+# Expose port
 EXPOSE 8080
 
 # Health check

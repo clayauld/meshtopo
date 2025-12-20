@@ -206,7 +206,9 @@ class TestGatewayApp:
         # send_position_update is async
         app.caltopo_reporter.send_position_update = AsyncMock(return_value=True)
         app.node_id_mapping["123"] = "!823a4edc"
+        app._node_id_cache["123"] = "!823a4edc"
         app.callsign_mapping["!823a4edc"] = "TEAM-LEAD"
+        app._callsign_cache["!823a4edc"] = "TEAM-LEAD"
 
         msg = {
             "type": "position",
@@ -270,6 +272,7 @@ class TestGatewayApp:
         app.config.devices.allow_unknown_devices = True
         app.configured_devices = set(["!known"])
         app.node_id_mapping["999"] = "!unknown"
+        app._node_id_cache["999"] = "!unknown"
 
         msg = {
             "type": "position",

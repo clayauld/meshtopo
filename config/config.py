@@ -146,18 +146,40 @@ class Config(BaseModel):
         else:
             raise TypeError("Config file must be a dictionary")
 
+    def _get_node_mapping(self, node_id: str) -> Optional[NodeMapping]:
+        """
+        Get node mapping handling optional '!' prefix.
+        """
+        # Direct lookup
+        if node_id in self.nodes:
+            return self.nodes[node_id]
+
+        # Try without '!' if present
+        if node_id.startswith("!"):
+            stripped_id = node_id[1:]
+            if stripped_id in self.nodes:
+                return self.nodes[stripped_id]
+
+        # Try with '!' if missing
+        else:
+            prefixed_id = f"!{node_id}"
+            if prefixed_id in self.nodes:
+                return self.nodes[prefixed_id]
+
+        return None
+
     def get_node_device_id(self, node_id: str) -> Optional[str]:
         """
         Get the CalTopo device ID for a given Meshtastic node ID.
         """
-        node_mapping = self.nodes.get(node_id)
+        node_mapping = self._get_node_mapping(node_id)
         return node_mapping.device_id if node_mapping else None
 
     def get_node_group(self, node_id: str) -> Optional[str]:
         """
         Get the GROUP for a given Meshtastic node ID.
         """
-        node_mapping = self.nodes.get(node_id)
+        node_mapping = self._get_node_mapping(node_id)
         if node_mapping and node_mapping.group:
             return node_mapping.group
         return self.caltopo.group

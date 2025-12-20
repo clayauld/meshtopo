@@ -76,12 +76,14 @@ class CalTopoReporter:
     # Assign the validated URL to the class attribute
     BASE_URL = _raw_base_url
 
-    def __init__(self, config: Any) -> None:
+    def __init__(self, config: Any, client: Optional[httpx.AsyncClient] = None) -> None:
         """
         Initialize CalTopo reporter.
 
         Args:
             config: Configuration object containing CalTopo settings
+            client: Optional shared httpx.AsyncClient. If not provided, a new client
+                   will be created for each request.
         """
         self.config = config
         self.logger = logging.getLogger(__name__)
