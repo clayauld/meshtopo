@@ -50,7 +50,7 @@ class MqttClient:
                     hostname=self.config.mqtt.broker,
                     port=self.config.mqtt.port,
                     username=self.config.mqtt.username,
-                    password=self.config.mqtt.password,
+                    password=self.config.mqtt.password.get_secret_value(),
                     keepalive=60,
                 ) as client:
                     self.client = client
@@ -88,8 +88,13 @@ class MqttClient:
         """
         try:
             payload = message.payload.decode("utf-8")
-            # Use lazy logging to avoid string formatting overhead if debug is disabled
-            self.logger.debug("Received message on topic %s: %s", message.topic, payload)
+            # Sanitize payload for logging
+            sanitized_payload = "".join(
+                c if c.isprintable() else f"\\x{ord(c):02x}" for c in payload
+            )
+            self.logger.debug(
+                f"Received message on topic {message.topic}: {sanitized_payload}"
+            )
 
             # Parse JSON
             data = json.loads(payload)

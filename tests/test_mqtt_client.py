@@ -14,7 +14,8 @@ def mock_config():
     config.mqtt.broker = "localhost"
     config.mqtt.port = 1883
     config.mqtt.username = "testuser"
-    config.mqtt.password = "testpass"
+    config.mqtt.password = Mock()
+    config.mqtt.password.get_secret_value.return_value = "testpass"
     config.mqtt.topic = "test/topic"
     return config
 
