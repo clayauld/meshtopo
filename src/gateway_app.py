@@ -15,6 +15,7 @@ from sqlitedict import SqliteDict
 from caltopo_reporter import CalTopoReporter
 from config.config import Config
 from mqtt_client import MqttClient
+from utils import sanitize_for_log
 
 
 class GatewayApp:
@@ -215,23 +216,6 @@ class GatewayApp:
             self.node_id_mapping.close()
         if self.callsign_mapping and hasattr(self.callsign_mapping, "close"):
             self.callsign_mapping.close()
-
-    def _sanitize_for_log(self, text: Any) -> str:
-        """
-        Sanitize text for logging to prevent log injection.
-
-        Args:
-            text: Text to sanitize
-
-        Returns:
-            Sanitized string
-        """
-        if text is None:
-            return "None"
-
-        # Convert to string and replace non-printable characters
-        s = str(text)
-        return "".join(c if c.isprintable() else f"\\x{ord(c):02x}" for c in s)
 
     async def _process_message(self, data: Dict[str, Any]) -> None:
         """
@@ -523,12 +507,12 @@ class GatewayApp:
                 )
 
         self.logger.info(
-            f"Node info from {self._sanitize_for_log(numeric_node_id)}: "
-            f"ID={self._sanitize_for_log(node_id_from_payload)}, "
-            f"Name={self._sanitize_for_log(longname)} "
-            f"({self._sanitize_for_log(shortname)}), "
-            f"Hardware={self._sanitize_for_log(hardware)}, "
-            f"Role={self._sanitize_for_log(role)}"
+            f"Node info from {sanitize_for_log(numeric_node_id)}: "
+            f"ID={sanitize_for_log(node_id_from_payload)}, "
+            f"Name={sanitize_for_log(longname)} "
+            f"({sanitize_for_log(shortname)}), "
+            f"Hardware={sanitize_for_log(hardware)}, "
+            f"Role={sanitize_for_log(role)}"
         )
 
     def _process_telemetry_message(
@@ -556,12 +540,12 @@ class GatewayApp:
         channel_utilization = payload.get("channel_utilization")
 
         self.logger.info(
-            f"Telemetry from {self._sanitize_for_log(numeric_node_id)}: "
-            f"Battery={self._sanitize_for_log(battery_level)}%, "
-            f"Voltage={self._sanitize_for_log(voltage)}V, "
-            f"Uptime={self._sanitize_for_log(uptime_seconds)}s, "
-            f"Air util TX={self._sanitize_for_log(air_util_tx)}, "
-            f"Channel util={self._sanitize_for_log(channel_utilization)}%"
+            f"Telemetry from {sanitize_for_log(numeric_node_id)}: "
+            f"Battery={sanitize_for_log(battery_level)}%, "
+            f"Voltage={sanitize_for_log(voltage)}V, "
+            f"Uptime={sanitize_for_log(uptime_seconds)}s, "
+            f"Air util TX={sanitize_for_log(air_util_tx)}, "
+            f"Channel util={sanitize_for_log(channel_utilization)}%"
         )
 
     def _process_traceroute_message(
@@ -585,8 +569,8 @@ class GatewayApp:
         route = payload.get("route", [])
 
         self.logger.info(
-            f"Traceroute from {self._sanitize_for_log(numeric_node_id)}: "
-            f"Route={self._sanitize_for_log(route)}"
+            f"Traceroute from {sanitize_for_log(numeric_node_id)}: "
+            f"Route={sanitize_for_log(route)}"
         )
 
     def _log_statistics(self) -> None:
