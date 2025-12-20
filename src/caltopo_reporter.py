@@ -88,13 +88,15 @@ class CalTopoReporter:
         self.config = config
         self.logger = logging.getLogger(__name__)
         # Use a persistent client for efficiency (connection reuse)
-        self.client: Optional[httpx.AsyncClient] = None
+        self.client = client
+        self._owns_client = client is None
         self.timeout = 10  # seconds
 
     async def start(self) -> None:
         """Initialize the persistent HTTP client."""
         if self.client is None:
             self.client = httpx.AsyncClient(timeout=self.timeout)
+            self._owns_client = True
 
     def _is_valid_caltopo_identifier(self, identifier: str) -> bool:
         """
@@ -388,6 +390,6 @@ class CalTopoReporter:
         """
         Close the reporter and the underlying HTTP client.
         """
-        if self.client:
+        if self.client and self._owns_client:
             await self.client.aclose()
             self.client = None

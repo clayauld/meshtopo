@@ -1,6 +1,6 @@
 import asyncio
 import json
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import ANY, AsyncMock, Mock, patch
 
 import pytest
 
@@ -91,7 +91,7 @@ class TestGatewayApp:
             tablename="node_id_mapping",
             autocommit=True,
             encode=json.dumps,
-            decode=json.loads,
+            decode=ANY,
         )
 
     @pytest.mark.asyncio

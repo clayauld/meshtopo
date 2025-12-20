@@ -96,7 +96,7 @@ class GatewayApp:
                     tablename="node_id_mapping",
                     autocommit=True,
                     encode=json.dumps,
-                    decode=json.loads,
+                    decode=lambda x: json.loads(x.decode("utf-8")),
                 )
                 # Trigger a read to ensure the file format is valid
                 # This will raise an exception if the file contains legacy pickle data
@@ -107,7 +107,7 @@ class GatewayApp:
                     tablename="callsign_mapping",
                     autocommit=True,
                     encode=json.dumps,
-                    decode=json.loads,
+                    decode=lambda x: json.loads(x.decode("utf-8")),
                 )
                 _ = len(self.callsign_mapping)
 
@@ -149,14 +149,14 @@ class GatewayApp:
                     tablename="node_id_mapping",
                     autocommit=True,
                     encode=json.dumps,
-                    decode=json.loads,
+                    decode=lambda x: json.loads(x.decode("utf-8")),
                 )
                 self.callsign_mapping = SqliteDict(
                     db_path,
                     tablename="callsign_mapping",
                     autocommit=True,
                     encode=json.dumps,
-                    decode=json.loads,
+                    decode=lambda x: json.loads(x.decode("utf-8")),
                 )
 
                 # Load into memory cache (empty or after reset)
@@ -172,9 +172,11 @@ class GatewayApp:
             # Initialize Shared HTTP Client
             self.http_client = httpx.AsyncClient(timeout=10)
 
-            # Initialize CalTopo reporter
+            # Initialize CalTopo reporter with shared client
             self.logger.info("Initializing CalTopo reporter...")
-            self.caltopo_reporter = CalTopoReporter(self.config)
+            self.caltopo_reporter = CalTopoReporter(
+                self.config, client=self.http_client
+            )
             await self.caltopo_reporter.start()
 
             # Test CalTopo connectivity
@@ -515,10 +517,12 @@ class GatewayApp:
         latitude = latitude_i / 1e7
         longitude = longitude_i / 1e7
 
-        self.logger.debug(
-            f"Processing position from {self._sanitize_for_log(numeric_node_id)}: "
-            f"{latitude}, {longitude}"
-        )
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(
+                f"Processing position from "
+                f"{self._sanitize_for_log(numeric_node_id)}: "
+                f"{latitude}, {longitude}"
+            )
 
         # Send to CalTopo
         if self.caltopo_reporter is None:
@@ -531,7 +535,7 @@ class GatewayApp:
         hardware_id = self._resolve_hardware_id(str(numeric_node_id))
         is_new_mapping = str(numeric_node_id) not in self._node_id_cache
 
-        if is_new_mapping:
+        if is_new_mapping and self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(
                 f"Calculated ID for new node: "
                 f"{self._sanitize_for_log(numeric_node_id)} -> "

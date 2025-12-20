@@ -31,8 +31,8 @@ I have identified the following vulnerabilities in the code changes:
 - Severity: High
 - Location: deploy/docker-compose.yml:51
 - Line Content:
-    - -   "traefik.http.routers.traefik.rule=Host(\traefik.${SSL_DOMAIN}\)"
-    - -   "traefik.http.routers.mosquitto-ws.rule=Host(\mqtt.${SSL_DOMAIN}\)"
+  - -   "traefik.http.routers.traefik.rule=Host(\traefik.${SSL_DOMAIN}\)"
+  - -   "traefik.http.routers.mosquitto-ws.rule=Host(\mqtt.${SSL_DOMAIN}\)"
 - Description: The SSL_DOMAIN environment variable is used directly in Traefik's routing rules without sanitization. An attacker who can control this environment variable can inject malicious expressions into
     the Host() function, potentially redirecting traffic, bypassing access controls, or causing a denial of service. For example, an attacker could set SSL_DOMAIN to ` ) || PathPrefix("/") `` to route all
     traffic to a specific service.
