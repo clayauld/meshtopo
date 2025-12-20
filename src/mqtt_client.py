@@ -88,7 +88,8 @@ class MqttClient:
         """
         try:
             payload = message.payload.decode("utf-8")
-            self.logger.debug(f"Received message on topic {message.topic}: {payload}")
+            # Use lazy logging to avoid string formatting overhead if debug is disabled
+            self.logger.debug("Received message on topic %s: %s", message.topic, payload)
 
             # Parse JSON
             data = json.loads(payload)
