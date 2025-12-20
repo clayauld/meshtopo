@@ -153,9 +153,13 @@ class CalTopoReporter:
         assert client is not None
 
         tasks = []
+        tasks = []
 
         # Send to connect_key endpoint if configured
         if self.config.caltopo.has_connect_key:
+            tasks.append(
+                self._send_to_connect_key(client, callsign, latitude, longitude)
+            )
             tasks.append(
                 self._send_to_connect_key(client, callsign, latitude, longitude)
             )
@@ -299,20 +303,24 @@ class CalTopoReporter:
         client = self.client
         assert client is not None
 
-        success_count = 0
-        total_attempts = 0
+        tasks = []
 
         # Test connect_key endpoint if configured
         if self.config.caltopo.has_connect_key:
-            total_attempts += 1
-            if await self._test_connect_key_endpoint(client):
-                success_count += 1
+            tasks.append(self._test_connect_key_endpoint(client))
 
         # Test group endpoint if configured
         if self.config.caltopo.has_group:
-            total_attempts += 1
-            if await self._test_group_endpoint(client):
-                success_count += 1
+            tasks.append(self._test_group_endpoint(client))
+
+        if not tasks:
+            return False
+
+        # Run tests concurrently
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        success_count = sum(1 for r in results if not isinstance(r, Exception) and r)
+        total_attempts = len(tasks)
 
         if success_count > 0:
             self.logger.info(
