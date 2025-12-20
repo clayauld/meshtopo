@@ -290,23 +290,6 @@ class GatewayApp:
         if self.callsign_mapping and hasattr(self.callsign_mapping, "close"):
             self.callsign_mapping.close()
 
-    def _sanitize_for_log(self, text: Any) -> str:
-        """
-        Sanitize text for logging to prevent log injection.
-
-        Args:
-            text: Text to sanitize
-
-        Returns:
-            Sanitized string
-        """
-        if text is None:
-            return "None"
-
-        # Convert to string and replace non-printable characters
-        s = str(text)
-        return "".join(c if c.isprintable() else f"\\x{ord(c):02x}" for c in s)
-
     def _resolve_hardware_id(self, numeric_node_id: str) -> str:
         """
         Resolve hardware ID from numeric node ID using cache or calculation.
@@ -364,14 +347,14 @@ class GatewayApp:
             elif message_type == "":
                 self.logger.debug(
                     f"Received message with empty type from "
-                    f"{self._sanitize_for_log(numeric_node_id)}, skipping"
+                    f"{sanitize_for_log(numeric_node_id)}, skipping"
                 )
                 return
             else:
                 self.logger.debug(
                     f"Received unsupported message type from "
-                    f"{self._sanitize_for_log(numeric_node_id)}: "
-                    f"{self._sanitize_for_log(message_type)}"
+                    f"{sanitize_for_log(numeric_node_id)}: "
+                    f"{sanitize_for_log(message_type)}"
                 )
                 return
 
@@ -404,8 +387,8 @@ class GatewayApp:
             # config.yaml.
             self.logger.debug(
                 f"Using configured device_id as callsign: "
-                f"{self._sanitize_for_log(hardware_id)} -> "
-                f"{self._sanitize_for_log(configured_device_id)}"
+                f"{sanitize_for_log(hardware_id)} -> "
+                f"{sanitize_for_log(configured_device_id)}"
             )
             return configured_device_id
 
@@ -424,13 +407,13 @@ class GatewayApp:
                 # "Permanent Callsign" issue. If nodeinfo arrives later,
                 # it will be persisted then.
                 self.logger.info(
-                    f"Allowing unknown device {self._sanitize_for_log(hardware_id)} "
+                    f"Allowing unknown device {sanitize_for_log(hardware_id)} "
                     f"(allow_unknown_devices=True). Using hardware_id as callsign."
                 )
                 return hardware_id
             else:
                 self.logger.warning(
-                    f"Unknown device {self._sanitize_for_log(hardware_id)} "
+                    f"Unknown device {sanitize_for_log(hardware_id)} "
                     f"position update blocked (allow_unknown_devices=False). "
                     f"Device is tracked but no position sent."
                 )
@@ -439,7 +422,7 @@ class GatewayApp:
         # Known device but no callsign mapping
         self.logger.warning(
             f"No callsign mapping found for known hardware ID "
-            f"{self._sanitize_for_log(hardware_id)}. Position update will be "
+            f"{sanitize_for_log(hardware_id)}. Position update will be "
             f"skipped until nodeinfo message is received."
         )
         return None
@@ -466,7 +449,7 @@ class GatewayApp:
             # Fallback for invalid inputs, though unlikely with correct upstream parsing
             self.logger.warning(
                 f"Could not convert numeric ID to string: "
-                f"{self._sanitize_for_log(numeric_id)}"
+                f"{sanitize_for_log(numeric_id)}"
             )
             return f"!{str(numeric_id)}"
 
@@ -489,7 +472,7 @@ class GatewayApp:
         if data.get("_mqtt_retain"):
             self.logger.info(
                 f"Skipping retained position message from "
-                f"{self._sanitize_for_log(numeric_node_id)}"
+                f"{sanitize_for_log(numeric_node_id)}"
             )
             return
 
@@ -498,7 +481,7 @@ class GatewayApp:
         if not payload:
             self.logger.warning(
                 f"Received position message from "
-                f"{self._sanitize_for_log(numeric_node_id)} without payload"
+                f"{sanitize_for_log(numeric_node_id)} without payload"
             )
             return
 
@@ -509,7 +492,7 @@ class GatewayApp:
         if latitude_i is None or longitude_i is None:
             self.logger.warning(
                 f"Received position message from "
-                f"{self._sanitize_for_log(numeric_node_id)} without coordinates"
+                f"{sanitize_for_log(numeric_node_id)} without coordinates"
             )
             return
 
@@ -520,7 +503,7 @@ class GatewayApp:
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(
                 f"Processing position from "
-                f"{self._sanitize_for_log(numeric_node_id)}: "
+                f"{sanitize_for_log(numeric_node_id)}: "
                 f"{latitude}, {longitude}"
             )
 
@@ -538,8 +521,8 @@ class GatewayApp:
         if is_new_mapping and self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(
                 f"Calculated ID for new node: "
-                f"{self._sanitize_for_log(numeric_node_id)} -> "
-                f"{self._sanitize_for_log(hardware_id)}"
+                f"{sanitize_for_log(numeric_node_id)} -> "
+                f"{sanitize_for_log(hardware_id)}"
             )
 
         # Get callsign for this hardware ID
@@ -601,8 +584,8 @@ class GatewayApp:
         if node_id_from_payload:
             self._persist_node_id_mapping(str(numeric_node_id), node_id_from_payload)
             self.logger.debug(
-                f"Mapped numeric node ID {self._sanitize_for_log(numeric_node_id)} "
-                f"to hardware ID {self._sanitize_for_log(node_id_from_payload)}"
+                f"Mapped numeric node ID {sanitize_for_log(numeric_node_id)} "
+                f"to hardware ID {sanitize_for_log(node_id_from_payload)}"
             )
 
             # Extract and store callsign - prioritize configured device_id over
@@ -618,17 +601,17 @@ class GatewayApp:
                 )
                 self.logger.debug(
                     f"Mapped hardware ID "
-                    f"{self._sanitize_for_log(node_id_from_payload)} "
+                    f"{sanitize_for_log(node_id_from_payload)} "
                     f"to configured callsign "
-                    f"{self._sanitize_for_log(configured_device_id)}"
+                    f"{sanitize_for_log(configured_device_id)}"
                 )
             elif longname:
                 # Fallback to Meshtastic longname if no configured device_id
                 self._persist_callsign_mapping(node_id_from_payload, longname)
                 self.logger.debug(
                     f"Mapped hardware ID "
-                    f"{self._sanitize_for_log(node_id_from_payload)} "
-                    f"to callsign {self._sanitize_for_log(longname)} "
+                    f"{sanitize_for_log(node_id_from_payload)} "
+                    f"to callsign {sanitize_for_log(longname)} "
                     f"(from longname)"
                 )
             elif shortname:
@@ -636,8 +619,8 @@ class GatewayApp:
                 self._persist_callsign_mapping(node_id_from_payload, shortname)
                 self.logger.debug(
                     f"Mapped hardware ID "
-                    f"{self._sanitize_for_log(node_id_from_payload)} "
-                    f"to callsign {self._sanitize_for_log(shortname)} "
+                    f"{sanitize_for_log(node_id_from_payload)} "
+                    f"to callsign {sanitize_for_log(shortname)} "
                     f"(from shortname)"
                 )
 

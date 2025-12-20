@@ -46,7 +46,7 @@ jobs:
     - name: Run pytest with coverage
       id: pytest
       run: |
-        python -m pytest tests/ -v --cov=src --cov-report=xml --cov-report=term-missing --junitxml=pytest-results.xml
+        python -m pytest -m "not integration" tests/ -v --cov=src --cov-report=xml --cov-report=term-missing --junitxml=pytest-results.xml
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
@@ -246,17 +246,25 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, lint]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6This _sanitize_for_log method is a duplicate of the function with the same name imported from utils.py on line 19. This local definition is redundant and should be removed to ensure a single source of truth for this utility function. All calls to self._sanitize_for_log throughout this file should be updated to call the imported sanitize_for_log function directly (e.g., sanitize_for_log(text) instead of self._sanitize_for_log(text)).
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Create integration environment file
         run: |
-          cp deploy/.env.integration deploy/.env.integration.ci
+          # Create a functional .env.integration for CI
+          cat <<EOF > deploy/.env.integration
+          MQTT_BROKER_HOST=mosquitto
+          MQTT_BROKER_PORT=1883
+          CALTOPO_CONNECT_KEY=test_key
+          CALTOPO_URL=http://mock-server:8080/api/v1/position/report
+          CALTOPO_ALLOWED_URL_PATTERNS=http://mock-server:*
+          LOG_LEVEL=DEBUG
+          EOF
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
