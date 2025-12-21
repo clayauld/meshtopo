@@ -13,6 +13,9 @@
 
 {% for desc in commit.descriptions %}
 {{ desc.strip() | replace('\n*', '\n\n*') }}
+{%- if not loop.last %}
+
+{% endif -%}
 {% endfor %}
 
 {%- endif %}
