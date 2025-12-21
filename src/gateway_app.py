@@ -3,7 +3,6 @@ Main gateway application that orchestrates MQTT and CalTopo communication.
 """
 
 import asyncio
-import json
 import logging
 import os
 import sys
@@ -12,11 +11,10 @@ from typing import Any, Dict, Optional, Union
 
 import httpx
 
-from persistent_dict import PersistentDict
-
 from caltopo_reporter import CalTopoReporter
 from config.config import Config
 from mqtt_client import MqttClient
+from persistent_dict import PersistentDict
 from utils import sanitize_for_log
 
 

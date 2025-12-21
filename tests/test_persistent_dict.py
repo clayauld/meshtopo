@@ -1,7 +1,7 @@
-import json
-import os
 import sqlite3
+
 import pytest
+
 from persistent_dict import PersistentDict
 
 
@@ -89,14 +89,19 @@ def test_invalid_json_in_db(db_path):
     """Verify handling of non-JSON data (e.g. if file corrupted or migration needed)"""
     # Manually insert bad data
     conn = sqlite3.connect(db_path)
-    conn.execute("CREATE TABLE IF NOT EXISTS test (key TEXT PRIMARY KEY, value TEXT)")
+    tablename = "test"  # Define tablename for clarity
     conn.execute(
-        "INSERT INTO test (key, value) VALUES ('bad', 'start_of_pickle_maybe?')"
+        f"CREATE TABLE IF NOT EXISTS {tablename} (key TEXT PRIMARY KEY, value TEXT)"
+    )
+    # Manually corrupt the DB with non-JSON data
+    conn.execute(
+        f"INSERT INTO {tablename} (key, value) VALUES (?, ?)", ("bad_key", "{invalid")
     )
     conn.commit()
     conn.close()
 
     with PersistentDict(db_path, tablename="test") as pd:
-        # Should raise KeyError on decode failure (as per implementation) or JSONDecodeError
+        # Should raise KeyError on decode failure (as per implementation)
+        # or JSONDecodeError
         with pytest.raises(KeyError):
             _ = pd["bad"]

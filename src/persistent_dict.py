@@ -1,7 +1,7 @@
 import json
-import sqlite3
 import logging
-from typing import Any, Dict, Iterator, MutableMapping, Optional, Tuple, TypeVar
+import sqlite3
+from typing import Any, Iterator, MutableMapping, Optional, TypeVar
 
 T = TypeVar("T")
 
@@ -33,6 +33,8 @@ class PersistentDict(MutableMapping[str, Any]):
             decoder: Ignored, kept for compatibility (always uses json.loads).
         """
         self.filename = filename
+        if not tablename.replace("_", "").isalnum():
+            raise ValueError("Tablename must be alphanumeric")
         self.tablename = tablename
         self.autocommit = autocommit
         self.conn: Optional[sqlite3.Connection] = None
@@ -50,7 +52,7 @@ class PersistentDict(MutableMapping[str, Any]):
         if not self.conn:
             return
         query = (
-            f"CREATE TABLE IF NOT EXISTS {self.tablename} "
+            f"CREATE TABLE IF NOT EXISTS {self.tablename} "  # nosec
             "(key TEXT PRIMARY KEY, value TEXT)"
         )
         self.conn.execute(query)
@@ -59,7 +61,7 @@ class PersistentDict(MutableMapping[str, Any]):
         if not self.conn:
             raise RuntimeError("Database connection closed")
 
-        query = f"SELECT value FROM {self.tablename} WHERE key = ?"
+        query = f"SELECT value FROM {self.tablename} WHERE key = ?"  # nosec
         cursor = self.conn.execute(query, (key,))
         row = cursor.fetchone()
         if row is None:
@@ -76,7 +78,10 @@ class PersistentDict(MutableMapping[str, Any]):
             raise RuntimeError("Database connection closed")
 
         serialized_value = json.dumps(value)
-        query = f"INSERT OR REPLACE INTO {self.tablename} (key, value) VALUES (?, ?)"
+        query = (
+            f"INSERT OR REPLACE INTO {self.tablename} "  # nosec
+            "(key, value) VALUES (?, ?)"
+        )
         self.conn.execute(query, (key, serialized_value))
         if self.autocommit:
             self.conn.commit()
@@ -88,7 +93,7 @@ class PersistentDict(MutableMapping[str, Any]):
         if key not in self:
             raise KeyError(key)
 
-        query = f"DELETE FROM {self.tablename} WHERE key = ?"
+        query = f"DELETE FROM {self.tablename} WHERE key = ?"  # nosec
         self.conn.execute(query, (key,))
         if self.autocommit:
             self.conn.commit()
@@ -97,7 +102,7 @@ class PersistentDict(MutableMapping[str, Any]):
         if not self.conn:
             raise RuntimeError("Database connection closed")
 
-        query = f"SELECT key FROM {self.tablename}"
+        query = f"SELECT key FROM {self.tablename}"  # nosec
         cursor = self.conn.execute(query)
         for row in cursor:
             yield row[0]
@@ -106,7 +111,7 @@ class PersistentDict(MutableMapping[str, Any]):
         if not self.conn:
             raise RuntimeError("Database connection closed")
 
-        query = f"SELECT COUNT(*) FROM {self.tablename}"
+        query = f"SELECT COUNT(*) FROM {self.tablename}"  # nosec
         cursor = self.conn.execute(query)
         result = cursor.fetchone()
         return result[0] if result else 0
