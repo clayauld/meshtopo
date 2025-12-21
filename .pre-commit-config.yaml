@@ -4,7 +4,7 @@
 repos:
   # General hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         files: ^(src|tests)/.*\.py$
@@ -26,7 +26,7 @@ repos:
 
   # Python formatting
   - repo: https://github.com/psf/black
-    rev: 25.1.0
+    rev: 25.12.0
     hooks:
       - id: black
         language_version: python3
@@ -35,7 +35,7 @@ repos:
 
   # Python import sorting
   - repo: https://github.com/pycqa/isort
-    rev: 6.0.1
+    rev: 7.0.0
     hooks:
       - id: isort
         args: [--profile=black, --line-length=88]
@@ -53,16 +53,16 @@ repos:
 
   # Python type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.2
+    rev: v1.19.1
     hooks:
       - id: mypy
-        additional_dependencies: [types-PyYAML, types-requests]
+        additional_dependencies: [pydantic, types-PyYAML, types-requests]
         args: [--ignore-missing-imports, --strict-optional]
-        files: ^src/.*\.py$
+        files: ^(src|config)/.*\.py$
 
   # Security scanning
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.8.6
+    rev: 1.9.2
     hooks:
       - id: bandit
         args: ["-f", "screen"]
@@ -71,56 +71,64 @@ repos:
 
   # Dockerfile linting
   - repo: https://github.com/hadolint/hadolint
-    rev: v2.12.0
+    rev: v2.14.0
     hooks:
       - id: hadolint-docker
         args: [--ignore, DL3008, --ignore, DL3009]
 
   # YAML linting
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.32.0
+    rev: v1.37.1
     hooks:
       - id: yamllint
         args: [-d, relaxed]
 
   # Shell script linting
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.9.0.5
+    rev: v0.11.0.1
     hooks:
       - id: shellcheck
         args: [-e, SC1091]
 
   # Markdown linting
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.35.0
+    rev: v0.47.0
     hooks:
       - id: markdownlint
         args: [--fix, --config, .markdownlint.json]
+
+  # Conventional Commits
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.10.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
 
   # Local hooks
   - repo: local
     hooks:
       - id: pytest
         name: pytest
-        entry: python3 -m pytest tests/ -v --tb=short
+        entry: python3 -m pytest -m "not integration" tests/ -v --tb=short
         language: system
         pass_filenames: false
         files: ^(src/|tests/).*\.py$
 
-      - id: beads-export
-        name: Export Beads issues to JSONL
-        entry: >
-          bash -c 'if command -v bd &> /dev/null && [[ -d .beads ]]; then
-            echo "🔗 Exporting beads issues to JSONL..." &&
-            bd export --format=jsonl -o .beads/issues.jsonl &&
-            git add .beads/issues.jsonl &&
-            echo "✓ Beads issues exported and staged";
-          else
-            echo "Warning: bd not found or .beads directory missing, skipping export";
-          fi'
-        language: system
-        always_run: true
-        pass_filenames: false
+      # Disabled: beads-export
+      # - id: beads-export
+      #   name: Export Beads issues to JSONL
+      #   entry: >
+      #     bash -c 'if command -v bd &> /dev/null && [[ -d .beads ]]; then
+      #       echo "🔗 Exporting beads issues to JSONL..." &&
+      #       bd export --format=jsonl -o .beads/issues.jsonl &&
+      #       git add .beads/issues.jsonl &&
+      #       echo "✓ Beads issues exported and staged";
+      #     else
+      #       echo "Warning: bd not found or .beads directory missing, skipping export";
+      #     fi'
+      #   language: system
+      #   always_run: true
+      #   pass_filenames: false
 
 # Configuration
 ci:

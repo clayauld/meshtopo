@@ -2,12 +2,14 @@
 MQTT client for receiving Meshtastic position data.
 """
 
+import asyncio
 import json
 import logging
-import time
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict, Optional
 
-import paho.mqtt.client as mqtt
+import aiomqtt as mqtt
+
+from utils import sanitize_for_log
 
 
 class MqttClient:
@@ -16,201 +18,97 @@ class MqttClient:
     """
 
     def __init__(
-        self, config: Any, message_callback: Callable[[Dict[str, Any]], None]
+        self,
+        config: Any,
+        message_callback: Callable[[Dict[str, Any]], Awaitable[None]],
     ) -> None:
         """
         Initialize MQTT client.
 
         Args:
             config: Configuration object containing MQTT settings
-            message_callback: Function to call when a message is received
+            message_callback: Async function to call when a message is received
         """
         self.config = config
         self.message_callback = message_callback
         self.client: Optional[mqtt.Client] = None
-        self.connected = False
-        self.reconnect_attempts = 0
-        self.max_reconnect_attempts = 10
-        self.reconnect_delay = 1  # Start with 1 second delay
-
         self.logger = logging.getLogger(__name__)
 
-    def connect(self) -> bool:
+    async def run(self) -> None:
         """
-        Connect to the MQTT broker.
+        Connect to the MQTT broker and process messages.
+        This method will run indefinitely until cancelled.
+        """
+        reconnect_interval = 1
+        max_reconnect_interval = 60
 
-        Returns:
-            bool: True if connection successful, False otherwise
+        while True:
+            try:
+                self.logger.info(
+                    f"Connecting to MQTT broker at "
+                    f"{self.config.mqtt.broker}: {self.config.mqtt.port}"
+                )
+                async with mqtt.Client(
+                    hostname=self.config.mqtt.broker,
+                    port=self.config.mqtt.port,
+                    username=self.config.mqtt.username,
+                    password=self.config.mqtt.password.get_secret_value(),
+                    keepalive=60,
+                ) as client:
+                    self.client = client
+                    self.logger.info("Connected to MQTT broker")
+                    reconnect_interval = 1  # Reset backoff on successful connection
+
+                    topic = self.config.mqtt.topic
+                    await client.subscribe(topic)
+                    self.logger.info(f"Subscribed to topic: {topic}")
+
+                    async for message in client.messages:
+                        await self._process_message(message)
+
+            except mqtt.MqttError as e:
+                self.logger.error(f"MQTT error: {e}")
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                self.logger.error(f"Unexpected error in MQTT client: {e}")
+            finally:
+                self.logger.info("Disconnected from MQTT broker")
+                self.client = None
+
+            # Exponential backoff
+            self.logger.info(f"Reconnecting in {reconnect_interval} seconds...")
+            await asyncio.sleep(reconnect_interval)
+            reconnect_interval = min(reconnect_interval * 2, max_reconnect_interval)
+
+    async def _process_message(self, message: Any) -> None:
+        """
+        Process a received MQTT message.
+
+        Args:
+            message: The received message object
         """
         try:
-            self.client = mqtt.Client()
-            self.client.username_pw_set(
-                self.config.mqtt.username, self.config.mqtt.password
+            payload = message.payload.decode("utf-8")
+            self.logger.debug(
+                f"Received message on topic {sanitize_for_log(message.topic)}: "
+                f"{sanitize_for_log(payload)}"
             )
-
-            # Set up callbacks
-            self.client.on_connect = self._on_connect
-            self.client.on_disconnect = self._on_disconnect
-            self.client.on_message = self._on_message
-            self.client.on_log = self._on_log
-
-            # Connect to broker
-            self.logger.info(
-                f"Connecting to MQTT broker at "
-                f"{self.config.mqtt.broker}: {self.config.mqtt.port}"
-            )
-            self.client.connect(
-                self.config.mqtt.broker, self.config.mqtt.port, keepalive=60
-            )
-
-            # Start the loop
-            self.client.loop_start()
-
-            # Wait for connection to be established
-            timeout = 10  # seconds
-            start_time = time.time()
-            while not self.connected and (time.time() - start_time) < timeout:
-                time.sleep(0.1)
-
-            if self.connected:
-                self.logger.info("Successfully connected to MQTT broker")
-                self.reconnect_attempts = 0
-                return True
-            else:
-                self.logger.error("Failed to connect to MQTT broker within timeout")
-                return False
-
-        except Exception as e:
-            self.logger.error(f"Failed to connect to MQTT broker: {e}")
-            return False
-
-    def disconnect(self) -> None:
-        """Disconnect from the MQTT broker."""
-        if self.client:
-            self.logger.info("Disconnecting from MQTT broker")
-            self.client.loop_stop()
-            self.client.disconnect()
-            self.connected = False
-
-    def _on_connect(self, client: Any, userdata: Any, flags: Any, rc: int) -> None:
-        """
-        Callback for when the client connects to the broker.
-
-        Args:
-            client: The MQTT client instance
-            userdata: User data passed to the client
-            flags: Connection flags
-            rc: Result code (0 = success)
-        """
-        if rc == 0:
-            self.connected = True
-            self.logger.info("Connected to MQTT broker")
-
-            # Subscribe to the configured topic
-            topic = self.config.mqtt.topic
-            result = client.subscribe(topic)
-            if result[0] == mqtt.MQTT_ERR_SUCCESS:
-                self.logger.info(f"Subscribed to topic: {topic}")
-            else:
-                self.logger.error(f"Failed to subscribe to topic: {topic}")
-        else:
-            self.connected = False
-            self.logger.error(f"Failed to connect to MQTT broker. Result code: {rc}")
-
-    def _on_disconnect(self, client: Any, userdata: Any, rc: int) -> None:
-        """
-        Callback for when the client disconnects from the broker.
-
-        Args:
-            client: The MQTT client instance
-            userdata: User data passed to the client
-            rc: Disconnect reason code
-        """
-        self.connected = False
-        if rc != 0:
-            self.logger.warning(
-                f"Unexpected disconnection from MQTT broker. Reason code: {rc}"
-            )
-            self._attempt_reconnect()
-        else:
-            self.logger.info("Disconnected from MQTT broker")
-
-    def _on_message(self, client: Any, userdata: Any, msg: Any) -> None:
-        """
-        Callback for when a message is received.
-
-        Args:
-            client: The MQTT client instance
-            userdata: User data passed to the client
-            msg: The received message
-        """
-        try:
-            # Decode the message payload
-            payload = msg.payload.decode("utf-8")
-            self.logger.debug(f"Received message on topic {msg.topic}: {payload}")
 
             # Parse JSON
             data = json.loads(payload)
 
-            # Call the message callback
-            self.message_callback(data)
+            # Inject retain flag
+            if hasattr(message, "retain"):
+                data["_mqtt_retain"] = message.retain
+
+            # Await the async message callback
+            await self.message_callback(data)
 
         except json.JSONDecodeError as e:
             self.logger.warning(
-                f"Failed to parse JSON message: {e}. Payload: {msg.payload}"
+                f"Failed to parse JSON message: {e}. "
+                f"Payload: {sanitize_for_log(message.payload)}"
             )
         except Exception as e:
             self.logger.error(f"Error processing message: {e}")
-
-    def _on_log(self, client: Any, userdata: Any, level: int, buf: str) -> None:
-        """
-        Callback for MQTT client logging.
-
-        Args:
-            client: The MQTT client instance
-            userdata: User data passed to the client
-            level: Log level
-            buf: Log message
-        """
-        # Only log warnings and errors from paho-mqtt
-        if level <= mqtt.MQTT_LOG_WARNING:
-            self.logger.debug(f"MQTT: {buf}")
-
-    def _attempt_reconnect(self) -> None:
-        """
-        Attempt to reconnect to the MQTT broker with exponential backoff.
-        """
-        if self.reconnect_attempts >= self.max_reconnect_attempts:
-            self.logger.error(
-                f"Max reconnection attempts ({self.max_reconnect_attempts}) "
-                f"reached. Giving up."
-            )
-            return
-
-        self.reconnect_attempts += 1
-        delay = min(
-            self.reconnect_delay * (2 ** (self.reconnect_attempts - 1)), 60
-        )  # Max 60 seconds
-
-        self.logger.info(
-            f"Attempting to reconnect in {delay} seconds "
-            f"(attempt {self.reconnect_attempts}/{self.max_reconnect_attempts})"
-        )
-
-        time.sleep(delay)
-
-        try:
-            if self.client:
-                self.client.reconnect()
-        except Exception as e:
-            self.logger.error(f"Reconnection attempt failed: {e}")
-            self._attempt_reconnect()
-
-    def is_connected(self) -> bool:
-        """
-        Check if the client is connected to the broker.
-
-        Returns:
-            bool: True if connected, False otherwise
-        """
-        return self.connected and self.client is not None

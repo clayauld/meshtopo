@@ -60,7 +60,7 @@ print_status "pip3 found"
 # Install dependencies
 echo ""
 print_info "Installing Python dependencies..."
-pip3 install -r requirements.txt
+pip3 install .
 print_status "Dependencies installed"
 
 # Create necessary directories

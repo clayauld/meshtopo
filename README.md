@@ -70,15 +70,15 @@ The service is configured via a single `config/config.yaml` file. The `make setu
 
 ### Main Configuration Parameters
 
-| Parameter | Description | Example |
-|---|---|---|
-| `mqtt.broker` | IP address or hostname of your MQTT broker. Use `mosquitto` if using the internal broker. | `192.168.1.100` |
-| `mqtt.port` | MQTT broker port. | `1883` |
-| `mqtt.username` | MQTT authentication username. | `meshtopo_user` |
-| `mqtt.password` | MQTT authentication password. | `your_secure_password` |
-| `mqtt.topic` | MQTT topic pattern for Meshtastic position packets. **Replace `US` with your LoRa region code.** | `msh/US/2/json/+/+` |
-| `caltopo.connect_key`| Your CalTopo Team Account connect key. | `G3rvY...` |
-| `devices.allow_unknown_devices`| If `true`, devices not listed in the `nodes` section can send position updates. | `true` |
+| Parameter                       | Description                                                                                      | Example                |
+| ------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------- |
+| `mqtt.broker`                   | IP address or hostname of your MQTT broker. Use `mosquitto` if using the internal broker.        | `192.168.1.100`        |
+| `mqtt.port`                     | MQTT broker port.                                                                                | `1883`                 |
+| `mqtt.username`                 | MQTT authentication username.                                                                    | `meshtopo_user`        |
+| `mqtt.password`                 | MQTT authentication password.                                                                    | `your_secure_password` |
+| `mqtt.topic`                    | MQTT topic pattern for Meshtastic position packets. **Replace `US` with your LoRa region code.** | `msh/US/2/json/+/+`    |
+| `caltopo.connect_key`           | Your CalTopo Team Account connect key.                                                           | `G3rvY...`             |
+| `devices.allow_unknown_devices` | If `true`, devices not listed in the `nodes` section can send position updates.                  | `true`                 |
 
 ### Node Display Name Overrides
 
@@ -122,7 +122,7 @@ Interested in contributing to Meshtopo? Here's how to get your development envir
     ```
 
 2. **Set up the development environment**:
-    This will install development dependencies and pre-commit hooks.
+   This will install development dependencies and pre-commit hooks.
 
     ```bash
     make dev-setup
@@ -142,15 +142,15 @@ The project follows PEP 8 guidelines and uses `black` for formatting and `flake8
 
 - **Run linting checks:**
 
-  ```bash
-  make lint
-  ```
+    ```bash
+    make lint
+    ```
 
 - **Format code:**
 
-  ```bash
-  make format
-  ```
+    ```bash
+    make format
+    ```
 
 ### Project Structure
 

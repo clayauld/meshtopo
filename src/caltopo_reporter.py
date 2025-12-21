@@ -2,12 +2,34 @@
 CalTopo API integration for sending position reports.
 """
 
+import asyncio
 import logging
+import os
+import random
 import re
-from typing import Any, Optional
-from urllib.parse import urlencode
+from typing import Any, Optional, cast
+from urllib.parse import urlencode, urlparse
 
-import requests
+import httpx
+
+from utils import sanitize_for_log
+
+
+def _matches_url_pattern(url: str, pattern: str) -> bool:
+    """
+    Check if a URL matches a pattern with wildcard support.
+
+    Args:
+        url: The URL to check
+        pattern: The pattern to match (supports * wildcard)
+
+    Returns:
+        bool: True if the URL matches the pattern
+    """
+    # Convert pattern to regex: escape special chars except *,
+    # then replace * with .*
+    pattern_regex = re.escape(pattern).replace(r"\*", ".*")
+    return bool(re.match(f"^{pattern_regex}$", url))
 
 
 class CalTopoReporter:
@@ -15,21 +37,66 @@ class CalTopoReporter:
     Handles communication with the CalTopo Position Report API.
     """
 
-    BASE_URL = "https://caltopo.com/api/v1/position/report"
+    _raw_base_url = os.getenv(
+        "CALTOPO_URL", "https://caltopo.com/api/v1/position/report"
+    )
+    _parsed_url = urlparse(_raw_base_url)
 
-    def __init__(self, config: Any) -> None:
+    # Allow explicit URL patterns for testing/development
+    _allowed_patterns_str = os.getenv("CALTOPO_ALLOWED_URL_PATTERNS", "")
+    _allowed_patterns = [
+        p.strip() for p in _allowed_patterns_str.split(",") if p.strip()
+    ]
+
+    # Validate URL based on allowed patterns or production rules
+    if _allowed_patterns:
+        # Test/development mode: validate against explicit allowlist
+        _url_matches = False
+        for _pattern in _allowed_patterns:
+            if _matches_url_pattern(_raw_base_url, _pattern):
+                _url_matches = True
+                break
+        if not _url_matches:
+            raise ValueError(
+                f"Invalid CALTOPO_URL: {_raw_base_url}. "
+                f"URL does not match any allowed pattern: "
+                f"{', '.join(_allowed_patterns)}"
+            )
+    else:
+        # Production mode: enforce that hostname must be caltopo.com
+        if not (
+            _parsed_url.hostname == "caltopo.com"
+            or cast(str, _parsed_url.hostname).endswith(".caltopo.com")
+        ):
+            raise ValueError(
+                f"Invalid CALTOPO_URL: {_raw_base_url}. "
+                f"Hostname must be 'caltopo.com' or a subdomain thereof."
+            )
+
+    # Assign the validated URL to the class attribute
+    BASE_URL = _raw_base_url
+
+    def __init__(self, config: Any, client: Optional[httpx.AsyncClient] = None) -> None:
         """
         Initialize CalTopo reporter.
 
         Args:
             config: Configuration object containing CalTopo settings
+            client: Optional shared httpx.AsyncClient. If not provided, a new client
+                   will be created for each request.
         """
         self.config = config
         self.logger = logging.getLogger(__name__)
-        self.session = requests.Session()
-
-        # Set a reasonable timeout for API requests
+        # Use a persistent client for efficiency (connection reuse)
+        self.client = client
+        self._owns_client = client is None
         self.timeout = 10  # seconds
+
+    async def start(self) -> None:
+        """Initialize the persistent HTTP client."""
+        if self.client is None:
+            self.client = httpx.AsyncClient(timeout=self.timeout)
+            self._owns_client = True
 
     def _is_valid_caltopo_identifier(self, identifier: str) -> bool:
         """
@@ -59,11 +126,13 @@ class CalTopoReporter:
             bool: True if the identifier is valid, False otherwise
         """
         if not self._is_valid_caltopo_identifier(identifier):
-            self.logger.error(f"Invalid CalTopo {identifier_type}: {identifier}")
+            self.logger.error(
+                f"Invalid CalTopo {identifier_type}: {sanitize_for_log(identifier)}"
+            )
             return False
         return True
 
-    def send_position_update(
+    async def send_position_update(
         self,
         callsign: str,
         latitude: float,
@@ -82,27 +151,46 @@ class CalTopoReporter:
         Returns:
             bool: True if at least one endpoint was successful, False otherwise
         """
-        success_count = 0
-        total_attempts = 0
+        # Ensure client is initialized
+        if self.client is None:
+            await self.start()
+
+        # We can safely assume client is not None after start(),
+        # but type checker might complain
+        # So we use a local variable or assert
+        client = self.client
+        if client is None:
+            raise RuntimeError("httpx.AsyncClient failed to initialize")
+
+        tasks = []
 
         # Send to connect_key endpoint if configured
         if self.config.caltopo.has_connect_key:
-            total_attempts += 1
-            if self._send_to_connect_key(callsign, latitude, longitude):
-                success_count += 1
+            tasks.append(
+                self._send_to_connect_key(client, callsign, latitude, longitude)
+            )
 
         # Send to group endpoint if configured
         if self.config.caltopo.has_group:
-            total_attempts += 1
             group_to_use = group or self.config.caltopo.group
-            if self._send_to_group(callsign, latitude, longitude, group_to_use):
-                success_count += 1
+            tasks.append(
+                self._send_to_group(client, callsign, latitude, longitude, group_to_use)
+            )
+
+        if not tasks:
+            return False
+
+        # Execute requests concurrently to reduce latency
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        success_count = sum(1 for r in results if r is True)
 
         # Return True if at least one endpoint was successful
         return success_count > 0
 
-    def _send_to_connect_key(
+    async def _send_to_connect_key(
         self,
+        client: httpx.AsyncClient,
         callsign: str,
         latitude: float,
         longitude: float,
@@ -117,10 +205,11 @@ class CalTopoReporter:
         query_string = urlencode(params)
         full_url = f"{url}?{query_string}"
 
-        return self._make_api_request(full_url, callsign, "connect_key")
+        return await self._make_api_request(client, full_url, callsign, "connect_key")
 
-    def _send_to_group(
+    async def _send_to_group(
         self,
+        client: httpx.AsyncClient,
         callsign: str,
         latitude: float,
         longitude: float,
@@ -135,99 +224,80 @@ class CalTopoReporter:
         query_string = urlencode(params)
         full_url = f"{url}?{query_string}"
 
-        return self._make_api_request(full_url, callsign, "group")
+        return await self._make_api_request(client, full_url, callsign, "group")
 
-    def _make_api_request(self, url: str, callsign: str, endpoint_type: str) -> bool:
-        """Make an API request and handle the response."""
-        try:
-            # Redact connect_key from URL for logging
-            log_url = (
-                re.sub(f"({self.BASE_URL}/)[^?]+", r"\1<REDACTED>", url)
-                if endpoint_type == "connect_key"
-                else url
-            )
-            self.logger.debug(
-                f"Sending position update for {callsign} to {endpoint_type}: "
-                f"{log_url}"
-            )
+    async def _make_api_request(
+        self,
+        client: httpx.AsyncClient,
+        url: str,
+        callsign: str,
+        endpoint_type: str,
+    ) -> bool:
+        """Make an API request with retry logic."""
+        max_retries = 3
+        base_delay = 1.0  # seconds
 
-            # Make the HTTP GET request
-            response = self.session.get(url, timeout=self.timeout)
+        # Consistently redact sensitive path parameters for both endpoint types.
+        log_url = re.sub(f"({self.BASE_URL}/)[^?]+", r"\1<REDACTED>", url)
 
-            if response.status_code == 200:
-                self.logger.info(
-                    f"Successfully sent position update for {callsign} to "
-                    f"{endpoint_type}"
+        for attempt in range(max_retries + 1):
+            try:
+                self.logger.debug(
+                    f"Sending position update for {sanitize_for_log(callsign)} "
+                    f"to {endpoint_type} (attempt {attempt + 1}): {log_url}"
                 )
-                return True
-            else:
+
+                response = await client.get(url)
+
+                if response.status_code == 200:
+                    self.logger.info(
+                        f"Successfully sent position update for "
+                        f"{sanitize_for_log(callsign)} to {endpoint_type}"
+                    )
+                    return True
+                elif 500 <= response.status_code < 600 or response.status_code == 429:
+                    # Retry on server errors or rate limits
+                    self.logger.warning(
+                        f"CalTopo API error for {sanitize_for_log(callsign)} "
+                        f"({endpoint_type}): HTTP {response.status_code} - "
+                        f"{sanitize_for_log(response.text)}. Retrying..."
+                    )
+                else:
+                    # Don't retry on other client errors (e.g., 400, 401, 404)
+                    self.logger.error(
+                        f"CalTopo API error for {sanitize_for_log(callsign)} "
+                        f"({endpoint_type}): HTTP {response.status_code} - "
+                        f"{sanitize_for_log(response.text)}"
+                    )
+                    return False
+
+            except (httpx.ConnectError, httpx.TimeoutException) as e:
+                self.logger.warning(
+                    f"CalTopo API connection/timeout error for "
+                    f"{sanitize_for_log(callsign)} ({endpoint_type}): {e}. Retrying..."
+                )
+            except Exception as e:
                 self.logger.error(
-                    f"CalTopo API error for {callsign} ({endpoint_type}): "
-                    f"HTTP {response.status_code} - {response.text}"
+                    f"Unexpected error sending position update for "
+                    f"{sanitize_for_log(callsign)} ({endpoint_type}): {e}"
                 )
                 return False
 
-        except requests.exceptions.Timeout:
-            self.logger.error(f"CalTopo API timeout for {callsign} ({endpoint_type})")
-            return False
-        except requests.exceptions.ConnectionError:
-            self.logger.error(
-                f"CalTopo API connection error for {callsign} ({endpoint_type})"
-            )
-            return False
-        except requests.exceptions.RequestException as e:
-            self.logger.error(
-                f"CalTopo API request error for {callsign} ({endpoint_type}): {e}"
-            )
-            return False
-        except Exception as e:
-            self.logger.error(
-                f"Unexpected error sending position update for {callsign} "
-                f"({endpoint_type}): {e}"
-            )
-            return False
+            if attempt < max_retries:
+                # Exponential backoff with jitter
+                delay = (base_delay * (2**attempt)) + (
+                    random.SystemRandom().uniform(0, 0.5)
+                )
+                self.logger.info(f"Retrying in {delay:.2f} seconds...")
+                await asyncio.sleep(delay)
 
-    def _build_api_url(
-        self,
-        callsign: str,
-        latitude: float,
-        longitude: float,
-        group: Optional[str] = None,
-    ) -> str:
-        """
-        Build the CalTopo API URL with query parameters.
+        self.logger.error(
+            f"Failed to send position update for {sanitize_for_log(callsign)} "
+            f"({endpoint_type}) after {max_retries + 1} attempts"
+        )
+        return False
 
-        This method is kept for backward compatibility but is deprecated.
-        Use the new _send_to_connect_key and _send_to_group methods instead.
-
-        Args:
-            callsign: Device callsign/identifier
-            latitude: Latitude in decimal degrees
-            longitude: Longitude in decimal degrees
-            group: Optional GROUP for group-based API mode
-
-        Returns:
-            str: Complete API URL
-        """
-        # For backward compatibility, prefer connect_key if available
-        if self.config.caltopo.has_connect_key:
-            url = f"{self.BASE_URL}/{self.config.caltopo.connect_key}"
-        elif self.config.caltopo.has_group:
-            group_to_use = group or self.config.caltopo.group
-            if not group_to_use:
-                raise ValueError("GROUP is required for group-based API mode")
-            url = f"{self.BASE_URL}/{group_to_use}"
-        else:
-            raise ValueError("No CalTopo endpoint configured")
-
-        # Build query parameters
-        params = {"id": callsign, "lat": latitude, "lng": longitude}
-
-        # Encode parameters and append to URL
-        query_string = urlencode(params)
-        return f"{url}?{query_string}"
-
-    def test_connection(self) -> bool:
+    async def test_connection(self) -> bool:
         """
         Test the connection to CalTopo API.
 
@@ -235,20 +305,32 @@ class CalTopoReporter:
             bool: True if at least one endpoint connection test successful,
                 False otherwise
         """
-        success_count = 0
-        total_attempts = 0
+        # Ensure client is initialized
+        if self.client is None:
+            await self.start()
+
+        client = self.client
+        if client is None:
+            raise RuntimeError("httpx.AsyncClient failed to initialize")
+
+        tasks = []
 
         # Test connect_key endpoint if configured
         if self.config.caltopo.has_connect_key:
-            total_attempts += 1
-            if self._test_connect_key_endpoint():
-                success_count += 1
+            tasks.append(self._test_connect_key_endpoint(client))
 
         # Test group endpoint if configured
         if self.config.caltopo.has_group:
-            total_attempts += 1
-            if self._test_group_endpoint():
-                success_count += 1
+            tasks.append(self._test_group_endpoint(client))
+
+        if not tasks:
+            return False
+
+        # Run tests concurrently
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        success_count = sum(1 for r in results if not isinstance(r, Exception) and r)
+        total_attempts = len(tasks)
 
         if success_count > 0:
             self.logger.info(
@@ -260,7 +342,7 @@ class CalTopoReporter:
             self.logger.error("CalTopo API connectivity test failed for all endpoints")
             return False
 
-    def _test_connect_key_endpoint(self) -> bool:
+    async def _test_connect_key_endpoint(self, client: httpx.AsyncClient) -> bool:
         """Test connection to connect_key endpoint."""
         try:
             connect_key = self.config.caltopo.connect_key
@@ -270,7 +352,7 @@ class CalTopoReporter:
             test_url = (
                 f"{self.BASE_URL}/{connect_key}" f"?id=MESHTOPO_SYSTEM_TEST&lat=0&lng=0"
             )
-            response = self.session.get(test_url, timeout=self.timeout)
+            response = await client.get(test_url)
 
             # Any response (even 4xx/5xx) means we can reach the API
             self.logger.info(
@@ -282,7 +364,7 @@ class CalTopoReporter:
             self.logger.error(f"CalTopo connect_key endpoint test failed: {e}")
             return False
 
-    def _test_group_endpoint(self) -> bool:
+    async def _test_group_endpoint(self, client: httpx.AsyncClient) -> bool:
         """Test connection to group endpoint."""
         try:
             group = self.config.caltopo.group
@@ -292,7 +374,7 @@ class CalTopoReporter:
             test_url = (
                 f"{self.BASE_URL}/{group}" f"?id=MESHTOPO_SYSTEM_TEST&lat=0&lng=0"
             )
-            response = self.session.get(test_url, timeout=self.timeout)
+            response = await client.get(test_url)
 
             # Any response (even 4xx/5xx) means we can reach the API
             self.logger.info(
@@ -304,8 +386,10 @@ class CalTopoReporter:
             self.logger.error(f"CalTopo group endpoint test failed: {e}")
             return False
 
-    def close(self) -> None:
-        """Close the HTTP session."""
-        if self.session:
-            self.session.close()
-            self.logger.debug("CalTopo reporter session closed")
+    async def close(self) -> None:
+        """
+        Close the reporter and the underlying HTTP client.
+        """
+        if self.client and self._owns_client:
+            await self.client.aclose()
+            self.client = None

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 
 # Constants
 _LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -17,7 +17,7 @@ class MqttUser(BaseModel):
     """MQTT user configuration."""
 
     username: str
-    password: str
+    password: SecretStr
     acl: str = "readwrite"
 
 
@@ -27,7 +27,7 @@ class MqttConfig(BaseModel):
     broker: str
     port: int = 1883
     username: str = ""
-    password: str = ""
+    password: SecretStr = SecretStr("")
     topic: str = "msh/US/2/json/+/+"
     keepalive: int = 60
     use_internal_broker: bool = False
@@ -62,7 +62,7 @@ class CalTopoConfig(BaseModel):
         """Check if group is configured and valid."""
         return bool(self.group and self.group.strip())
 
-    @model_validator(mode="after")  # type: ignore[misc]
+    @model_validator(mode="after")
     def check_at_least_one_mode(self) -> "CalTopoConfig":
         if not self.has_connect_key and not self.has_group:
             raise ValueError(
@@ -70,7 +70,7 @@ class CalTopoConfig(BaseModel):
             )
         return self
 
-    @field_validator("connect_key", "group", mode="before")  # type: ignore[misc]
+    @field_validator("connect_key", "group", mode="before")
     @classmethod
     def strip_whitespace(cls, v: Optional[str]) -> Optional[str]:
         if v is not None:
@@ -108,15 +108,22 @@ class DeviceConfig(BaseModel):
     allow_unknown_devices: bool = True
 
 
+class StorageConfig(BaseModel):
+    """Storage configuration."""
+
+    db_path: str = "meshtopo_state.sqlite"
+
+
 class Config(BaseModel):
     """Main configuration class."""
 
     mqtt: MqttConfig
     caltopo: CalTopoConfig
-    nodes: Dict[str, NodeMapping]
+    nodes: Dict[str, NodeMapping] = Field(default_factory=dict)
     logging: LoggingConfig
     mqtt_broker: MqttBrokerConfig = Field(default_factory=MqttBrokerConfig)
     devices: DeviceConfig = Field(default_factory=DeviceConfig)
+    storage: StorageConfig = Field(default_factory=StorageConfig)
 
     @classmethod
     def from_file(cls, config_path: str) -> "Config":
@@ -135,22 +142,44 @@ class Config(BaseModel):
             raise yaml.YAMLError(f"Failed to parse YAML configuration: {e}")
 
         if isinstance(data, dict):
-            return cls.model_validate(data)  # type: ignore[no-any-return]
+            return cls.model_validate(data)
         else:
             raise TypeError("Config file must be a dictionary")
+
+    def _get_node_mapping(self, node_id: str) -> Optional[NodeMapping]:
+        """
+        Get node mapping handling optional '!' prefix.
+        """
+        # Direct lookup
+        if node_id in self.nodes:
+            return self.nodes[node_id]
+
+        # Try without '!' if present
+        if node_id.startswith("!"):
+            stripped_id = node_id[1:]
+            if stripped_id in self.nodes:
+                return self.nodes[stripped_id]
+
+        # Try with '!' if missing
+        else:
+            prefixed_id = f"!{node_id}"
+            if prefixed_id in self.nodes:
+                return self.nodes[prefixed_id]
+
+        return None
 
     def get_node_device_id(self, node_id: str) -> Optional[str]:
         """
         Get the CalTopo device ID for a given Meshtastic node ID.
         """
-        node_mapping = self.nodes.get(node_id)
+        node_mapping = self._get_node_mapping(node_id)
         return node_mapping.device_id if node_mapping else None
 
     def get_node_group(self, node_id: str) -> Optional[str]:
         """
         Get the GROUP for a given Meshtastic node ID.
         """
-        node_mapping = self.nodes.get(node_id)
+        node_mapping = self._get_node_mapping(node_id)
         if node_mapping and node_mapping.group:
             return node_mapping.group
         return self.caltopo.group
@@ -161,10 +190,48 @@ class Config(BaseModel):
         """
         log_level = getattr(logging, self.logging.level.upper(), logging.INFO)
 
+        handlers: List[logging.Handler] = [logging.StreamHandler()]
+
+        if self.logging.file.enabled:
+            log_path = Path(self.logging.file.path)
+            # Ensure log directory exists
+            try:
+                log_path.parent.mkdir(parents=True, exist_ok=True)
+
+                # Parse max size (e.g. 10MB -> bytes)
+                max_bytes = 10 * 1024 * 1024  # Default 10MB
+                if self.logging.file.max_size:
+                    # Simple parser for KB, MB
+                    size_str = self.logging.file.max_size.upper()
+                    if size_str.endswith("K") or size_str.endswith("KB"):
+                        max_bytes = int(float(size_str.rstrip("KB")) * 1024)
+                    elif size_str.endswith("M") or size_str.endswith("MB"):
+                        max_bytes = int(float(size_str.rstrip("MB")) * 1024 * 1024)
+                    else:
+                        try:
+                            max_bytes = int(size_str)
+                        except ValueError:
+                            pass
+
+                from logging.handlers import RotatingFileHandler
+
+                file_handler = RotatingFileHandler(
+                    log_path,
+                    maxBytes=max_bytes,
+                    backupCount=self.logging.file.backup_count,
+                )
+                file_handler.setFormatter(logging.Formatter(self.logging.format))
+                handlers.append(file_handler)
+            except Exception as e:
+                # Fallback to stderr if file logging fails (e.g. permissions)
+                print(f"Failed to setup file logging: {e}")
+
         logging.basicConfig(
             level=log_level,
             format=self.logging.format,
             datefmt="%Y-%m-%d %H:%M:%S",
+            handlers=handlers,
+            force=True,  # Ensure we override any existing config
         )
 
         logging.getLogger("paho.mqtt").setLevel(logging.WARNING)

@@ -12,8 +12,11 @@ services:
         container_name: meshtopo-gateway
         restart: unless-stopped
         volumes:
-            - ./config/config.yaml.minimal:/app/config/config.yaml:ro
-            - logs:/app/logs
+            - ../config/config.yaml:/app/config/config.yaml:ro
+            # Logs are mounted to /app/logs
+            - ./logs:/app/logs
+            # Data is mounted to /app/data for database file
+            - ./data:/app/data
         environment:
             - TZ=UTC
         deploy:
