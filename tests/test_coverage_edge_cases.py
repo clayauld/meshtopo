@@ -1,14 +1,13 @@
-import os
-import json
-import pytest
-import asyncio
-import logging
 import importlib
-from unittest.mock import MagicMock, AsyncMock, patch, ANY
-from gateway_app import GatewayApp
+import os
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
 import caltopo_reporter
 from caltopo_reporter import CalTopoReporter
 from config.config import Config
+from gateway_app import GatewayApp
 
 
 @pytest.fixture
