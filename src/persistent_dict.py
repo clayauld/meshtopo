@@ -43,7 +43,8 @@ class PersistentDict(MutableMapping[str, Any]):
         self._create_table()
 
     def _connect(self) -> None:
-        self.conn = sqlite3.connect(self.filename, isolation_level=None)
+        # Use default isolation level to allow manual transaction control
+        self.conn = sqlite3.connect(self.filename)
         # optimize for simple key-value storage
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA synchronous=NORMAL")
