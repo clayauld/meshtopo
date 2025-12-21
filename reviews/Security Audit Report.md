@@ -15,7 +15,7 @@ I have identified the following vulnerabilities in the code changes:
     control the GITHUB_REPOSITORY environment variable can inject arbitrary shell commands. For example, setting GITHUB_REPOSITORY to a; rm -rf / would result in the execution of rm -rf /.
 - Recommendation: Sanitize the GITHUB*REPOSITORY variable before using it in shell commands. Ensure it only contains characters appropriate for a repository name (e.g., alphanumeric,*, -, /).
 
-2. Leaking Secrets in Process List
+1. Leaking Secrets in Process List
 
 - Vulnerability: Exposure of Sensitive Information to an Unauthorized Actor
 - Severity: Medium
@@ -25,21 +25,21 @@ I have identified the following vulnerabilities in the code changes:
     Anyone with access to the machine running make can see the GITHUB_TOKEN.
 - Recommendation: Pass the token via stdin to the docker login command. For example: echo $(GITHUB_TOKEN) | docker login ghcr.io -u $(GITHUB_ACTOR) --password-stdin.
 
-3. Traefik Routing Rule Injection
+1. Traefik Routing Rule Injection
 
 - Vulnerability: Traefik Routing Rule Injection
 - Severity: High
 - Location: deploy/docker-compose.yml:51
 - Line Content:
-    - -   "traefik.http.routers.traefik.rule=Host(\traefik.${SSL_DOMAIN}\)"
-    - -   "traefik.http.routers.mosquitto-ws.rule=Host(\mqtt.${SSL_DOMAIN}\)"
+  - "traefik.http.routers.traefik.rule=Host(\traefik.${SSL_DOMAIN}\)"
+  - "traefik.http.routers.mosquitto-ws.rule=Host(\mqtt.${SSL_DOMAIN}\)"
 - Description: The SSL_DOMAIN environment variable is used directly in Traefik's routing rules without sanitization. An attacker who can control this environment variable can inject malicious expressions into
     the Host() function, potentially redirecting traffic, bypassing access controls, or causing a denial of service. For example, an attacker could set SSL_DOMAIN to ` ) || PathPrefix("/") `` to route all
     traffic to a specific service.
 - Recommendation: Sanitize the SSL_DOMAIN variable to ensure it only contains a valid domain name. It should not contain any characters that have a special meaning in Traefik's rule syntax, such as (, ), &, |,
     etc.
 
-4. Unnecessary Build Tools in Production Image
+1. Unnecessary Build Tools in Production Image
 
 - Vulnerability: Unnecessary build tools in production image.
 - Severity: Low
@@ -50,7 +50,7 @@ I have identified the following vulnerabilities in the code changes:
 - Recommendation: Use a multi-stage build. Create a builder stage where you install gcc and build any dependencies that need it. Then, in the production stage, copy the built artifacts from the builder stage
     without installing gcc.
 
-5. Insecure Service Configuration in Integration Tests
+1. Insecure Service Configuration in Integration Tests
 
 - Vulnerability: Use of an insecure service configuration.
 - Severity: Low
@@ -61,7 +61,7 @@ I have identified the following vulnerabilities in the code changes:
 - Recommendation: Ensure that the production docker-compose.yml uses a secure Mosquitto configuration with authentication enabled. Add a comment to docker-compose.integration.yml to clarify that it's for
     testing purposes only and should not be used in production.
 
-6. Unsanitized File Path from Command-line Argument
+1. Unsanitized File Path from Command-line Argument
 
 - Vulnerability: Path Traversal
 - Severity: Low
@@ -72,7 +72,7 @@ I have identified the following vulnerabilities in the code changes:
 - Recommendation: While the immediate risk is low due to the execution context, it's a good practice to sanitize the input. For example, you could restrict the file path to a specific directory, or at least
     resolve the path and ensure it's within the project's directory.
 
-7. Insecure Deserialization in SqliteDict
+1. Insecure Deserialization in SqliteDict
 
 - Vulnerability: Insecure Deserialization
 - Severity: Critical
@@ -86,7 +86,7 @@ I have identified the following vulnerabilities in the code changes:
 - Recommendation: When initializing SqliteDict, explicitly set encode=json.dumps and decode=json.loads. json is a safe serialization format. For example: SqliteDict("meshtopo_state.sqlite",
     tablename="node_id_mapping", autocommit=True, encode=json.dumps, decode=json.loads).
 
-8. Inconsistent Log Sanitization
+1. Inconsistent Log Sanitization
 
 - Vulnerability: Log Injection
 - Severity: Medium
@@ -101,10 +101,10 @@ I have identified the following vulnerabilities in the code changes:
 All identified vulnerabilities have been addressed:
 
 1. **Command Injection in Makefile**: Fixed by sanitizing `$(REPO)` variable.
-2. **Leaking Secrets in Process List**: Fixed by using `--password-stdin` for `docker login`.
-3. **Traefik Routing Rule Injection**: Fixed by sanitizing `SSL_DOMAIN` in Makefile.
-4. **Unnecessary Build Tools**: Fixed by using multi-stage Dockerfile.
-5. **Insecure Service Configuration**: Added warning comments to `docker-compose.integration.yml`.
-6. **Unsanitized File Path**: Added strict path validation in `src/gateway.py`.
-7. **Insecure Deserialization**: Switched `SqliteDict` to use JSON serialization.
-8. **Inconsistent Log Sanitization**: Applied `_sanitize_for_log` consistently.
+1. **Leaking Secrets in Process List**: Fixed by using `--password-stdin` for `docker login`.
+1. **Traefik Routing Rule Injection**: Fixed by sanitizing `SSL_DOMAIN` in Makefile.
+1. **Unnecessary Build Tools**: Fixed by using multi-stage Dockerfile.
+1. **Insecure Service Configuration**: Added warning comments to `docker-compose.integration.yml`.
+1. **Unsanitized File Path**: Added strict path validation in `src/gateway.py`.
+1. **Insecure Deserialization**: Switched `SqliteDict` to use JSON serialization.
+1. **Inconsistent Log Sanitization**: Applied `_sanitize_for_log` consistently.

@@ -1,6 +1,6 @@
 # Fix Meshtastic MQTT Node Attribution Logic
 
-### Implementation Specification: Fix Meshtastic MQTT Node Attribution Logic
+## Implementation Specification: Fix Meshtastic MQTT Node Attribution Logic
 
 **Context:** The current system incorrectly uses the MQTT `sender` field (which identifies the Gateway) as a fallback when the `from` field (the field Node) is not yet mapped in the local database. This causes field node positions to overwrite the Gateway's position.
 
@@ -10,7 +10,7 @@
 
 ---
 
-#### Step 1: Add Helper Method for ID Conversion
+### Step 1: Add Helper Method for ID Conversion
 
 **Action:** In `src/gateway_app.py`, inside the `GatewayApp` class, add the following helper method.
 **Placement:** Insert this method immediately before the `_process_message` method (approx. line 351).
@@ -42,7 +42,7 @@
 
 ---
 
-#### Step 2: Refactor Position Processing Logic
+### Step 2: Refactor Position Processing Logic
 
 **Action:** In `src/gateway_app.py`, locate the `_process_position_message` method.
 **Target Block:** Replace the entire lookup and fallback logic block (approx lines 463-492) that handles `hardware_id` resolution.
@@ -98,7 +98,7 @@
 
 ---
 
-#### Step 3: Verification Logic (Mental Check)
+### Step 3: Verification Logic (Mental Check)
 
 1. **Input:** A message arrives with `from: 305419896`.
 2. **Lookup:** `self.node_id_mapping` is empty for this ID.

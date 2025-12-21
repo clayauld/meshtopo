@@ -62,7 +62,7 @@ class CalTopoConfig(BaseModel):
         """Check if group is configured and valid."""
         return bool(self.group and self.group.strip())
 
-    @model_validator(mode="after")  # type: ignore[misc]
+    @model_validator(mode="after")
     def check_at_least_one_mode(self) -> "CalTopoConfig":
         if not self.has_connect_key and not self.has_group:
             raise ValueError(
@@ -70,7 +70,7 @@ class CalTopoConfig(BaseModel):
             )
         return self
 
-    @field_validator("connect_key", "group", mode="before")  # type: ignore[misc]
+    @field_validator("connect_key", "group", mode="before")
     @classmethod
     def strip_whitespace(cls, v: Optional[str]) -> Optional[str]:
         if v is not None:
@@ -142,7 +142,7 @@ class Config(BaseModel):
             raise yaml.YAMLError(f"Failed to parse YAML configuration: {e}")
 
         if isinstance(data, dict):
-            return cls.model_validate(data)  # type: ignore[no-any-return]
+            return cls.model_validate(data)
         else:
             raise TypeError("Config file must be a dictionary")
 
