@@ -4,27 +4,31 @@ networks:
 
 volumes:
     mosquitto_data:
-    caddy_data:
-    caddy_config:
+    traefik_data:
 
 services:
-    # Caddy reverse proxy with SSL termination (conditional)
-    caddy:
-        image: caddy:2-alpine
-        container_name: caddy
+    # Traefik reverse proxy with SSL termination and TCP support
+    traefik:
+        image: traefik:v2.10
+        container_name: traefik
         restart: unless-stopped
+        command:
+            - "--providers.docker=true"
+            - "--providers.docker.exposedbydefault=false"
+            - "--entrypoints.web.address=:80"
+            - "--entrypoints.websecure.address=:443"
+            - "--entrypoints.mqttsecure.address=:8883"
+            - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+            - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+            - "--certificatesresolvers.myresolver.acme.email=${SSL_EMAIL}"
+            - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
         ports:
             - "80:80"
             - "443:443"
-            - "443:443/udp"
+            - "8883:8883"
         volumes:
-            - ./Caddyfile:/etc/caddy/Caddyfile
-            - caddy_data:/data
-            - caddy_config:/config
-        environment:
-            - SSL_DOMAIN=${SSL_DOMAIN}
-            - SSL_EMAIL=${SSL_EMAIL}
-            - TZ=UTC
+            - "/var/run/docker.sock:/var/run/docker.sock:ro"
+            - "traefik_data:/letsencrypt"
         networks:
             - meshtopo
         profiles:
@@ -59,6 +63,14 @@ services:
             - mosquitto_data:/mosquitto/log
             - ./passwd:/mosquitto/config/passwd:ro
             - ../config/config.yaml:/mosquitto/config/config.yaml:ro
+        labels:
+            - "traefik.enable=true"
+            - "traefik.tcp.routers.mqtt.rule=HostSNI(`mqtt.${SSL_DOMAIN}`)"
+            - "traefik.tcp.routers.mqtt.entrypoints=mqttsecure"
+            - "traefik.tcp.routers.mqtt.tls=true"
+            - "traefik.tcp.routers.mqtt.tls.certresolver=myresolver"
+            - "traefik.tcp.routers.mqtt.service=mqtt"
+            - "traefik.tcp.services.mqtt.loadbalancer.server.port=1883"
         networks:
             - meshtopo
         profiles:
