@@ -1,0 +1,21 @@
+{% for version, release in releases.items() -%}
+{% if version == "0.0.0" %}
+# CHANGELOG
+{% else %}
+## {{ version }} ({{ release.datetime.date() }})
+
+{% for type, commits in release.commits.items() -%}
+### {{ type }}
+
+{% for commit in commits -%}
+* {{ commit.subject }} ([`{{ commit.hex[:7] }}`](https://github.com/clayauld/meshtopo/commit/{{ commit.hex }}))
+{%- if commit.body %}
+
+{{ commit.body.strip() | replace('\n*', '\n\n*') }}
+
+{%- endif %}
+{% endfor %}
+
+{% endfor %}
+{%- endif %}
+{%- endfor %}
