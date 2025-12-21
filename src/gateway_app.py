@@ -11,7 +11,8 @@ import time
 from typing import Any, Dict, Optional, Union
 
 import httpx
-from sqlitedict import SqliteDict
+
+from persistent_dict import PersistentDict
 
 from caltopo_reporter import CalTopoReporter
 from config.config import Config
@@ -91,23 +92,19 @@ class GatewayApp:
                     # We continue, letting SqliteDict fail if it must, or maybe it works
 
             try:
-                self.node_id_mapping = SqliteDict(
+                self.node_id_mapping = PersistentDict(
                     db_path,
                     tablename="node_id_mapping",
                     autocommit=True,
-                    encode=json.dumps,
-                    decode=lambda x: json.loads(x.decode("utf-8")),
                 )
                 # Trigger a read to ensure the file format is valid
                 # This will raise an exception if the file contains legacy pickle data
                 _ = len(self.node_id_mapping)
 
-                self.callsign_mapping = SqliteDict(
+                self.callsign_mapping = PersistentDict(
                     db_path,
                     tablename="callsign_mapping",
                     autocommit=True,
-                    encode=json.dumps,
-                    decode=lambda x: json.loads(x.decode("utf-8")),
                 )
                 _ = len(self.callsign_mapping)
 
@@ -144,19 +141,15 @@ class GatewayApp:
                         )
 
                 # Re-initialize with new format
-                self.node_id_mapping = SqliteDict(
+                self.node_id_mapping = PersistentDict(
                     db_path,
                     tablename="node_id_mapping",
                     autocommit=True,
-                    encode=json.dumps,
-                    decode=lambda x: json.loads(x.decode("utf-8")),
                 )
-                self.callsign_mapping = SqliteDict(
+                self.callsign_mapping = PersistentDict(
                     db_path,
                     tablename="callsign_mapping",
                     autocommit=True,
-                    encode=json.dumps,
-                    decode=lambda x: json.loads(x.decode("utf-8")),
                 )
 
                 # Load into memory cache (empty or after reset)

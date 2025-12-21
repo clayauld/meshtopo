@@ -23,7 +23,7 @@ def mock_config():
     return config
 
 
-class MockSqliteDict(dict):
+class MockPersistentDict(dict):
     def __init__(self, *args, **kwargs):
         super().__init__()
 
@@ -35,14 +35,14 @@ class MockSqliteDict(dict):
 def app(mock_config):
     with (
         patch("gateway_app.Config") as MockConfig,
-        patch("gateway_app.SqliteDict") as MockSqliteDictClass,
+        patch("gateway_app.PersistentDict") as MockPersistentDictClass,
     ):
 
         MockConfig.from_file.return_value = mock_config
 
-        # Setup MockSqliteDict behavior
-        mock_db_instance = MockSqliteDict()
-        MockSqliteDictClass.return_value = mock_db_instance
+        # Setup MockPersistentDict behavior
+        mock_db_instance = MockPersistentDict()
+        MockPersistentDictClass.return_value = mock_db_instance
 
         app = GatewayApp("dummy_config.yaml")
         app.config = mock_config
@@ -52,7 +52,7 @@ def app(mock_config):
         app.callsign_mapping = mock_db_instance
 
         # Attach for testing
-        app._MockSqliteDictClass = MockSqliteDictClass
+        app._MockPersistentDictClass = MockPersistentDictClass
 
         yield app
 
@@ -84,14 +84,12 @@ class TestGatewayApp:
         assert app.caltopo_reporter is not None
         assert "!823a4edc" in app.configured_devices
 
-        # Verify DB initialization with configured path in MockSqliteDict
-        # The SqliteDict constructor should have been called with our test path
-        app._MockSqliteDictClass.assert_any_call(
+        # Verify DB initialization with configured path in MockPersistentDict
+        # The PersistentDict constructor should have been called with our test path
+        app._MockPersistentDictClass.assert_any_call(
             "test_db.sqlite",
             tablename="node_id_mapping",
             autocommit=True,
-            encode=json.dumps,
-            decode=ANY,
         )
 
     @pytest.mark.asyncio
@@ -299,7 +297,7 @@ class TestGatewayApp:
         """Test error handling when creating database directory fails."""
         with (
             patch("gateway_app.Config") as MockConfig,
-            patch("gateway_app.SqliteDict"),
+            patch("gateway_app.PersistentDict"),
             patch("gateway_app.os.makedirs", side_effect=OSError("Permission denied")),
             patch("gateway_app.os.path.dirname", return_value="/protected/dir"),
         ):
@@ -320,7 +318,7 @@ class TestGatewayApp:
         """Test that initialization continues even if CalTopo test fails."""
         with (
             patch("gateway_app.Config") as MockConfig,
-            patch("gateway_app.SqliteDict"),
+            patch("gateway_app.PersistentDict"),
             patch("gateway_app.CalTopoReporter") as MockReporterClass,
             patch("gateway_app.MqttClient"),
         ):
