@@ -1,17 +1,22 @@
-{% for version, release in releases.items() -%}
-{% if version == "0.0.0" %}
+{% for release in history -%}
+{% if release.version | string == "0.0.0" %}
 # CHANGELOG
 {% else %}
-## {{ version }} ({{ release.datetime.date() }})
+## {{ release.version }} ({{ release.tagged_date.date() }})
 
-{% for type, commits in release.commits.items() -%}
+{% for type, commits in release.elements.items() -%}
 ### {{ type }}
 
 {% for commit in commits -%}
-* {{ commit.subject }} ([`{{ commit.hex[:7] }}`](https://github.com/clayauld/meshtopo/commit/{{ commit.hex }}))
-{%- if commit.body %}
+* {{ commit.message.splitlines()[0] }} ([`{{ commit.short_hash }}`](https://github.com/clayauld/meshtopo/commit/{{ commit.hexsha }}))
+{%- if commit.descriptions %}
 
-{{ commit.body.strip() | replace('\n*', '\n\n*') }}
+{% for desc in commit.descriptions %}
+{{ desc.strip() | replace('\n*', '\n\n*') }}
+{%- if not loop.last %}
+
+{% endif -%}
+{% endfor %}
 
 {%- endif %}
 {% endfor %}
