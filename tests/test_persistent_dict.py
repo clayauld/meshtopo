@@ -104,4 +104,4 @@ def test_invalid_json_in_db(db_path):
         # Should raise KeyError on decode failure (as per implementation)
         # or JSONDecodeError
         with pytest.raises(KeyError):
-            _ = pd["bad"]
+            _ = pd["bad_key"]
