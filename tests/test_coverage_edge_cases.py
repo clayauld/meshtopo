@@ -89,7 +89,7 @@ async def test_initialize_db_reset_on_failure(mock_config, tmp_path):
     app = GatewayApp()
     with patch("gateway_app.Config.from_file", return_value=mock_config):
         with patch(
-            "gateway_app.SqliteDict",
+            "gateway_app.PersistentDict",
             side_effect=[Exception("Corrupt"), MagicMock(), MagicMock()],
         ):
             mock_reporter = MagicMock(spec=CalTopoReporter)
@@ -142,7 +142,7 @@ async def test_gateway_app_initialization_directory_creation_failure(mock_config
             mock_reporter.start = AsyncMock()
             mock_reporter.test_connection = AsyncMock(return_value=True)
             with (
-                patch("gateway_app.SqliteDict"),
+                patch("gateway_app.PersistentDict"),
                 patch("gateway_app.CalTopoReporter", return_value=mock_reporter),
                 patch("gateway_app.MqttClient"),
                 patch("gateway_app.os.path.exists", return_value=False),

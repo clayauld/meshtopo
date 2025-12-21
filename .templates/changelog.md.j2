@@ -8,7 +8,7 @@
 ### {{ type }}
 
 {% for commit in commits -%}
-* {{ commit.message.splitlines()[0] }} ([`{{ commit.short_hash }}`](https://github.com/clayauld/meshtopo/commit/{{ commit.hexsha }}))
+* {{ (commit.message.splitlines() or [''])[0] }} ([`{{ commit.short_hash }}`](https://github.com/clayauld/meshtopo/commit/{{ commit.hexsha }}))
 {%- if commit.descriptions %}
 
 {% for desc in commit.descriptions %}
