@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "meshtopo"
-version = "0.1.0"
+version = "0.0.1"
 description = "Meshtastic to CalTopo Gateway Service"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -178,6 +178,10 @@ commit_version_number = true
 upload_to_pypi = false
 upload_to_release = true
 build_command = "pip install build && python -m build"
+
+[tool.semantic_release.changelog]
+template_dir = ".templates"
+changelog_file = "CHANGELOG.md"
 
 [tool.semantic_release.branches.main]
 match = "main"

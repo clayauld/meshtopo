@@ -1,7 +1,5 @@
 # CHANGELOG
 
-
-
 ## v0.1.0 (2025-12-21)
 
 ### Chore
@@ -13,235 +11,263 @@
 * chore(deps): Bump pydantic from 2.12.3 to 2.12.5
 
 Bumps [pydantic](https://github.com/pydantic/pydantic) from 2.12.3 to 2.12.5.
-- [Release notes](https://github.com/pydantic/pydantic/releases)
-- [Changelog](https://github.com/pydantic/pydantic/blob/main/HISTORY.md)
-- [Commits](https://github.com/pydantic/pydantic/compare/v2.12.3...v2.12.5)
+
+* [Release notes](https://github.com/pydantic/pydantic/releases)
+* [Changelog](https://github.com/pydantic/pydantic/blob/main/HISTORY.md)
+* [Commits](https://github.com/pydantic/pydantic/compare/v2.12.3...v2.12.5)
 
 ---
 updated-dependencies:
-- dependency-name: pydantic
+
+* dependency-name: pydantic
   dependency-version: 2.12.5
   dependency-type: direct:production
   update-type: version-update:semver-patch
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`3d002a3`](https://github.com/clayauld/meshtopo/commit/3d002a3d8f1b790cd45e68014b1f814c5d4a203c))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`3d002a3`](https://github.com/clayauld/meshtopo/commit/3d002a3d8f1b790cd45e68014b1f814c5d4a203c))
 
 * chore(deps): Bump codecov/codecov-action from 3 to 5
 
 Bumps [codecov/codecov-action](https://github.com/codecov/codecov-action) from 3 to 5.
-- [Release notes](https://github.com/codecov/codecov-action/releases)
-- [Changelog](https://github.com/codecov/codecov-action/blob/main/CHANGELOG.md)
-- [Commits](https://github.com/codecov/codecov-action/compare/v3...v5)
+
+* [Release notes](https://github.com/codecov/codecov-action/releases)
+* [Changelog](https://github.com/codecov/codecov-action/blob/main/CHANGELOG.md)
+* [Commits](https://github.com/codecov/codecov-action/compare/v3...v5)
 
 ---
 updated-dependencies:
-- dependency-name: codecov/codecov-action
+
+* dependency-name: codecov/codecov-action
   dependency-version: &#39;5&#39;
   dependency-type: direct:production
   update-type: version-update:semver-major
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`988487a`](https://github.com/clayauld/meshtopo/commit/988487ab7a66977c1b41156f1031a29d3986526a))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`988487a`](https://github.com/clayauld/meshtopo/commit/988487ab7a66977c1b41156f1031a29d3986526a))
 
 * chore(deps): Bump actions/cache from 3 to 5
 
 Bumps [actions/cache](https://github.com/actions/cache) from 3 to 5.
-- [Release notes](https://github.com/actions/cache/releases)
-- [Changelog](https://github.com/actions/cache/blob/main/RELEASES.md)
-- [Commits](https://github.com/actions/cache/compare/v3...v5)
+
+* [Release notes](https://github.com/actions/cache/releases)
+* [Changelog](https://github.com/actions/cache/blob/main/RELEASES.md)
+* [Commits](https://github.com/actions/cache/compare/v3...v5)
 
 ---
 updated-dependencies:
-- dependency-name: actions/cache
+
+* dependency-name: actions/cache
   dependency-version: &#39;5&#39;
   dependency-type: direct:production
   update-type: version-update:semver-major
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`5767d40`](https://github.com/clayauld/meshtopo/commit/5767d40bbf266291a25fdad82c03b7c46e5b2b87))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`5767d40`](https://github.com/clayauld/meshtopo/commit/5767d40bbf266291a25fdad82c03b7c46e5b2b87))
 
 * chore(deps): Bump actions/github-script from 7 to 8
 
 Bumps [actions/github-script](https://github.com/actions/github-script) from 7 to 8.
-- [Release notes](https://github.com/actions/github-script/releases)
-- [Commits](https://github.com/actions/github-script/compare/v7...v8)
+
+* [Release notes](https://github.com/actions/github-script/releases)
+* [Commits](https://github.com/actions/github-script/compare/v7...v8)
 
 ---
 updated-dependencies:
-- dependency-name: actions/github-script
+
+* dependency-name: actions/github-script
   dependency-version: &#39;8&#39;
   dependency-type: direct:production
   update-type: version-update:semver-major
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`474babd`](https://github.com/clayauld/meshtopo/commit/474babd3727ba8d771543d448e3bbe88026b5c9d))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`474babd`](https://github.com/clayauld/meshtopo/commit/474babd3727ba8d771543d448e3bbe88026b5c9d))
 
 * chore(deps): Bump pytest-cov from 4.1.0 to 7.0.0
 
 Bumps [pytest-cov](https://github.com/pytest-dev/pytest-cov) from 4.1.0 to 7.0.0.
-- [Changelog](https://github.com/pytest-dev/pytest-cov/blob/master/CHANGELOG.rst)
-- [Commits](https://github.com/pytest-dev/pytest-cov/compare/v4.1.0...v7.0.0)
+
+* [Changelog](https://github.com/pytest-dev/pytest-cov/blob/master/CHANGELOG.rst)
+* [Commits](https://github.com/pytest-dev/pytest-cov/compare/v4.1.0...v7.0.0)
 
 ---
 updated-dependencies:
-- dependency-name: pytest-cov
+
+* dependency-name: pytest-cov
   dependency-version: 7.0.0
   dependency-type: direct:production
   update-type: version-update:semver-major
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`4905f1a`](https://github.com/clayauld/meshtopo/commit/4905f1a4379eb06a1de2b2d1ae7642ab104b14af))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`4905f1a`](https://github.com/clayauld/meshtopo/commit/4905f1a4379eb06a1de2b2d1ae7642ab104b14af))
 
 * chore(deps): Bump pyyaml from 6.0.1 to 6.0.3
 
 Bumps [pyyaml](https://github.com/yaml/pyyaml) from 6.0.1 to 6.0.3.
-- [Release notes](https://github.com/yaml/pyyaml/releases)
-- [Changelog](https://github.com/yaml/pyyaml/blob/6.0.3/CHANGES)
-- [Commits](https://github.com/yaml/pyyaml/compare/6.0.1...6.0.3)
+
+* [Release notes](https://github.com/yaml/pyyaml/releases)
+* [Changelog](https://github.com/yaml/pyyaml/blob/6.0.3/CHANGES)
+* [Commits](https://github.com/yaml/pyyaml/compare/6.0.1...6.0.3)
 
 ---
 updated-dependencies:
-- dependency-name: pyyaml
+
+* dependency-name: pyyaml
   dependency-version: 6.0.3
   dependency-type: direct:production
   update-type: version-update:semver-patch
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`10f1ff1`](https://github.com/clayauld/meshtopo/commit/10f1ff15590027caeb9caae96d901dc0faf59469))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`10f1ff1`](https://github.com/clayauld/meshtopo/commit/10f1ff15590027caeb9caae96d901dc0faf59469))
 
 * chore(deps): Bump paho-mqtt from 1.6.1 to 2.1.0
 
 Bumps [paho-mqtt](https://github.com/eclipse/paho.mqtt.python) from 1.6.1 to 2.1.0.
-- [Release notes](https://github.com/eclipse/paho.mqtt.python/releases)
-- [Changelog](https://github.com/eclipse-paho/paho.mqtt.python/blob/master/ChangeLog.txt)
-- [Commits](https://github.com/eclipse/paho.mqtt.python/compare/v1.6.1...v2.1.0)
+
+* [Release notes](https://github.com/eclipse/paho.mqtt.python/releases)
+* [Changelog](https://github.com/eclipse-paho/paho.mqtt.python/blob/master/ChangeLog.txt)
+* [Commits](https://github.com/eclipse/paho.mqtt.python/compare/v1.6.1...v2.1.0)
 
 ---
 updated-dependencies:
-- dependency-name: paho-mqtt
+
+* dependency-name: paho-mqtt
   dependency-version: 2.1.0
   dependency-type: direct:production
   update-type: version-update:semver-major
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`3674f88`](https://github.com/clayauld/meshtopo/commit/3674f88f89525168fcb3224cb4a41a2495b76c51))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`3674f88`](https://github.com/clayauld/meshtopo/commit/3674f88f89525168fcb3224cb4a41a2495b76c51))
 
 * chore(deps): Bump pytest from 7.4.4 to 8.4.2
 
 Bumps [pytest](https://github.com/pytest-dev/pytest) from 7.4.4 to 8.4.2.
-- [Release notes](https://github.com/pytest-dev/pytest/releases)
-- [Changelog](https://github.com/pytest-dev/pytest/blob/main/CHANGELOG.rst)
-- [Commits](https://github.com/pytest-dev/pytest/compare/7.4.4...8.4.2)
+
+* [Release notes](https://github.com/pytest-dev/pytest/releases)
+* [Changelog](https://github.com/pytest-dev/pytest/blob/main/CHANGELOG.rst)
+* [Commits](https://github.com/pytest-dev/pytest/compare/7.4.4...8.4.2)
 
 ---
 updated-dependencies:
-- dependency-name: pytest
+
+* dependency-name: pytest
   dependency-version: 8.4.2
   dependency-type: direct:production
   update-type: version-update:semver-major
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`7e5e431`](https://github.com/clayauld/meshtopo/commit/7e5e4316f3a2be4eb683eceefbb335b7574c8a6e))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`7e5e431`](https://github.com/clayauld/meshtopo/commit/7e5e4316f3a2be4eb683eceefbb335b7574c8a6e))
 
 * chore(deps): Bump requests from 2.32.4 to 2.32.5
 
 Bumps [requests](https://github.com/psf/requests) from 2.32.4 to 2.32.5.
-- [Release notes](https://github.com/psf/requests/releases)
-- [Changelog](https://github.com/psf/requests/blob/main/HISTORY.md)
-- [Commits](https://github.com/psf/requests/compare/v2.32.4...v2.32.5)
+
+* [Release notes](https://github.com/psf/requests/releases)
+* [Changelog](https://github.com/psf/requests/blob/main/HISTORY.md)
+* [Commits](https://github.com/psf/requests/compare/v2.32.4...v2.32.5)
 
 ---
 updated-dependencies:
-- dependency-name: requests
+
+* dependency-name: requests
   dependency-version: 2.32.5
   dependency-type: direct:production
   update-type: version-update:semver-patch
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`b203eab`](https://github.com/clayauld/meshtopo/commit/b203eabbd117fbda63aaef3384a82a2259976275))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`b203eab`](https://github.com/clayauld/meshtopo/commit/b203eabbd117fbda63aaef3384a82a2259976275))
 
 * chore(deps): Bump actions/upload-artifact from 4 to 6
 
 Bumps [actions/upload-artifact](https://github.com/actions/upload-artifact) from 4 to 6.
-- [Release notes](https://github.com/actions/upload-artifact/releases)
-- [Commits](https://github.com/actions/upload-artifact/compare/v4...v6)
+
+* [Release notes](https://github.com/actions/upload-artifact/releases)
+* [Commits](https://github.com/actions/upload-artifact/compare/v4...v6)
 
 ---
 updated-dependencies:
-- dependency-name: actions/upload-artifact
+
+* dependency-name: actions/upload-artifact
   dependency-version: &#39;6&#39;
   dependency-type: direct:production
   update-type: version-update:semver-major
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`4e394f8`](https://github.com/clayauld/meshtopo/commit/4e394f8c19e6a96dc9e49fb3e3a4b8b6bd9e269b))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`4e394f8`](https://github.com/clayauld/meshtopo/commit/4e394f8c19e6a96dc9e49fb3e3a4b8b6bd9e269b))
 
 * chore(deps): Bump actions/checkout from 4 to 6
 
 Bumps [actions/checkout](https://github.com/actions/checkout) from 4 to 6.
-- [Release notes](https://github.com/actions/checkout/releases)
-- [Changelog](https://github.com/actions/checkout/blob/main/CHANGELOG.md)
-- [Commits](https://github.com/actions/checkout/compare/v4...v6)
+
+* [Release notes](https://github.com/actions/checkout/releases)
+* [Changelog](https://github.com/actions/checkout/blob/main/CHANGELOG.md)
+* [Commits](https://github.com/actions/checkout/compare/v4...v6)
 
 ---
 updated-dependencies:
-- dependency-name: actions/checkout
+
+* dependency-name: actions/checkout
   dependency-version: &#39;6&#39;
   dependency-type: direct:production
   update-type: version-update:semver-major
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`30f31cf`](https://github.com/clayauld/meshtopo/commit/30f31cf4f97cdda40f084720eada951360fa1485))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`30f31cf`](https://github.com/clayauld/meshtopo/commit/30f31cf4f97cdda40f084720eada951360fa1485))
 
 * chore(deps): Bump docker/build-push-action from 5 to 6
 
 Bumps [docker/build-push-action](https://github.com/docker/build-push-action) from 5 to 6.
-- [Release notes](https://github.com/docker/build-push-action/releases)
-- [Commits](https://github.com/docker/build-push-action/compare/v5...v6)
+
+* [Release notes](https://github.com/docker/build-push-action/releases)
+* [Commits](https://github.com/docker/build-push-action/compare/v5...v6)
 
 ---
 updated-dependencies:
-- dependency-name: docker/build-push-action
+
+* dependency-name: docker/build-push-action
   dependency-version: &#39;6&#39;
   dependency-type: direct:production
   update-type: version-update:semver-major
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`6577bbe`](https://github.com/clayauld/meshtopo/commit/6577bbee32c67fe9499005f8626719ff1e205379))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`6577bbe`](https://github.com/clayauld/meshtopo/commit/6577bbee32c67fe9499005f8626719ff1e205379))
 
 * chore(deps): Bump actions/setup-python from 4 to 6
 
 Bumps [actions/setup-python](https://github.com/actions/setup-python) from 4 to 6.
-- [Release notes](https://github.com/actions/setup-python/releases)
-- [Commits](https://github.com/actions/setup-python/compare/v4...v6)
+
+* [Release notes](https://github.com/actions/setup-python/releases)
+* [Commits](https://github.com/actions/setup-python/compare/v4...v6)
 
 ---
 updated-dependencies:
-- dependency-name: actions/setup-python
+
+* dependency-name: actions/setup-python
   dependency-version: &#39;6&#39;
   dependency-type: direct:production
   update-type: version-update:semver-major
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`b7e9db4`](https://github.com/clayauld/meshtopo/commit/b7e9db4780776a156350d67ab55bf1b66b124b16))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`b7e9db4`](https://github.com/clayauld/meshtopo/commit/b7e9db4780776a156350d67ab55bf1b66b124b16))
 
 * chore(deps): Bump dorny/test-reporter from 1 to 2
 
 Bumps [dorny/test-reporter](https://github.com/dorny/test-reporter) from 1 to 2.
-- [Release notes](https://github.com/dorny/test-reporter/releases)
-- [Changelog](https://github.com/dorny/test-reporter/blob/main/CHANGELOG.md)
-- [Commits](https://github.com/dorny/test-reporter/compare/v1...v2)
+
+* [Release notes](https://github.com/dorny/test-reporter/releases)
+* [Changelog](https://github.com/dorny/test-reporter/blob/main/CHANGELOG.md)
+* [Commits](https://github.com/dorny/test-reporter/compare/v1...v2)
 
 ---
 updated-dependencies:
-- dependency-name: dorny/test-reporter
+
+* dependency-name: dorny/test-reporter
   dependency-version: &#39;2&#39;
   dependency-type: direct:production
   update-type: version-update:semver-major
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`25d9464`](https://github.com/clayauld/meshtopo/commit/25d94646ef2d118570fdad8606568e7ca67bcee2))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`25d9464`](https://github.com/clayauld/meshtopo/commit/25d94646ef2d118570fdad8606568e7ca67bcee2))
 
 * chore: update project dependencies ([`9e6c43f`](https://github.com/clayauld/meshtopo/commit/9e6c43f746ec8e5b880185def8312d34a030a05f))
 
@@ -251,109 +277,112 @@ Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`25d9464`](https://g
 
 Bumps the pip group with 1 update in the / directory: [jinja2](https://github.com/pallets/jinja).
 
-
 Updates `jinja2` from 3.1.2 to 3.1.6
-- [Release notes](https://github.com/pallets/jinja/releases)
-- [Changelog](https://github.com/pallets/jinja/blob/main/CHANGES.rst)
-- [Commits](https://github.com/pallets/jinja/compare/3.1.2...3.1.6)
+
+* [Release notes](https://github.com/pallets/jinja/releases)
+* [Changelog](https://github.com/pallets/jinja/blob/main/CHANGES.rst)
+* [Commits](https://github.com/pallets/jinja/compare/3.1.2...3.1.6)
 
 ---
 updated-dependencies:
-- dependency-name: jinja2
+
+* dependency-name: jinja2
   dependency-version: 3.1.6
   dependency-type: direct:production
   dependency-group: pip
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`e491daf`](https://github.com/clayauld/meshtopo/commit/e491daf9090eaa3ff90864ad8e1d646fc45603c0))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`e491daf`](https://github.com/clayauld/meshtopo/commit/e491daf9090eaa3ff90864ad8e1d646fc45603c0))
 
 * chore: Update .gitignore to reflect Beads database changes
 
-- Changed comment from &#34;beads issues&#34; to &#34;Beads database&#34; for clarity.
-- Ensured .gitignore excludes Beads database files appropriately. ([`01b3a2b`](https://github.com/clayauld/meshtopo/commit/01b3a2b86e873a3f2ffbc220a1f61bbd2ff637ad))
+* Changed comment from &#34;beads issues&#34; to &#34;Beads database&#34; for clarity.
+* Ensured .gitignore excludes Beads database files appropriately. ([`01b3a2b`](https://github.com/clayauld/meshtopo/commit/01b3a2b86e873a3f2ffbc220a1f61bbd2ff637ad))
 
 * chore: Update .gitignore and add AGENTS.md for Beads tracking
 
-- Added entries to .gitignore to exclude Beads database files.
-- Created AGENTS.md to document the use of Beads for work tracking. ([`f1a6428`](https://github.com/clayauld/meshtopo/commit/f1a642878bdd189827ae22cc9494a0e3bb5fb308))
+* Added entries to .gitignore to exclude Beads database files.
+* Created AGENTS.md to document the use of Beads for work tracking. ([`f1a6428`](https://github.com/clayauld/meshtopo/commit/f1a642878bdd189827ae22cc9494a0e3bb5fb308))
 
 * chore: Refactor configuration and Makefile for enhanced clarity and functionality
 
-- Updated `.pre-commit-config.yaml` to remove unnecessary type stubs from mypy dependencies.
-- Revised `Makefile` to include additional Docker commands for improved management and clarity.
-- Enhanced `README.md` to reflect new features and configuration options, including device management and API modes.
-- Updated configuration files to support new device management features and group-based API integration.
-- Improved CI workflow to streamline testing and installation processes. ([`1bcbbf1`](https://github.com/clayauld/meshtopo/commit/1bcbbf1cc770ff3c16165e72c7e35b061145b7ac))
+* Updated `.pre-commit-config.yaml` to remove unnecessary type stubs from mypy dependencies.
+* Revised `Makefile` to include additional Docker commands for improved management and clarity.
+* Enhanced `README.md` to reflect new features and configuration options, including device management and API modes.
+* Updated configuration files to support new device management features and group-based API integration.
+* Improved CI workflow to streamline testing and installation processes. ([`1bcbbf1`](https://github.com/clayauld/meshtopo/commit/1bcbbf1cc770ff3c16165e72c7e35b061145b7ac))
 
 * chore: Remove deprecated web UI and user management scripts
 
-- Deleted the `Dockerfile.web` as the web UI is no longer part of the project.
-- Removed `authentication.md` documentation related to the web UI authentication system.
-- Eliminated `user_manager.py` script for user management as it is no longer needed.
-- Updated `design.md` to reflect the removal of the web management interface and related features.
-- Revised `install.sh` to remove references to web UI setup and user management.
-- Adjusted `gateway_app.py` to eliminate health check server functionality associated with the web UI. ([`3db126a`](https://github.com/clayauld/meshtopo/commit/3db126a6c062a4dc605a26a22e39175fa4e59d14))
+* Deleted the `Dockerfile.web` as the web UI is no longer part of the project.
+* Removed `authentication.md` documentation related to the web UI authentication system.
+* Eliminated `user_manager.py` script for user management as it is no longer needed.
+* Updated `design.md` to reflect the removal of the web management interface and related features.
+* Revised `install.sh` to remove references to web UI setup and user management.
+* Adjusted `gateway_app.py` to eliminate health check server functionality associated with the web UI. ([`3db126a`](https://github.com/clayauld/meshtopo/commit/3db126a6c062a4dc605a26a22e39175fa4e59d14))
 
 * chore: Update configuration files and Makefile for improved setup
 
-- Enhanced `.gitignore` to exclude coverage files and added an entry for archived components.
-- Modified the `Makefile` to include new targets for setting up the internal MQTT broker and generating broker configuration.
-- Updated `README.md` to reflect changes in configuration options and improved clarity on setup instructions.
-- Removed the `requirements-web.txt` file as the web UI dependencies are no longer needed.
-- Revised configuration examples to simplify setup and enhance documentation for CalTopo integration. ([`401cb34`](https://github.com/clayauld/meshtopo/commit/401cb347e445fc670923078b8e8ba237ef9fda19))
+* Enhanced `.gitignore` to exclude coverage files and added an entry for archived components.
+* Modified the `Makefile` to include new targets for setting up the internal MQTT broker and generating broker configuration.
+* Updated `README.md` to reflect changes in configuration options and improved clarity on setup instructions.
+* Removed the `requirements-web.txt` file as the web UI dependencies are no longer needed.
+* Revised configuration examples to simplify setup and enhance documentation for CalTopo integration. ([`401cb34`](https://github.com/clayauld/meshtopo/commit/401cb347e445fc670923078b8e8ba237ef9fda19))
 
 * chore: Update .gitignore to include backup configuration files
 
-- Added entry for backup configuration file `config/config.yaml.bak` to the .gitignore to prevent it from being tracked by Git. ([`79e89da`](https://github.com/clayauld/meshtopo/commit/79e89dafc4a6ae3197c2f805a65c39637bc03d98))
+* Added entry for backup configuration file `config/config.yaml.bak` to the .gitignore to prevent it from being tracked by Git. ([`79e89da`](https://github.com/clayauld/meshtopo/commit/79e89dafc4a6ae3197c2f805a65c39637bc03d98))
 
 * chore: Update configuration management and installation script
 
-- Revised the installation script to create the configuration file in the new `config` directory.
-- Updated paths in the installation script to reflect the new project structure.
-- Enhanced documentation in the installation output for clarity on configuration steps. ([`4c33c73`](https://github.com/clayauld/meshtopo/commit/4c33c73b4ce864c839a74287ee58d90018845b80))
+* Revised the installation script to create the configuration file in the new `config` directory.
+* Updated paths in the installation script to reflect the new project structure.
+* Enhanced documentation in the installation output for clarity on configuration steps. ([`4c33c73`](https://github.com/clayauld/meshtopo/commit/4c33c73b4ce864c839a74287ee58d90018845b80))
 
 * chore: Update CI workflow permissions for improved access control
 
-- Added permissions for reading contents and writing packages in the CI configuration. ([`7b54004`](https://github.com/clayauld/meshtopo/commit/7b54004205a19e62bfd2bfae4920b6816862bb53))
+* Added permissions for reading contents and writing packages in the CI configuration. ([`7b54004`](https://github.com/clayauld/meshtopo/commit/7b54004205a19e62bfd2bfae4920b6816862bb53))
 
 * chore: Update CI workflow to use GitHub Container Registry for Docker image login and push
 
-- Changed Docker Hub login to GitHub Container Registry in the CI configuration.
-- Updated image tagging and pushing commands to reflect the new registry. ([`fcc9d1d`](https://github.com/clayauld/meshtopo/commit/fcc9d1d694648fcb4c10c025d1e3ec0af16604cf))
+* Changed Docker Hub login to GitHub Container Registry in the CI configuration.
+* Updated image tagging and pushing commands to reflect the new registry. ([`fcc9d1d`](https://github.com/clayauld/meshtopo/commit/fcc9d1d694648fcb4c10c025d1e3ec0af16604cf))
 
 * chore(deps): Bump requests from 2.31.0 to 2.32.4
 
 Bumps [requests](https://github.com/psf/requests) from 2.31.0 to 2.32.4.
-- [Release notes](https://github.com/psf/requests/releases)
-- [Changelog](https://github.com/psf/requests/blob/main/HISTORY.md)
-- [Commits](https://github.com/psf/requests/compare/v2.31.0...v2.32.4)
+
+* [Release notes](https://github.com/psf/requests/releases)
+* [Changelog](https://github.com/psf/requests/blob/main/HISTORY.md)
+* [Commits](https://github.com/psf/requests/compare/v2.31.0...v2.32.4)
 
 ---
 updated-dependencies:
-- dependency-name: requests
+
+* dependency-name: requests
   dependency-version: 2.32.4
   dependency-type: direct:production
 ...
 
-Signed-off-by: dependabot[bot] &lt;support@github.com&gt; ([`fbb29e1`](https://github.com/clayauld/meshtopo/commit/fbb29e1a8d54e56141912e7d63c5b85e096b9b28))
+Signed-off-by: dependabot[bot] &lt;<support@github.com>&gt; ([`fbb29e1`](https://github.com/clayauld/meshtopo/commit/fbb29e1a8d54e56141912e7d63c5b85e096b9b28))
 
 * chore: Update CI configuration to set up Python environment
 
-- Added a step to set up Python in the CI workflow using actions/setup-python.
-- Ensured compatibility with the specified Python version in the matrix. ([`df75380`](https://github.com/clayauld/meshtopo/commit/df75380d82de592a362abfa64cdeba1a7058ed7e))
+* Added a step to set up Python in the CI workflow using actions/setup-python.
+* Ensured compatibility with the specified Python version in the matrix. ([`df75380`](https://github.com/clayauld/meshtopo/commit/df75380d82de592a362abfa64cdeba1a7058ed7e))
 
 * chore: Enhance CI configuration by installing type stubs for requests and PyYAML
 
-- Added a step to install type stubs for better type checking in the CI workflow.
-- Updated mypy command to check types without ignoring missing imports. ([`2d659a5`](https://github.com/clayauld/meshtopo/commit/2d659a51ab1f3fa09636443f370843418e1f17e3))
+* Added a step to install type stubs for better type checking in the CI workflow.
+* Updated mypy command to check types without ignoring missing imports. ([`2d659a5`](https://github.com/clayauld/meshtopo/commit/2d659a51ab1f3fa09636443f370843418e1f17e3))
 
 * chore: Update configuration files and improve code formatting
 
-- Added .markdownlint.json for markdown linting configuration.
-- Updated .pre-commit-config.yaml to use a separate line for arguments.
-- Added bandit-report.json for security analysis results.
-- Cleaned up whitespace and formatting in various Python files and configuration files.
-- Adjusted .gitignore to ensure temporary files are ignored correctly. ([`a0d1cfe`](https://github.com/clayauld/meshtopo/commit/a0d1cfebe450c304dc5817d30bd9e4c47c4f989d))
+* Added .markdownlint.json for markdown linting configuration.
+* Updated .pre-commit-config.yaml to use a separate line for arguments.
+* Added bandit-report.json for security analysis results.
+* Cleaned up whitespace and formatting in various Python files and configuration files.
+* Adjusted .gitignore to ensure temporary files are ignored correctly. ([`a0d1cfe`](https://github.com/clayauld/meshtopo/commit/a0d1cfebe450c304dc5817d30bd9e4c47c4f989d))
 
 * chore: Remove debug steps from CI configuration and streamline Python setup ([`ebe70ef`](https://github.com/clayauld/meshtopo/commit/ebe70ef0544a6c1821915558f68055b2b5e01310))
 
@@ -387,9 +416,10 @@ Fix bug where old position updates would retransmit on startup. ([`a87ba63`](htt
 
 Introduced a `sanitize_for_log` utility to escape non-printable characters in log messages.
 Applied sanitization to:
-- MQTT payloads and topics in `src/mqtt_client.py`
-- Call signs, endpoint types, and API responses in `src/caltopo_reporter.py`
-- Node info, telemetry, and traceroute data in `src/gateway_app.py`
+
+* MQTT payloads and topics in `src/mqtt_client.py`
+* Call signs, endpoint types, and API responses in `src/caltopo_reporter.py`
+* Node info, telemetry, and traceroute data in `src/gateway_app.py`
 
 This mitigates CWE-117 (Improper Output Neutralization for Logs).
 
@@ -422,14 +452,15 @@ Added `tests/test_utils.py` to verify sanitization logic. ([`3c98ba9`](https://g
 This commit implements the foundational improvements outlined in Phase 1 of the engineering review document.
 
 Key changes include:
-- A new `make setup` interactive wizard to streamline user onboarding.
-- Refactoring of the Docker Compose configuration to use environment variables for the Mosquitto broker.
-- Deprecation of the Mosquitto configuration generation script.
-- A restructured `README.md` with clear sections for users and developers.
-- Integration of Pydantic for robust configuration validation.
-- Implementation of state persistence using `sqlitedict` to prevent data loss on restart.
-- Setup of Dependabot for automated dependency updates.
-- Creation of a status document to track the progress of the engineering review.
+
+* A new `make setup` interactive wizard to streamline user onboarding.
+* Refactoring of the Docker Compose configuration to use environment variables for the Mosquitto broker.
+* Deprecation of the Mosquitto configuration generation script.
+* A restructured `README.md` with clear sections for users and developers.
+* Integration of Pydantic for robust configuration validation.
+* Implementation of state persistence using `sqlitedict` to prevent data loss on restart.
+* Setup of Dependabot for automated dependency updates.
+* Creation of a status document to track the progress of the engineering review.
 
 Additionally, this commit synchronizes the `make format` command with the pre-commit hooks to ensure consistent code formatting. ([`9d6bd1d`](https://github.com/clayauld/meshtopo/commit/9d6bd1da50040e988f4c60e2bb15041240a731d2))
 
@@ -438,14 +469,15 @@ Additionally, this commit synchronizes the `make format` command with the pre-co
 This commit implements the foundational improvements outlined in Phase 1 of the engineering review document.
 
 Key changes include:
-- A new `make setup` interactive wizard to streamline user onboarding.
-- Refactoring of the Docker Compose configuration to use environment variables for the Mosquitto broker.
-- Deprecation of the Mosquitto configuration generation script.
-- A restructured `README.md` with clear sections for users and developers.
-- Integration of Pydantic for robust configuration validation.
-- Implementation of state persistence using `sqlitedict` to prevent data loss on restart.
-- Setup of Dependabot for automated dependency updates.
-- Creation of a status document to track the progress of the engineering review.
+
+* A new `make setup` interactive wizard to streamline user onboarding.
+* Refactoring of the Docker Compose configuration to use environment variables for the Mosquitto broker.
+* Deprecation of the Mosquitto configuration generation script.
+* A restructured `README.md` with clear sections for users and developers.
+* Integration of Pydantic for robust configuration validation.
+* Implementation of state persistence using `sqlitedict` to prevent data loss on restart.
+* Setup of Dependabot for automated dependency updates.
+* Creation of a status document to track the progress of the engineering review.
 
 Additionally, this commit synchronizes the `make format` command with the pre-commit hooks to ensure consistent code formatting. ([`be852b5`](https://github.com/clayauld/meshtopo/commit/be852b5d3b43d01568d65ba60f9dc7270f79ab30))
 
@@ -454,14 +486,15 @@ Additionally, this commit synchronizes the `make format` command with the pre-co
 This commit implements the foundational improvements outlined in Phase 1 of the engineering review document.
 
 Key changes include:
-- A new `make setup` interactive wizard to streamline user onboarding.
-- Refactoring of the Docker Compose configuration to use environment variables for the Mosquitto broker.
-- Deprecation of the Mosquitto configuration generation script.
-- A restructured `README.md` with clear sections for users and developers.
-- Integration of Pydantic for robust configuration validation.
-- Implementation of state persistence using `sqlitedict` to prevent data loss on restart.
-- Setup of Dependabot for automated dependency updates.
-- Creation of a status document to track the progress of the engineering review.
+
+* A new `make setup` interactive wizard to streamline user onboarding.
+* Refactoring of the Docker Compose configuration to use environment variables for the Mosquitto broker.
+* Deprecation of the Mosquitto configuration generation script.
+* A restructured `README.md` with clear sections for users and developers.
+* Integration of Pydantic for robust configuration validation.
+* Implementation of state persistence using `sqlitedict` to prevent data loss on restart.
+* Setup of Dependabot for automated dependency updates.
+* Creation of a status document to track the progress of the engineering review.
 
 Additionally, this commit synchronizes the `make format` command with the pre-commit hooks to ensure consistent code formatting. ([`5f10e4a`](https://github.com/clayauld/meshtopo/commit/5f10e4a5ddb957c6ea62a5db8fa539fb1865934a))
 
@@ -470,100 +503,102 @@ Additionally, this commit synchronizes the `make format` command with the pre-co
 This commit implements the foundational improvements outlined in Phase 1 of the engineering review document.
 
 Key changes include:
-- A new `make setup` interactive wizard to streamline user onboarding.
-- Refactoring of the Docker Compose configuration to use environment variables for the Mosquitto broker.
-- Deprecation of the Mosquitto configuration generation script.
-- A restructured `README.md` with clear sections for users and developers.
-- Integration of Pydantic for robust configuration validation.
-- Implementation of state persistence using `sqlitedict` to prevent data loss on restart.
-- Setup of Dependabot for automated dependency updates.
-- Creation of a status document to track the progress of the engineering review. ([`378bf2e`](https://github.com/clayauld/meshtopo/commit/378bf2e465b721ff952257b2bb0338b4819ec013))
+
+* A new `make setup` interactive wizard to streamline user onboarding.
+* Refactoring of the Docker Compose configuration to use environment variables for the Mosquitto broker.
+* Deprecation of the Mosquitto configuration generation script.
+* A restructured `README.md` with clear sections for users and developers.
+* Integration of Pydantic for robust configuration validation.
+* Implementation of state persistence using `sqlitedict` to prevent data loss on restart.
+* Setup of Dependabot for automated dependency updates.
+* Creation of a status document to track the progress of the engineering review. ([`378bf2e`](https://github.com/clayauld/meshtopo/commit/378bf2e465b721ff952257b2bb0338b4819ec013))
 
 * feat: Implement Phase 1 of Engineering Review
 
 This commit implements the foundational improvements outlined in Phase 1 of the engineering review document.
 
 Key changes include:
-- A new `make setup` interactive wizard to streamline user onboarding.
-- Refactoring of the Docker Compose configuration to use environment variables for the Mosquitto broker.
-- Deprecation of the Mosquitto configuration generation script.
-- A restructured `README.md` with clear sections for users and developers.
-- Integration of Pydantic for robust configuration validation.
-- Implementation of state persistence using `sqlitedict` to prevent data loss on restart.
-- Setup of Dependabot for automated dependency updates.
-- Creation of a status document to track the progress of the engineering review. ([`39c52a2`](https://github.com/clayauld/meshtopo/commit/39c52a23ece45df8478398f50f4efcf760128d0c))
+
+* A new `make setup` interactive wizard to streamline user onboarding.
+* Refactoring of the Docker Compose configuration to use environment variables for the Mosquitto broker.
+* Deprecation of the Mosquitto configuration generation script.
+* A restructured `README.md` with clear sections for users and developers.
+* Integration of Pydantic for robust configuration validation.
+* Implementation of state persistence using `sqlitedict` to prevent data loss on restart.
+* Setup of Dependabot for automated dependency updates.
+* Creation of a status document to track the progress of the engineering review. ([`39c52a2`](https://github.com/clayauld/meshtopo/commit/39c52a23ece45df8478398f50f4efcf760128d0c))
 
 * feat: Integrate Beads export into pre-commit framework and enhance documentation
 
-- Added a local hook in .pre-commit-config.yaml to automate the export of Beads issues to JSONL before commits.
-- Created a new pre-commit.sh script for handling the export process.
-- Updated AGENTS.md to include a top-level heading for markdownlint compliance.
-- Improved README files across various directories to replace inline HTML with proper markdown syntax for better compatibility and consistency. ([`017bbc8`](https://github.com/clayauld/meshtopo/commit/017bbc839499090008a36ddc9e356f928c81311f))
+* Added a local hook in .pre-commit-config.yaml to automate the export of Beads issues to JSONL before commits.
+* Created a new pre-commit.sh script for handling the export process.
+* Updated AGENTS.md to include a top-level heading for markdownlint compliance.
+* Improved README files across various directories to replace inline HTML with proper markdown syntax for better compatibility and consistency. ([`017bbc8`](https://github.com/clayauld/meshtopo/commit/017bbc839499090008a36ddc9e356f928c81311f))
 
 * feat: Add Beads git hooks for automatic issue management
 
-- Introduced installation script for Beads git hooks to automate issue export/import during git operations.
-- Added pre-commit, post-merge, and post-checkout hooks to manage issues in JSONL format.
-- Created README.md to document the functionality and installation process of the git hooks. ([`7764919`](https://github.com/clayauld/meshtopo/commit/776491902fbcd0f6450d1f04ee177700e820572d))
+* Introduced installation script for Beads git hooks to automate issue export/import during git operations.
+* Added pre-commit, post-merge, and post-checkout hooks to manage issues in JSONL format.
+* Created README.md to document the functionality and installation process of the git hooks. ([`7764919`](https://github.com/clayauld/meshtopo/commit/776491902fbcd0f6450d1f04ee177700e820572d))
 
 * feat: Add logo assets and enhance documentation
 
-- Introduced logo assets for the Meshtopo project, including main and icon versions in PNG format, along with the source file in GIMP format.
-- Updated README files in the assets and config directories to include logo usage guidelines and project branding.
-- Enhanced the main README.md to display the Meshtopo logo at the top for improved visibility and branding.
-- Improved documentation clarity by ensuring consistent formatting and structure across configuration and deployment guides. ([`c34c68c`](https://github.com/clayauld/meshtopo/commit/c34c68ca5d8af0e9b5944ad22988e72626ba19cf))
+* Introduced logo assets for the Meshtopo project, including main and icon versions in PNG format, along with the source file in GIMP format.
+* Updated README files in the assets and config directories to include logo usage guidelines and project branding.
+* Enhanced the main README.md to display the Meshtopo logo at the top for improved visibility and branding.
+* Improved documentation clarity by ensuring consistent formatting and structure across configuration and deployment guides. ([`c34c68c`](https://github.com/clayauld/meshtopo/commit/c34c68ca5d8af0e9b5944ad22988e72626ba19cf))
 
 * feat: Update MQTT topic configuration and enhance documentation
 
-- Changed MQTT topic pattern in configuration files to use `REGION` placeholder for better adaptability.
-- Enhanced README and design documentation to include details on region codes and mapping mechanisms.
-- Introduced a two-tier node mapping system in the gateway to ensure reliable position updates.
-- Updated tests to verify correct MQTT topic format and region code handling.
-- Improved error handling and logging for message processing in the gateway application. ([`24916ba`](https://github.com/clayauld/meshtopo/commit/24916ba215f42c001b318e730c83d6287d6b6421))
+* Changed MQTT topic pattern in configuration files to use `REGION` placeholder for better adaptability.
+* Enhanced README and design documentation to include details on region codes and mapping mechanisms.
+* Introduced a two-tier node mapping system in the gateway to ensure reliable position updates.
+* Updated tests to verify correct MQTT topic format and region code handling.
+* Improved error handling and logging for message processing in the gateway application. ([`24916ba`](https://github.com/clayauld/meshtopo/commit/24916ba215f42c001b318e730c83d6287d6b6421))
 
 * feat: Enhance user management and testing capabilities
 
-- Added user management routes for admin interface, including user addition, removal, and listing.
-- Implemented CSRF protection for authentication forms to enhance security.
-- Updated Makefile to include new test commands for user management and authentication.
-- Introduced comprehensive test suite for user management and authentication flows.
-- Enhanced configuration files with examples for minimal, basic, and production setups.
-- Updated CI workflow to include testing of user management functionalities. ([`401c1b5`](https://github.com/clayauld/meshtopo/commit/401c1b5c1161aeb21ff2307c704afd08c0fd298e))
+* Added user management routes for admin interface, including user addition, removal, and listing.
+* Implemented CSRF protection for authentication forms to enhance security.
+* Updated Makefile to include new test commands for user management and authentication.
+* Introduced comprehensive test suite for user management and authentication flows.
+* Enhanced configuration files with examples for minimal, basic, and production setups.
+* Updated CI workflow to include testing of user management functionalities. ([`401c1b5`](https://github.com/clayauld/meshtopo/commit/401c1b5c1161aeb21ff2307c704afd08c0fd298e))
 
 * feat: Implement user management and simple authentication system
 
-- Added user management utility for adding, removing, and listing users in the configuration.
-- Introduced simple username/password authentication, replacing OAuth integration.
-- Updated configuration management to support per-user CalTopo credentials.
-- Enhanced web UI with login form and user session management.
-- Revised Makefile and installation script to include web UI dependencies and user setup instructions.
-- Added password hashing utilities for secure password storage.
-- Updated documentation to reflect changes in authentication and user management. ([`623bc7c`](https://github.com/clayauld/meshtopo/commit/623bc7c50edaeea97530f04e5b1aa77c6e0b25ee))
+* Added user management utility for adding, removing, and listing users in the configuration.
+* Introduced simple username/password authentication, replacing OAuth integration.
+* Updated configuration management to support per-user CalTopo credentials.
+* Enhanced web UI with login form and user session management.
+* Revised Makefile and installation script to include web UI dependencies and user setup instructions.
+* Added password hashing utilities for secure password storage.
+* Updated documentation to reflect changes in authentication and user management. ([`623bc7c`](https://github.com/clayauld/meshtopo/commit/623bc7c50edaeea97530f04e5b1aa77c6e0b25ee))
 
 * feat: Enhance configuration management and add health check functionality
 
-- Added new configuration options for CalTopo Team API, OAuth, SSL, and Web UI in `config.py` and `config.yaml.example`.
-- Updated `requirements.txt` to include Flask and related libraries for web UI support.
-- Implemented health check and metrics endpoints in `gateway_app.py` to monitor service status.
-- Revised Docker Compose setup to support new services and configurations, including Traefik for SSL termination and Mosquitto for MQTT.
-- Enhanced `caltopo_reporter.py` to manage Team API interactions, including authentication and map retrieval. ([`ae4522a`](https://github.com/clayauld/meshtopo/commit/ae4522a0f062e2a020908232576e1f7cec306546))
+* Added new configuration options for CalTopo Team API, OAuth, SSL, and Web UI in `config.py` and `config.yaml.example`.
+* Updated `requirements.txt` to include Flask and related libraries for web UI support.
+* Implemented health check and metrics endpoints in `gateway_app.py` to monitor service status.
+* Revised Docker Compose setup to support new services and configurations, including Traefik for SSL termination and Mosquitto for MQTT.
+* Enhanced `caltopo_reporter.py` to manage Team API interactions, including authentication and map retrieval. ([`ae4522a`](https://github.com/clayauld/meshtopo/commit/ae4522a0f062e2a020908232576e1f7cec306546))
 
 * feat: Refactor project structure and enhance configuration management
 
-- Moved source files to a new `src` directory for better organization.
-- Created a `config` package for configuration management, including a new `config.py` for handling settings.
-- Updated Makefile commands to reflect new file paths for tests and the gateway service.
-- Revised README and documentation to align with the new structure and provide clearer instructions.
-- Added Docker and systemd service files for deployment.
-- Introduced a test suite for validating configuration loading and message processing. ([`46650e1`](https://github.com/clayauld/meshtopo/commit/46650e1d7e4a384c6c94f3c57b9c5cc16e8a75df))
+* Moved source files to a new `src` directory for better organization.
+* Created a `config` package for configuration management, including a new `config.py` for handling settings.
+* Updated Makefile commands to reflect new file paths for tests and the gateway service.
+* Revised README and documentation to align with the new structure and provide clearer instructions.
+* Added Docker and systemd service files for deployment.
+* Introduced a test suite for validating configuration loading and message processing. ([`46650e1`](https://github.com/clayauld/meshtopo/commit/46650e1d7e4a384c6c94f3c57b9c5cc16e8a75df))
 
 * feat: Add CI, pre-commit, and project configuration
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`e5597e8`](https://github.com/clayauld/meshtopo/commit/e5597e8532b287aef8cda482e9760fa22b9f95ee))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`e5597e8`](https://github.com/clayauld/meshtopo/commit/e5597e8532b287aef8cda482e9760fa22b9f95ee))
 
 * feat: Add Meshtopo gateway service and Docker support
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`f4f9c28`](https://github.com/clayauld/meshtopo/commit/f4f9c28a4fa915ac30d28963d149b05dcfb6a804))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`f4f9c28`](https://github.com/clayauld/meshtopo/commit/f4f9c28a4fa915ac30d28963d149b05dcfb6a804))
 
 ### Fix
 
@@ -582,9 +617,10 @@ Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`f4f9c28`](https://github
 * fix: Update README.md for improved formatting and clarity
 
 This commit enhances the README.md by:
-- Adding spacing for better readability in the instructions.
-- Ensuring consistent formatting for numbered lists.
-- Improving the overall structure and flow of the document.
+
+* Adding spacing for better readability in the instructions.
+* Ensuring consistent formatting for numbered lists.
+* Improving the overall structure and flow of the document.
 
 These changes aim to provide a clearer onboarding experience for users and improve the documentation&#39;s professionalism. ([`6851604`](https://github.com/clayauld/meshtopo/commit/685160452340e4169cb95d665de98e16a438c3a9))
 
@@ -592,21 +628,21 @@ These changes aim to provide a clearer onboarding experience for users and impro
 
 * fix: Update Meshtopo logo in configuration README
 
-- Replaced the logo image in the config README.md with the updated version for improved branding consistency. ([`52f6cc5`](https://github.com/clayauld/meshtopo/commit/52f6cc5da76ea7215a5fb96792c55683021601d8))
+* Replaced the logo image in the config README.md with the updated version for improved branding consistency. ([`52f6cc5`](https://github.com/clayauld/meshtopo/commit/52f6cc5da76ea7215a5fb96792c55683021601d8))
 
 * fix: Update Makefile and web UI initialization
 
-- Modified the Makefile to set the PYTHONPATH before running the web UI application for proper module resolution.
-- Added DEBUG and TEMPLATES_AUTO_RELOAD configuration options in the web UI app initialization for improved performance and debugging control.
-- Ensured the rate limiter is properly initialized with the app instance for enhanced request management. ([`7746424`](https://github.com/clayauld/meshtopo/commit/7746424d5570ddb92c8b4a2ba8027a76c7b4e46f))
+* Modified the Makefile to set the PYTHONPATH before running the web UI application for proper module resolution.
+* Added DEBUG and TEMPLATES_AUTO_RELOAD configuration options in the web UI app initialization for improved performance and debugging control.
+* Ensured the rate limiter is properly initialized with the app instance for enhanced request management. ([`7746424`](https://github.com/clayauld/meshtopo/commit/7746424d5570ddb92c8b4a2ba8027a76c7b4e46f))
 
 * fix: Correct import order in gateway_app.py for consistency
 
-- Reordered import statements in `gateway_app.py` to align with project conventions and improve readability. ([`5bfe40c`](https://github.com/clayauld/meshtopo/commit/5bfe40cb0a97b7b8011ef055eb68a8b9f32ce3e5))
+* Reordered import statements in `gateway_app.py` to align with project conventions and improve readability. ([`5bfe40c`](https://github.com/clayauld/meshtopo/commit/5bfe40cb0a97b7b8011ef055eb68a8b9f32ce3e5))
 
 * fix: Update test paths in CI workflow to reflect new project structure
 
-- Modified test commands in the CI configuration to use the updated file paths in the `src` directory for `test_gateway.py`. ([`1567b54`](https://github.com/clayauld/meshtopo/commit/1567b5422c0710174c66ed402aad21d120dac3c1))
+* Modified test commands in the CI configuration to use the updated file paths in the `src` directory for `test_gateway.py`. ([`1567b54`](https://github.com/clayauld/meshtopo/commit/1567b5422c0710174c66ed402aad21d120dac3c1))
 
 ### Refactor
 
@@ -622,13 +658,13 @@ These changes aim to provide a clearer onboarding experience for users and impro
 
 * refactor: Update Docker build context and improve test file paths
 
-- Changed the Docker build command in the CI workflow to specify the Dockerfile location.
-- Updated test file paths in `test_gateway.py` to use the project root directory for better path resolution. ([`3b8c54b`](https://github.com/clayauld/meshtopo/commit/3b8c54b01baffa421bb87b2aed0e1c9d9fea87df))
+* Changed the Docker build command in the CI workflow to specify the Dockerfile location.
+* Updated test file paths in `test_gateway.py` to use the project root directory for better path resolution. ([`3b8c54b`](https://github.com/clayauld/meshtopo/commit/3b8c54b01baffa421bb87b2aed0e1c9d9fea87df))
 
 * refactor: Update import paths for consistency and clarity
 
-- Adjusted import statements in `gateway_app.py`, `gateway.py`, and `test_gateway.py` to remove the `src` prefix, reflecting the new project structure.
-- Ensured that the parent directory is included in the import paths for proper module resolution. ([`fbf7075`](https://github.com/clayauld/meshtopo/commit/fbf7075ff499f3cd19cc47fa8d4034da93578639))
+* Adjusted import statements in `gateway_app.py`, `gateway.py`, and `test_gateway.py` to remove the `src` prefix, reflecting the new project structure.
+* Ensured that the parent directory is included in the import paths for proper module resolution. ([`fbf7075`](https://github.com/clayauld/meshtopo/commit/fbf7075ff499f3cd19cc47fa8d4034da93578639))
 
 ### Test
 
@@ -694,9 +730,9 @@ Updated `CalTopoReporter.send_position_update` and `test_connection` to use `asy
 
 * ⚡ Bolt: Parallelize CalTopo requests and optimize logging
 
-- Parallelize `connect_key` and `group` requests in `CalTopoReporter` using `asyncio.gather`
-- Replace `secrets.SystemRandom` with `random.uniform` for jitter
-- Use lazy logging in hot paths to avoid f-string overhead ([`7f35f31`](https://github.com/clayauld/meshtopo/commit/7f35f31a0c60f14e9b082afd16dc5f37c3d437e1))
+* Parallelize `connect_key` and `group` requests in `CalTopoReporter` using `asyncio.gather`
+* Replace `secrets.SystemRandom` with `random.uniform` for jitter
+* Use lazy logging in hot paths to avoid f-string overhead ([`7f35f31`](https://github.com/clayauld/meshtopo/commit/7f35f31a0c60f14e9b082afd16dc5f37c3d437e1))
 
 * Merge pull request #30 from clayauld/sentinel/fix-insecure-deserialization-3884758878854556739
 
@@ -712,9 +748,9 @@ Refactored CalTopoReporter to use a persistent httpx.AsyncClient to enable conne
 
 * 🛡️ Sentinel: [HIGH] Fix insecure deserialization in state persistence
 
-- Enforce JSON serialization in SqliteDict to prevent pickle vulnerabilities
-- Rename tables to `*_v2` to avoid backward incompatibility crashes
-- Fix dependency conflicts (paho-mqtt) and update test imports to enable verification ([`f3cb0eb`](https://github.com/clayauld/meshtopo/commit/f3cb0ebe513fd2a4057d671680f777807db4ee55))
+* Enforce JSON serialization in SqliteDict to prevent pickle vulnerabilities
+* Rename tables to `*_v2` to avoid backward incompatibility crashes
+* Fix dependency conflicts (paho-mqtt) and update test imports to enable verification ([`f3cb0eb`](https://github.com/clayauld/meshtopo/commit/f3cb0ebe513fd2a4057d671680f777807db4ee55))
 
 * Address outstanding review issues and security vulnerabilities ([`8912f21`](https://github.com/clayauld/meshtopo/commit/8912f213c3fa1c7fd3a5d81c6965e387318c98af))
 
@@ -734,7 +770,7 @@ Refactored CalTopoReporter to use a persistent httpx.AsyncClient to enable conne
 
 commit 50a1f6235c50f7ceff1898c7e83f26444a9d0511
 Merge: 669d11b 10f1ff1
-Author: Clayton Auld &lt;2290528+clayauld@users.noreply.github.com&gt;
+Author: Clayton Auld &lt;<2290528+clayauld@users.noreply.github.com>&gt;
 Date:   Sat Dec 13 16:55:16 2025 -0900
 
     Merge pull request #25 from clayauld/dependabot/pip/pyyaml-6.0.3
@@ -743,7 +779,7 @@ Date:   Sat Dec 13 16:55:16 2025 -0900
 
 commit 669d11bba15843e1968262525898b540525faf4d
 Merge: e36838b 4905f1a
-Author: Clayton Auld &lt;2290528+clayauld@users.noreply.github.com&gt;
+Author: Clayton Auld &lt;<2290528+clayauld@users.noreply.github.com>&gt;
 Date:   Sat Dec 13 16:55:05 2025 -0900
 
     Merge pull request #24 from clayauld/dependabot/pip/pytest-cov-7.0.0
@@ -752,7 +788,7 @@ Date:   Sat Dec 13 16:55:05 2025 -0900
 
 commit e36838bb5c795a46c90415a0a7e4b6f07ce67918
 Merge: 62795c2 3674f88
-Author: Clayton Auld &lt;2290528+clayauld@users.noreply.github.com&gt;
+Author: Clayton Auld &lt;<2290528+clayauld@users.noreply.github.com>&gt;
 Date:   Sat Dec 13 16:54:50 2025 -0900
 
     Merge pull request #23 from clayauld/dependabot/pip/paho-mqtt-2.1.0
@@ -823,7 +859,7 @@ Date:   Sun Dec 14 01:52:50 2025 +0000
 
 commit 62795c27e5952298233b093de2ac322905dea966
 Merge: ab0b7d3 7e5e431
-Author: Clayton Auld &lt;2290528+clayauld@users.noreply.github.com&gt;
+Author: Clayton Auld &lt;<2290528+clayauld@users.noreply.github.com>&gt;
 Date:   Sat Dec 13 16:52:17 2025 -0900
 
     Merge pull request #26 from clayauld/dependabot/pip/pytest-8.4.2
@@ -832,7 +868,7 @@ Date:   Sat Dec 13 16:52:17 2025 -0900
 
 commit ab0b7d37f37369048ded2168b139bed5b215f867
 Merge: 8e582f3 b203eab
-Author: Clayton Auld &lt;2290528+clayauld@users.noreply.github.com&gt;
+Author: Clayton Auld &lt;<2290528+clayauld@users.noreply.github.com>&gt;
 Date:   Sat Dec 13 16:51:43 2025 -0900
 
     Merge pull request #22 from clayauld/dependabot/pip/requests-2.32.5
@@ -841,7 +877,7 @@ Date:   Sat Dec 13 16:51:43 2025 -0900
 
 commit 8e582f3b7a11c9559f0e77d5229284b9c12acf41
 Merge: 47e9773 4e394f8
-Author: Clayton Auld &lt;2290528+clayauld@users.noreply.github.com&gt;
+Author: Clayton Auld &lt;<2290528+clayauld@users.noreply.github.com>&gt;
 Date:   Sat Dec 13 16:51:29 2025 -0900
 
     Merge pull request #21 from clayauld/dependabot/github_actions/actions/upload-artifact-6
@@ -850,7 +886,7 @@ Date:   Sat Dec 13 16:51:29 2025 -0900
 
 commit 47e97738cf0779e48fa0d8a68405831ae9fb4c6a
 Merge: 4f8e8a3 30f31cf
-Author: Clayton Auld &lt;2290528+clayauld@users.noreply.github.com&gt;
+Author: Clayton Auld &lt;<2290528+clayauld@users.noreply.github.com>&gt;
 Date:   Sat Dec 13 16:51:13 2025 -0900
 
     Merge pull request #20 from clayauld/dependabot/github_actions/actions/checkout-6
@@ -859,7 +895,7 @@ Date:   Sat Dec 13 16:51:13 2025 -0900
 
 commit 4f8e8a3b4979a87607acf84e950cc262acc7987c
 Merge: 5caa654 6577bbe
-Author: Clayton Auld &lt;2290528+clayauld@users.noreply.github.com&gt;
+Author: Clayton Auld &lt;<2290528+clayauld@users.noreply.github.com>&gt;
 Date:   Sat Dec 13 16:50:58 2025 -0900
 
     Merge pull request #19 from clayauld/dependabot/github_actions/docker/build-push-action-6
@@ -868,7 +904,7 @@ Date:   Sat Dec 13 16:50:58 2025 -0900
 
 commit 5caa65490887508fa28de9db6ee3e6bd62236f04
 Merge: 6c51036 b7e9db4
-Author: Clayton Auld &lt;2290528+clayauld@users.noreply.github.com&gt;
+Author: Clayton Auld &lt;<2290528+clayauld@users.noreply.github.com>&gt;
 Date:   Sat Dec 13 16:50:41 2025 -0900
 
     Merge pull request #18 from clayauld/dependabot/github_actions/actions/setup-python-6
@@ -877,7 +913,7 @@ Date:   Sat Dec 13 16:50:41 2025 -0900
 
 commit 6c5103636fc728e4f4eeec597fc7593e138d9f22
 Merge: 655e95f 25d9464
-Author: Clayton Auld &lt;2290528+clayauld@users.noreply.github.com&gt;
+Author: Clayton Auld &lt;<2290528+clayauld@users.noreply.github.com>&gt;
 Date:   Sat Dec 13 16:50:10 2025 -0900
 
     Merge pull request #17 from clayauld/dependabot/github_actions/dorny/test-reporter-2
@@ -1090,32 +1126,32 @@ Fixes issues from PR review ([`b482a4d`](https://github.com/clayauld/meshtopo/co
 
 This commit addresses three issues identified in the pull request review:
 
-- Adds whitespace validation to the `CalTopoConfig` Pydantic model to strip leading and trailing whitespace from the `connect_key` and `group` fields.
-- Adds a `close()` method to the `GatewayApp` class to explicitly close the `SqliteDict` database connections on application shutdown.
-- Updates the `scripts/setup_wizard.py` script to use the correct keys (`broker` and `username`) for the MQTT configuration and to handle multiple users. ([`55f0b3a`](https://github.com/clayauld/meshtopo/commit/55f0b3a743ae75e925917ce7373e61021c0e0075))
+* Adds whitespace validation to the `CalTopoConfig` Pydantic model to strip leading and trailing whitespace from the `connect_key` and `group` fields.
+* Adds a `close()` method to the `GatewayApp` class to explicitly close the `SqliteDict` database connections on application shutdown.
+* Updates the `scripts/setup_wizard.py` script to use the correct keys (`broker` and `username`) for the MQTT configuration and to handle multiple users. ([`55f0b3a`](https://github.com/clayauld/meshtopo/commit/55f0b3a743ae75e925917ce7373e61021c0e0075))
 
 * Add engineering review document for Meshtopo Gateway
 
-- Introduced a comprehensive engineering review and modernization roadmap for the Meshtopo Gateway project.
-- The document outlines strategic recommendations for improving user onboarding, enhancing architectural resilience, and modernizing the codebase.
-- Key initiatives include unifying configuration processes, implementing an interactive setup wizard, transitioning to an asynchronous core, and fortifying dependency management. ([`9e9cca3`](https://github.com/clayauld/meshtopo/commit/9e9cca325d67b7fffe27ae686e4dfdd0b2470bf3))
+* Introduced a comprehensive engineering review and modernization roadmap for the Meshtopo Gateway project.
+* The document outlines strategic recommendations for improving user onboarding, enhancing architectural resilience, and modernizing the codebase.
+* Key initiatives include unifying configuration processes, implementing an interactive setup wizard, transitioning to an asynchronous core, and fortifying dependency management. ([`9e9cca3`](https://github.com/clayauld/meshtopo/commit/9e9cca325d67b7fffe27ae686e4dfdd0b2470bf3))
 
 * Fix: Correct print statement formatting in Mosquitto configuration script
 
-- Combined two lines of a print statement into a single line for improved clarity when instructing users on starting the MQTT broker. ([`7edcf10`](https://github.com/clayauld/meshtopo/commit/7edcf10e6922aa92160a14b8a32145e57710a2d2))
+* Combined two lines of a print statement into a single line for improved clarity when instructing users on starting the MQTT broker. ([`7edcf10`](https://github.com/clayauld/meshtopo/commit/7edcf10e6922aa92160a14b8a32145e57710a2d2))
 
 * Fix: Update Mosquitto configuration generation script for improved clarity
 
-- Added a comment to suppress linting warning in the generate_mosquitto_config.py script.
-- Split a long print statement into two lines for better readability when informing users about starting the MQTT broker. ([`fa0ca2e`](https://github.com/clayauld/meshtopo/commit/fa0ca2eb66707b9dd9a361481cd0c9322e4332df))
+* Added a comment to suppress linting warning in the generate_mosquitto_config.py script.
+* Split a long print statement into two lines for better readability when informing users about starting the MQTT broker. ([`fa0ca2e`](https://github.com/clayauld/meshtopo/commit/fa0ca2eb66707b9dd9a361481cd0c9322e4332df))
 
 * Update README and configuration files for improved clarity and functionality
 
-- Enhanced the README.md for better formatting and readability of features and configuration instructions.
-- Updated docker-compose.yml to correct volume paths for configuration files.
-- Modified mosquitto.conf to ensure a single global password_file directive and adjusted max_packet_size for better performance.
-- Improved the mosquitto configuration generation script to utilize mosquitto_passwd for password management, ensuring compatibility with Mosquitto 2.0.
-- Added troubleshooting notes for common MQTT broker issues in the README. ([`0ce42b0`](https://github.com/clayauld/meshtopo/commit/0ce42b0b87496be131eeb570ed8ca087fba0ea25))
+* Enhanced the README.md for better formatting and readability of features and configuration instructions.
+* Updated docker-compose.yml to correct volume paths for configuration files.
+* Modified mosquitto.conf to ensure a single global password_file directive and adjusted max_packet_size for better performance.
+* Improved the mosquitto configuration generation script to utilize mosquitto_passwd for password management, ensuring compatibility with Mosquitto 2.0.
+* Added troubleshooting notes for common MQTT broker issues in the README. ([`0ce42b0`](https://github.com/clayauld/meshtopo/commit/0ce42b0b87496be131eeb570ed8ca087fba0ea25))
 
 * Merge pull request #11 from clayauld/harden-caltopo-reporter
 
@@ -1125,14 +1161,14 @@ Harden caltopo reporter ([`c28ceef`](https://github.com/clayauld/meshtopo/commit
 
 This commit enhances the readability of the URL construction in the CalTopoReporter class by formatting multi-line strings for better clarity. The changes include:
 
-- Adjusted the logging of the connect_key URL to use a more readable format.
-- Simplified the construction of test URLs for both connect_key and group identifiers.
+* Adjusted the logging of the connect_key URL to use a more readable format.
+* Simplified the construction of test URLs for both connect_key and group identifiers.
 
 These modifications aim to improve code maintainability and readability without altering functionality. ([`1baeef8`](https://github.com/clayauld/meshtopo/commit/1baeef88f77f0b355607af9b32ad1f614185f644))
 
 * Refactor: Extract identifier validation to a helper method
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`e62f57b`](https://github.com/clayauld/meshtopo/commit/e62f57b1f112525d279382005d35b9c5f88d6658))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`e62f57b`](https://github.com/clayauld/meshtopo/commit/e62f57b1f112525d279382005d35b9c5f88d6658))
 
 * Update src/caltopo_reporter.py
 
@@ -1142,17 +1178,17 @@ Co-authored-by: gemini-code-assist[bot] &lt;176961590+gemini-code-assist[bot]@us
 
 This commit introduces two security enhancements to the CalTopo reporter:
 
-1.  **Identifier Validation:** The `connect_key` and `group` identifiers are now validated to ensure they only contain alphanumeric characters and underscores. This prevents potential URL manipulation vulnerabilities.
+1. **Identifier Validation:** The `connect_key` and `group` identifiers are now validated to ensure they only contain alphanumeric characters and underscores. This prevents potential URL manipulation vulnerabilities.
 
-2.  **Log Redaction:** The `connect_key` is now redacted from the URL in log messages to prevent sensitive information from being exposed in logs. ([`b7d22e8`](https://github.com/clayauld/meshtopo/commit/b7d22e88230dba263e593cedba6019390d8ec4d2))
+2. **Log Redaction:** The `connect_key` is now redacted from the URL in log messages to prevent sensitive information from being exposed in logs. ([`b7d22e8`](https://github.com/clayauld/meshtopo/commit/b7d22e88230dba263e593cedba6019390d8ec4d2))
 
 * Fix: Harden CalTopo reporter against URL injection and log exposure
 
 This commit introduces two security enhancements to the CalTopo reporter:
 
-1.  **Identifier Validation:** The `connect_key` and `group` identifiers are now validated to ensure they only contain alphanumeric characters and underscores. This prevents potential URL manipulation vulnerabilities.
+1. **Identifier Validation:** The `connect_key` and `group` identifiers are now validated to ensure they only contain alphanumeric characters and underscores. This prevents potential URL manipulation vulnerabilities.
 
-2.  **Log Redaction:** The `connect_key` is now redacted from the URL in log messages to prevent sensitive information from being exposed in logs. ([`92cd214`](https://github.com/clayauld/meshtopo/commit/92cd214cbbf3198d6ed91e3d9dfec66c1922db17))
+2. **Log Redaction:** The `connect_key` is now redacted from the URL in log messages to prevent sensitive information from being exposed in logs. ([`92cd214`](https://github.com/clayauld/meshtopo/commit/92cd214cbbf3198d6ed91e3d9dfec66c1922db17))
 
 * Merge pull request #10 from clayauld/cursor/fix-docker-build-file-not-found-error-f561
 
@@ -1160,7 +1196,7 @@ Fix docker build file not found error ([`79aedf4`](https://github.com/clayauld/m
 
 * Fix: Specify Dockerfile for test image build
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`ba46023`](https://github.com/clayauld/meshtopo/commit/ba460231c577d0afffdfc27f0be651f1926d6d11))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`ba46023`](https://github.com/clayauld/meshtopo/commit/ba460231c577d0afffdfc27f0be651f1926d6d11))
 
 * Merge pull request #8 from clayauld/cursor/fix-pytest-module-not-found-error-272e
 
@@ -1168,15 +1204,15 @@ Fix pytest module not found error ([`540f69e`](https://github.com/clayauld/mesht
 
 * Refactor: Separate test dependencies from production Docker images
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`539b75e`](https://github.com/clayauld/meshtopo/commit/539b75e96424578893195c60841746538bc410f2))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`539b75e`](https://github.com/clayauld/meshtopo/commit/539b75e96424578893195c60841746538bc410f2))
 
 * Refactor: Implement multi-stage Docker builds for cleaner images
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`afddaff`](https://github.com/clayauld/meshtopo/commit/afddaffbaf918a4653c559b9f2a78285996b9884))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`afddaff`](https://github.com/clayauld/meshtopo/commit/afddaffbaf918a4653c559b9f2a78285996b9884))
 
 * Add pytest and pytest-cov to requirements
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`08cf0c2`](https://github.com/clayauld/meshtopo/commit/08cf0c2fccb3fe6ed7d69cb734ee17853d3aab7c))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`08cf0c2`](https://github.com/clayauld/meshtopo/commit/08cf0c2fccb3fe6ed7d69cb734ee17853d3aab7c))
 
 * Merge pull request #7 from clayauld/dependabot/pip/pip-23b04c1fc7
 
@@ -1188,26 +1224,26 @@ Feature/web api full system ([`a6154af`](https://github.com/clayauld/meshtopo/co
 
 * Refactor Mosquitto configuration generation for improved clarity and maintainability
 
-- Adjust formatting in `generate_mosquitto_config.py` to enhance readability, including breaking long lines for better structure.
-- Update variable handling in the MQTT configuration output to use dedicated variables, ensuring consistency and clarity.
-- Maintain existing functionality while improving the overall quality of the code.
+* Adjust formatting in `generate_mosquitto_config.py` to enhance readability, including breaking long lines for better structure.
+* Update variable handling in the MQTT configuration output to use dedicated variables, ensuring consistency and clarity.
+* Maintain existing functionality while improving the overall quality of the code.
 
 These changes aim to streamline the configuration generation process and enhance code quality. ([`cc3c4c2`](https://github.com/clayauld/meshtopo/commit/cc3c4c239f46a6438b801afdafa66832b9f3dd83))
 
 * Enhance Mosquitto configuration generation with improved variable handling
 
-- Refactor `generate_mosquitto_config.py` to use dedicated variables for authentication and ACL settings, improving code readability.
-- Ensure consistent handling of MQTT configuration variables in the generated output.
-- Maintain existing functionality while enhancing clarity and maintainability of the code.
+* Refactor `generate_mosquitto_config.py` to use dedicated variables for authentication and ACL settings, improving code readability.
+* Ensure consistent handling of MQTT configuration variables in the generated output.
+* Maintain existing functionality while enhancing clarity and maintainability of the code.
 
 These changes aim to streamline the configuration generation process and improve code quality. ([`14c7419`](https://github.com/clayauld/meshtopo/commit/14c7419bdcbe20ced176e1090b088ce49754d2a9))
 
 * Update Mosquitto configuration generation and improve code readability
 
-- Refactor `generate_mosquitto_config.py` to enhance readability by adjusting comments and formatting.
-- Ensure secure password handling by directly hashing passwords without intermediate variables and clearing them from memory immediately after use.
-- Improve user feedback for existing MQTT configuration in the `.env` file, providing clearer warnings and instructions.
-- Set restrictive file permissions for generated files to enhance security.
+* Refactor `generate_mosquitto_config.py` to enhance readability by adjusting comments and formatting.
+* Ensure secure password handling by directly hashing passwords without intermediate variables and clearing them from memory immediately after use.
+* Improve user feedback for existing MQTT configuration in the `.env` file, providing clearer warnings and instructions.
+* Set restrictive file permissions for generated files to enhance security.
 
 These changes aim to improve the maintainability and security of the Mosquitto configuration generation process. ([`0e94d73`](https://github.com/clayauld/meshtopo/commit/0e94d73c710b7fce4d0d30d1a068b69e67ea03eb))
 
@@ -1227,20 +1263,20 @@ Addresses Gemini Code Assist feedback. ([`0148294`](https://github.com/clayauld/
 
 * Consolidate duplicate .env.example files
 
-- Merge content from deploy/env.example into deploy/.env.example
-- Remove duplicate deploy/env.example file
-- Create single comprehensive environment configuration template
-- Maintain all configuration options from both files
-- Follow standard naming convention (.env.example vs env.example) ([`456e0fe`](https://github.com/clayauld/meshtopo/commit/456e0fea5345e2c57ba6ffabc46c07f3830c5f11))
+* Merge content from deploy/env.example into deploy/.env.example
+* Remove duplicate deploy/env.example file
+* Create single comprehensive environment configuration template
+* Maintain all configuration options from both files
+* Follow standard naming convention (.env.example vs env.example) ([`456e0fe`](https://github.com/clayauld/meshtopo/commit/456e0fea5345e2c57ba6ffabc46c07f3830c5f11))
 
 * Improve .env file handling robustness in generate_mosquitto_config.py
 
-- Replace brittle string manipulation with more robust file handling
-- Add validation function for .env file operations
-- Improve error handling and user feedback
-- Add comprehensive documentation for environment variables
-- Handle existing MQTT config gracefully with user warnings
-- Test all scenarios to ensure reliability ([`653214d`](https://github.com/clayauld/meshtopo/commit/653214d78fc5caabe8bf61cc37414f9862a4d6aa))
+* Replace brittle string manipulation with more robust file handling
+* Add validation function for .env file operations
+* Improve error handling and user feedback
+* Add comprehensive documentation for environment variables
+* Handle existing MQTT config gracefully with user warnings
+* Test all scenarios to ensure reliability ([`653214d`](https://github.com/clayauld/meshtopo/commit/653214d78fc5caabe8bf61cc37414f9862a4d6aa))
 
 * Add compliance check reminder to AGENTS.md
 
@@ -1248,28 +1284,28 @@ Added a note about compliance checks before pushing changes. ([`e5aa597`](https:
 
 * Replace docker-compose.override.yml with environment variables
 
-- Remove docker-compose.override.yml generation from generate_mosquitto_config.py
-- Add .env.example template for environment configuration
-- Update docker-compose.yml to use environment variables for MQTT ports
-- Add docker-setup Makefile target for environment setup
-- Create deploy/README.md with comprehensive deployment guide
-- Update generate_mosquitto_config.py to update .env file instead of override
-- Improve maintainability by using standard Docker Compose practices
-- All MQTT configuration now managed through environment variables ([`e808a2d`](https://github.com/clayauld/meshtopo/commit/e808a2d9223b48814b80213e6a2c003a911d7a9c))
+* Remove docker-compose.override.yml generation from generate_mosquitto_config.py
+* Add .env.example template for environment configuration
+* Update docker-compose.yml to use environment variables for MQTT ports
+* Add docker-setup Makefile target for environment setup
+* Create deploy/README.md with comprehensive deployment guide
+* Update generate_mosquitto_config.py to update .env file instead of override
+* Improve maintainability by using standard Docker Compose practices
+* All MQTT configuration now managed through environment variables ([`e808a2d`](https://github.com/clayauld/meshtopo/commit/e808a2d9223b48814b80213e6a2c003a911d7a9c))
 
 * Remove trailing newline from requirements-dev.txt
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`f3adfc8`](https://github.com/clayauld/meshtopo/commit/f3adfc8986be490a101cdd30bb88d03a55841707))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`f3adfc8`](https://github.com/clayauld/meshtopo/commit/f3adfc8986be490a101cdd30bb88d03a55841707))
 
 * Separate development dependencies into requirements-dev.txt
 
-- Create requirements-dev.txt with development-specific packages
-- Update Makefile dev-setup target to use requirements-dev.txt
-- Fix pre-commit installation to use python3 -m pre_commit
-- Fix pytest hook to use python3 instead of python
-- Fix syntax error in config.py MQTT validation
-- Improves dependency management clarity between runtime and dev
-- All development tools properly installed and configured ([`fba655c`](https://github.com/clayauld/meshtopo/commit/fba655ce010f39b705d4cc3a73cc87c732ea408e))
+* Create requirements-dev.txt with development-specific packages
+* Update Makefile dev-setup target to use requirements-dev.txt
+* Fix pre-commit installation to use python3 -m pre_commit
+* Fix pytest hook to use python3 instead of python
+* Fix syntax error in config.py MQTT validation
+* Improves dependency management clarity between runtime and dev
+* All development tools properly installed and configured ([`fba655c`](https://github.com/clayauld/meshtopo/commit/fba655ce010f39b705d4cc3a73cc87c732ea408e))
 
 * Update config/config.py
 
@@ -1277,91 +1313,91 @@ Co-authored-by: gemini-code-assist[bot] &lt;176961590+gemini-code-assist[bot]@us
 
 * Apply black code formatting
 
-- Format config/config.py with black
-- Format src/caltopo_reporter.py with black
-- Format tests/test_caltopo_modes.py with black
-- All tests still pass with 85% config.py coverage
-- Code now compliant with all CI formatting requirements ([`7499c9b`](https://github.com/clayauld/meshtopo/commit/7499c9b518bf3138eee9a79293d1dda87b91ab74))
+* Format config/config.py with black
+* Format src/caltopo_reporter.py with black
+* Format tests/test_caltopo_modes.py with black
+* All tests still pass with 85% config.py coverage
+* Code now compliant with all CI formatting requirements ([`7499c9b`](https://github.com/clayauld/meshtopo/commit/7499c9b518bf3138eee9a79293d1dda87b91ab74))
 
 * Fix linting issues for CI compliance
 
-- Fix line length violations (E501) in config.py, caltopo_reporter.py, and test files
-- Add missing return type annotations for mypy compliance
-- Fix import sorting issues with isort
-- Remove temporary test files causing linting issues
-- All tests still pass with 85% config.py coverage ([`b1b5d7e`](https://github.com/clayauld/meshtopo/commit/b1b5d7e8d6f8405bfb4f066486d8a328d37fe377))
+* Fix line length violations (E501) in config.py, caltopo_reporter.py, and test files
+* Add missing return type annotations for mypy compliance
+* Fix import sorting issues with isort
+* Remove temporary test files causing linting issues
+* All tests still pass with 85% config.py coverage ([`b1b5d7e`](https://github.com/clayauld/meshtopo/commit/b1b5d7e8d6f8405bfb4f066486d8a328d37fe377))
 
 * Add comprehensive pytest tests for CalTopo configuration modes
 
-- Test connect_key only mode
-- Test group only mode
-- Test both modes simultaneously
-- Test validation errors for empty/invalid values
-- Test missing configuration scenarios
-- All 15 tests pass with 85% config.py coverage ([`27a487b`](https://github.com/clayauld/meshtopo/commit/27a487ba091ca2e6d6aa169a2f9c44ee49d7fb52))
+* Test connect_key only mode
+* Test group only mode
+* Test both modes simultaneously
+* Test validation errors for empty/invalid values
+* Test missing configuration scenarios
+* All 15 tests pass with 85% config.py coverage ([`27a487b`](https://github.com/clayauld/meshtopo/commit/27a487ba091ca2e6d6aa169a2f9c44ee49d7fb52))
 
 * Checkpoint before follow-up message
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`5558d0f`](https://github.com/clayauld/meshtopo/commit/5558d0f07aae1c24aed8e0b86586f4f008f503a9))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`5558d0f`](https://github.com/clayauld/meshtopo/commit/5558d0f07aae1c24aed8e0b86586f4f008f503a9))
 
 * Refactor CalTopo config validation to use dataclass post_init
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`374311b`](https://github.com/clayauld/meshtopo/commit/374311bdbd5bd31c0184c46470f62e3c3527d3db))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`374311b`](https://github.com/clayauld/meshtopo/commit/374311bdbd5bd31c0184c46470f62e3c3527d3db))
 
 * Checkpoint before follow-up message
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`947f004`](https://github.com/clayauld/meshtopo/commit/947f0040dc3755fcf78bdbe986e7c078b594ddda))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`947f004`](https://github.com/clayauld/meshtopo/commit/947f0040dc3755fcf78bdbe986e7c078b594ddda))
 
 * Add validation for empty configuration values
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`cc8e747`](https://github.com/clayauld/meshtopo/commit/cc8e7477d157baa5bdff90497ca7994928d2337a))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`cc8e747`](https://github.com/clayauld/meshtopo/commit/cc8e7477d157baa5bdff90497ca7994928d2337a))
 
 * Refactor Mosquitto config generation for improved formatting
 
-- Updated the generation of the Docker Compose override to use formatted strings for port mappings.
-- Adjusted comments and formatting for consistency and clarity in the generated configuration file. ([`ddc2961`](https://github.com/clayauld/meshtopo/commit/ddc2961a01ea980ea47e114e0403ad2fdd4a82c9))
+* Updated the generation of the Docker Compose override to use formatted strings for port mappings.
+* Adjusted comments and formatting for consistency and clarity in the generated configuration file. ([`ddc2961`](https://github.com/clayauld/meshtopo/commit/ddc2961a01ea980ea47e114e0403ad2fdd4a82c9))
 
 * Enhance CI configuration and testing setup
 
-- Added pytest as a pre-commit hook for running tests automatically.
-- Updated CI workflow to install pre-commit hooks and streamline the installation process.
-- Made minor formatting adjustments in Mosquitto config and logging messages for consistency. ([`7cf9aa8`](https://github.com/clayauld/meshtopo/commit/7cf9aa8b906ede4edccf6324eb271703935a7d01))
+* Added pytest as a pre-commit hook for running tests automatically.
+* Updated CI workflow to install pre-commit hooks and streamline the installation process.
+* Made minor formatting adjustments in Mosquitto config and logging messages for consistency. ([`7cf9aa8`](https://github.com/clayauld/meshtopo/commit/7cf9aa8b906ede4edccf6324eb271703935a7d01))
 
 * Update .gitignore and remove bandit report
 
-- Added bandit-report.json to .gitignore to prevent tracking of security analysis reports.
-- Deleted the existing bandit-report.json file as it is no longer needed. ([`25e30f6`](https://github.com/clayauld/meshtopo/commit/25e30f6e2e8355df5e09ef6b3c636bc9e045cafc))
+* Added bandit-report.json to .gitignore to prevent tracking of security analysis reports.
+* Deleted the existing bandit-report.json file as it is no longer needed. ([`25e30f6`](https://github.com/clayauld/meshtopo/commit/25e30f6e2e8355df5e09ef6b3c636bc9e045cafc))
 
 * Refactor test commands and update CI security scan
 
-- Updated test commands in Makefile to use pytest with verbose output.
-- Changed safety check command in CI workflow to use &#39;safety scan&#39; for improved reporting. ([`ef63947`](https://github.com/clayauld/meshtopo/commit/ef639470895a6e99df6f9c1540755e9bfde64f6b))
+* Updated test commands in Makefile to use pytest with verbose output.
+* Changed safety check command in CI workflow to use &#39;safety scan&#39; for improved reporting. ([`ef63947`](https://github.com/clayauld/meshtopo/commit/ef639470895a6e99df6f9c1540755e9bfde64f6b))
 
 * Remove redundant hardware_id None check
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`7d0e089`](https://github.com/clayauld/meshtopo/commit/7d0e0892a6363eee23acad8100d6e8ecc1b5afdf))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`7d0e089`](https://github.com/clayauld/meshtopo/commit/7d0e0892a6363eee23acad8100d6e8ecc1b5afdf))
 
 * Enhance security in Mosquitto config generation
 
-- Improved memory handling by ensuring sensitive data, including password bytes and hashed passwords, are cleared immediately after use.
-- Updated comments for clarity on security practices related to password management.
-- Set restrictive file permissions for the generated passwd file to enhance security. ([`9476697`](https://github.com/clayauld/meshtopo/commit/94766979fa4266e8cec11a492cdc3678d61fe5bc))
+* Improved memory handling by ensuring sensitive data, including password bytes and hashed passwords, are cleared immediately after use.
+* Updated comments for clarity on security practices related to password management.
+* Set restrictive file permissions for the generated passwd file to enhance security. ([`9476697`](https://github.com/clayauld/meshtopo/commit/94766979fa4266e8cec11a492cdc3678d61fe5bc))
 
 * Update requirements and enhance Mosquitto config generation
 
-- Added bcrypt to requirements.txt for secure password hashing.
-- Refactored password generation in generate_mosquitto_config.py to use bcrypt, improving security and ensuring sensitive data is cleared from memory after use.
-- Updated comments for clarity on password handling and hashing process. ([`0e7ca9a`](https://github.com/clayauld/meshtopo/commit/0e7ca9aca8e789d6be3e3d14165400d7b361d966))
+* Added bcrypt to requirements.txt for secure password hashing.
+* Refactored password generation in generate_mosquitto_config.py to use bcrypt, improving security and ensuring sensitive data is cleared from memory after use.
+* Updated comments for clarity on password handling and hashing process. ([`0e7ca9a`](https://github.com/clayauld/meshtopo/commit/0e7ca9aca8e789d6be3e3d14165400d7b361d966))
 
 * Refactor password generation to safely delete variables
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`f9241e5`](https://github.com/clayauld/meshtopo/commit/f9241e536cae34659ca5a2ebfd2070f3019ebd85))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`f9241e5`](https://github.com/clayauld/meshtopo/commit/f9241e536cae34659ca5a2ebfd2070f3019ebd85))
 
 * Enhance AGENTS.md and improve Mosquitto config generation
 
-- Added installation instructions for Beads in AGENTS.md.
-- Updated generate_mosquitto_config.py to securely hash passwords and clear sensitive data from memory after use.
-- Refactored password handling to avoid exposing plaintext in memory during processing. ([`458124f`](https://github.com/clayauld/meshtopo/commit/458124facf85b8aa5e689ff45ed65a99b87d34ce))
+* Added installation instructions for Beads in AGENTS.md.
+* Updated generate_mosquitto_config.py to securely hash passwords and clear sensitive data from memory after use.
+* Refactored password handling to avoid exposing plaintext in memory during processing. ([`458124f`](https://github.com/clayauld/meshtopo/commit/458124facf85b8aa5e689ff45ed65a99b87d34ce))
 
 * Merge branch &#39;feature/web-api-full-system&#39; of github.com:clayauld/meshtopo into feature/web-api-full-system ([`f5f6dbf`](https://github.com/clayauld/meshtopo/commit/f5f6dbf680edeabb8e93705dc6b8a5bbc9adcb2a))
 
@@ -1375,11 +1411,11 @@ Co-authored-by: gemini-code-assist[bot] &lt;176961590+gemini-code-assist[bot]@us
 
 * Fix: Securely hash and clear passwords in mosquitto config
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`1ca3640`](https://github.com/clayauld/meshtopo/commit/1ca36405e1780d61ed333b21a5b42bc0b7d94aa5))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`1ca3640`](https://github.com/clayauld/meshtopo/commit/1ca36405e1780d61ed333b21a5b42bc0b7d94aa5))
 
 * Refactor config generation and improve gateway logic
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`2a8d2c5`](https://github.com/clayauld/meshtopo/commit/2a8d2c573313708d709a06be7af50ac5070917f5))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`2a8d2c5`](https://github.com/clayauld/meshtopo/commit/2a8d2c573313708d709a06be7af50ac5070917f5))
 
 * Update issues ([`5c5f2f8`](https://github.com/clayauld/meshtopo/commit/5c5f2f82134957207a210f5da811f89356a8a0b6))
 
@@ -1395,7 +1431,7 @@ Implement system from design document ([`00d953c`](https://github.com/clayauld/m
 
 * Refactor: Clean up whitespace and minor config adjustments
 
-Co-authored-by: clayton &lt;clayton@clayauld.com&gt; ([`b11e965`](https://github.com/clayauld/meshtopo/commit/b11e965b3e14bad99a92f302b84a73208a378192))
+Co-authored-by: clayton &lt;<clayton@clayauld.com>&gt; ([`b11e965`](https://github.com/clayauld/meshtopo/commit/b11e965b3e14bad99a92f302b84a73208a378192))
 
 * Create design.md ([`d2e6a1f`](https://github.com/clayauld/meshtopo/commit/d2e6a1f97aed46889b9580b77c8f7957039e18b9))
 

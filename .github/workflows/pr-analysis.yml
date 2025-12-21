@@ -35,7 +35,7 @@ jobs:
       run: |
         # Run tests with multiple output formats
         pytest tests/ \
-          --cov=src \
+          --cov=. \
           --cov-report=xml \
           --cov-report=html \
           --cov-report=term-missing \
@@ -116,7 +116,7 @@ jobs:
             # Get file-level coverage for key files
             files_summary = []
             for filename, file_data in cov_data['files'].items():
-                if 'src/' in filename:
+                if 'src/' in filename or 'config/' in filename:
                     file_cov = file_data['summary']['percent_covered']
                     files_summary.append(f"- `{filename.split('/')[-1]}`: {file_cov:.1f}%")
 
