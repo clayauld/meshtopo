@@ -58,12 +58,13 @@ services:
             - mosquitto_data:/mosquitto/data
             - mosquitto_data:/mosquitto/log
             - ./passwd:/mosquitto/config/passwd:ro
+            - ../config/config.yaml:/mosquitto/config/config.yaml:ro
         networks:
             - meshtopo
         profiles:
             - mqtt
         healthcheck:
-            test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "test", "-m", "healthcheck"]
+            test: ["CMD-SHELL", "export MQTT_USER=$$(awk '/^mqtt:/{f=1} f&&/username:/{print $$2; exit}' /mosquitto/config/config.yaml) && export MQTT_PASSWORD=$$(awk '/^mqtt:/{f=1} f&&/password:/{print $$2; exit}' /mosquitto/config/config.yaml) && mosquitto_pub -h localhost -u $$MQTT_USER -P $$MQTT_PASSWORD -t test -m healthcheck"]
             interval: 30s
             timeout: 10s
             retries: 3
