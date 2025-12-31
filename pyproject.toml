@@ -180,7 +180,6 @@ build_command = "pip install build && python -m build"
 
 [tool.semantic_release.changelog]
 template_dir = ".templates"
-changelog_file = "CHANGELOG.md"
 
 [tool.semantic_release.branches.main]
 match = "main"
