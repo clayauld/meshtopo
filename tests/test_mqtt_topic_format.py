@@ -20,9 +20,7 @@ class TestMQTTTopicFormat(unittest.TestCase):
         # Test that config files contain proper region codes
         config_files = [
             "config/config.yaml.example",
-            "config/config.yaml.minimal",
             "config/config.yaml.basic",
-            "config/config.yaml.docker",
             "config/config.yaml.production",
         ]
 

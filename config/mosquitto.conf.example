@@ -1,0 +1,42 @@
+# Mosquitto Full Configuration Example
+# Copy this to 'deploy/mosquitto.conf' to use custom settings.
+
+# Persistence
+persistence true
+persistence_location /mosquitto/data/
+
+# Logging
+log_dest stdout
+# log_dest file /mosquitto/log/mosquitto.log
+log_type error
+log_type warning
+log_type notice
+log_type information
+
+# Default listener (MQTT)
+listener 1883
+protocol mqtt
+allow_anonymous false
+password_file /mosquitto/config/passwd
+
+# Websocket listener
+listener 9001
+protocol websockets
+# allow_anonymous false
+# password_file /mosquitto/config/passwd
+
+# Security / ACL
+# acl_file /mosquitto/config/acl
+
+# Performance & Limits
+max_connections -1
+max_queued_messages 1000
+sys_interval 10
+
+# Bridge (optional)
+# connection bridge-to-cloud
+# address cloud-broker.example.com:8883
+# topic # out 1
+# topic # in 1
+# remote_username your-user
+# remote_password your-pass

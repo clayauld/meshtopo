@@ -21,20 +21,20 @@ This directory contains configuration files and examples for the Meshtopo gatewa
 
 1. **Copy an example configuration**:
 
-    ```bash
-    cp config.yaml.example config.yaml
-    ```
+   ```bash
+   cp config.yaml.example config.yaml
+   ```
 
 2. **Edit the configuration**:
 
-    ```bash
-    nano config.yaml
-    ```
+   ```bash
+   nano config.yaml
+   ```
 
 3. **Required settings**:
-    - MQTT broker connection details
-    - CalTopo Team Account connect key
-    - MQTT topic pattern with correct region code
+   - MQTT broker connection details
+   - CalTopo Team Account connect key
+   - MQTT topic pattern with correct region code
 
 ## Configuration Structure
 
@@ -42,20 +42,20 @@ This directory contains configuration files and examples for the Meshtopo gatewa
 
 ```yaml
 mqtt:
-    broker: "192.168.1.100" # MQTT broker hostname/IP
-    port: 1883 # MQTT broker port
-    username: "user" # MQTT username
-    password: "pass" # MQTT password
-    topic: "msh/US/2/json/+/+" # MQTT topic pattern
+  broker: "192.168.1.100" # MQTT broker hostname/IP
+  port: 1883 # MQTT broker port
+  username: "user" # MQTT username
+  password: "pass" # MQTT password
+  topic: "msh/US/2/json/+/+" # MQTT topic pattern
 ```
 
 ### CalTopo Configuration
 
 ```yaml
 caltopo:
-    connect_key: "YOUR_CONNECT_KEY_HERE" # From Team Account access URL
-    api_mode: "connect_key" # API mode: "connect_key" or "group"
-    group: "SARTEAM" # Global GROUP (required if api_mode is "group")
+  connect_key: "YOUR_CONNECT_KEY_HERE" # From Team Account access URL
+  api_mode: "connect_key" # API mode: "connect_key" or "group"
+  group: "SARTEAM" # Global GROUP (required if api_mode is "group")
 ```
 
 **API Mode Options:**
@@ -67,16 +67,16 @@ caltopo:
 
 ```yaml
 nodes:
-    "!823a4edc": # Meshtastic hardware ID
-        device_id: "TEAM-LEAD" # Custom display name in CalTopo
-        group: "LEADERSHIP" # Optional per-device GROUP override
+  "!123a4edc": # Meshtastic hardware ID
+    device_id: "TEAM-LEAD" # Custom display name in CalTopo
+    group: "LEADERSHIP" # Optional per-device GROUP override
 ```
 
 ### Device Management Configuration
 
 ```yaml
 devices:
-    allow_unknown_devices: true # Allow unknown devices to send position updates
+  allow_unknown_devices: true # Allow unknown devices to send position updates
 ```
 
 **Device Access Control:**
@@ -88,20 +88,20 @@ devices:
 
 ```yaml
 mqtt_broker:
-    enabled: true # Enable internal Mosquitto broker
-    port: 1883 # MQTT broker port
-    websocket_port: 9001 # WebSocket port for web clients
-    persistence: true # Enable message persistence
-    max_connections: 1000 # Maximum concurrent connections
-    allow_anonymous: false # Allow anonymous connections
-    users:
-        - username: "meshtopo" # MQTT username
-          password: "secure_password" # MQTT password
-          acl: "readwrite" # Access level: read, write, readwrite
-        - username: "readonly" # Read-only user
-          password: "readonly_pass" # Read-only password
-          acl: "read" # Read-only access
-    acl_enabled: false # Enable Access Control Lists
+  enabled: true # Enable internal Mosquitto broker
+  port: 1883 # MQTT broker port
+  websocket_port: 9001 # WebSocket port for web clients
+  persistence: true # Enable message persistence
+  max_connections: 1000 # Maximum concurrent connections
+  allow_anonymous: false # Allow anonymous connections
+  users:
+    - username: "meshtopo" # MQTT username
+      password: "secure_password" # MQTT password
+      acl: "readwrite" # Access level: read, write, readwrite
+    - username: "readonly" # Read-only user
+      password: "readonly_pass" # Read-only password
+      acl: "read" # Read-only access
+  acl_enabled: false # Enable Access Control Lists
 ```
 
 ## Obtaining CalTopo Connect Key
@@ -142,26 +142,26 @@ Devices automatically register in CalTopo using their Meshtastic callsigns:
 
 1. **Enable broker in config.yaml**:
 
-    ```yaml
-    mqtt_broker:
-        enabled: true
-        users:
-            - username: "meshtopo"
-              password: "your_password"
-              acl: "readwrite"
-    ```
+   ```yaml
+   mqtt_broker:
+     enabled: true
+     users:
+       - username: "meshtopo"
+         password: "your_password"
+         acl: "readwrite"
+   ```
 
 2. **Generate configuration**:
 
-    ```bash
-    make setup-broker
-    ```
+   ```bash
+   make setup-broker
+   ```
 
 3. **Start broker**:
 
-    ```bash
-    docker-compose up -d mosquitto
-    ```
+   ```bash
+   docker-compose up -d mosquitto
+   ```
 
 ### User Management
 
@@ -182,12 +182,12 @@ Devices automatically register in CalTopo using their Meshtastic callsigns:
 
 ```yaml
 logging:
-    level: "INFO" # DEBUG, INFO, WARNING, ERROR, CRITICAL
-    file:
-        enabled: true # Enable file logging
-        path: "/var/log/meshtopo/meshtopo.log"
-        max_size: "10MB" # Maximum log file size
-        backup_count: 5 # Number of backup files
+  level: "INFO" # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file:
+    enabled: true # Enable file logging
+    path: "/var/log/meshtopo/meshtopo.log"
+    max_size: "10MB" # Maximum log file size
+    backup_count: 5 # Number of backup files
 ```
 
 ## Environment-Specific Configurations

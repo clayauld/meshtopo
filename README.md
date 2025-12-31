@@ -21,35 +21,94 @@ Key features include:
 
 ---
 
-## Getting Started in 3 Steps
+## 🚀 Quickstart
 
-Get your Meshtopo gateway up and running with just three commands.
+Deployment simplified. Choose your path:
+
+### Option A: Full Stack (Recommended)
+
+Includes Gateway + Integrated MQTT Broker + Traefik
+
+1. **Download necessary files:**
+
+   ```bash
+   mkdir meshtopo && cd meshtopo
+   wget https://raw.githubusercontent.com/clayauld/meshtopo/main/deploy/docker-compose.yml
+   wget https://raw.githubusercontent.com/clayauld/meshtopo/main/config/config.yaml.basic -O config.yaml
+   ```
+
+2. **Configure and Launch:**
+
+   ```bash
+   # Run the setup wizard to configure credentials
+   docker run --rm -it -v $(pwd):/app ghcr.io/clayauld/meshtopo:latest python3 scripts/setup_wizard.py
+   docker compose up -d
+   ```
+
+### Option B: Simple (Gateway Only)
+
+Use this if you already have an MQTT broker
+
+1. **Download necessary files:**
+
+   ```bash
+   mkdir meshtopo && cd meshtopo
+   wget https://raw.githubusercontent.com/clayauld/meshtopo/main/deploy/docker-compose.simple.yml -O docker-compose.yml
+   wget https://raw.githubusercontent.com/clayauld/meshtopo/main/config/config.yaml.basic -O config.yaml
+   ```
+
+2. **Configure and Launch:**
+
+   ```bash
+   # To configure, you can either edit config.yaml manually or run the setup wizard:
+   # docker run --rm -it -v $(pwd):/app ghcr.io/clayauld/meshtopo:latest python3 scripts/setup_wizard.py
+   docker compose up -d
+   ```
+
+---
+
+## 🛠️ Installation & Setup
+
+For full repository access and development:
 
 1. **Clone the repository:**
 
-    ```bash
-    git clone https://github.com/clayauld/meshtopo.git
-    ```
+   ```bash
+   git clone https://github.com/clayauld/meshtopo.git && cd meshtopo
+   ```
 
-2. **Navigate into the directory:**
+2. **Run the setup wizard:**
 
-    ```bash
-    cd meshtopo
-    ```
+   ```bash
+   make setup
+   ```
 
-3. **Run the setup wizard:**
+3. **Start the service:**
 
-    ```bash
-    make setup
-    ```
+   ```bash
+   # For full stack (Gateway + Mosquitto)
+   make up-full
 
-    The interactive wizard will guide you through creating your `config.yaml` file, entering your CalTopo connect key, and setting up the MQTT broker.
+   # For simple setup (Gateway only)
+   make up-simple
+   ```
 
-Once the setup is complete, you can start the service using Docker:
+### Deployment Options
 
-```bash
-docker compose up -d
-```
+| File                               | Type           | Description                                                                  |
+| ---------------------------------- | -------------- | ---------------------------------------------------------------------------- |
+| `deploy/docker-compose.yml`        | **Full Stack** | Gateway + Integrated Mosquitto Broker + Traefik. Best for all-in-one setups. |
+| `deploy/docker-compose.simple.yml` | **Simple**     | Gateway service only. Best for users with an existing MQTT broker.           |
+
+### Integrated Mosquitto Configuration
+
+By default, the integrated Mosquitto broker in the **Full Stack** deployment is configured using an inline script in `docker-compose.yml`.
+
+- **Automatic Setup**: The `setup_wizard.py` script and the inline Docker command handle basic credentials and listener setup.
+- **Custom Configuration**: For advanced users who need to customize Mosquitto:
+  - Refer to [mosquitto.conf.example](config/mosquitto.conf.example) for a comprehensive static configuration example.
+  - See [mosquitto.conf.template](deploy/mosquitto.conf.template) for the template used by the setup scripts.
+  - To use a custom config, mount your file to `/mosquitto/config/mosquitto.conf` in the `docker-compose.yml`.
 
 ---
 
@@ -67,6 +126,16 @@ The system follows a simple linear data flow:
 ## Configuration Reference
 
 The service is configured via a single `config/config.yaml` file. The `make setup` wizard will help you create this file initially.
+
+### Configuration Templates
+
+Choose the template that best fits your environment:
+
+| Template                        | Use Case       | Features                                                            |
+| ------------------------------- | -------------- | ------------------------------------------------------------------- |
+| `config/config.yaml.basic`      | **New Users**  | Minimal set of parameters, used by the setup wizard and quickstart. |
+| `config/config.yaml.example`    | **Reference**  | Comprehensive example with comments explaining Every option.        |
+| `config/config.yaml.production` | **Production** | Hardened configuration with strict security and optimized logging.  |
 
 ### Main Configuration Parameters
 
@@ -86,10 +155,10 @@ You can optionally override the display names of your Meshtastic nodes in CalTop
 
 ```yaml
 nodes:
-    "!823a4edc": # Hardware ID from Meshtastic
-        device_id: "TEAM-LEAD"
-    "!a4b8c2f0":
-        device_id: "COMMS-1"
+  "!123a4edc": # Hardware ID from Meshtastic
+    device_id: "TEAM-LEAD"
+  "!456bc2f0":
+    device_id: "COMMS-1"
 ```
 
 ### LoRa Region Codes
@@ -117,16 +186,16 @@ Interested in contributing to Meshtopo? Here's how to get your development envir
 
 1. **Install dependencies**:
 
-    ```bash
-    make install
-    ```
+   ```bash
+   make install
+   ```
 
 2. **Set up the development environment**:
    This will install development dependencies and pre-commit hooks.
 
-    ```bash
-    make dev-setup
-    ```
+   ```bash
+   make dev-setup
+   ```
 
 ### Running Tests
 
@@ -142,15 +211,15 @@ The project follows PEP 8 guidelines and uses `black` for formatting and `flake8
 
 - **Run linting checks:**
 
-    ```bash
-    make lint
-    ```
+  ```bash
+  make lint
+  ```
 
 - **Format code:**
 
-    ```bash
-    make format
-    ```
+  ```bash
+  make format
+  ```
 
 ### Project Structure
 
@@ -175,27 +244,27 @@ meshtopo/
 
 1. **MQTT Connection Failed**
 
-    - Verify broker address and credentials
-    - Check network connectivity
-    - Ensure MQTT broker is running
+   - Verify broker address and credentials
+   - Check network connectivity
+   - Ensure MQTT broker is running
 
 2. **No Position Updates**
 
-    - Verify Meshtastic MQTT gateway is configured
-    - Check topic pattern in configuration
-    - Ensure nodes are broadcasting position data
+   - Verify Meshtastic MQTT gateway is configured
+   - Check topic pattern in configuration
+   - Ensure nodes are broadcasting position data
 
 3. **CalTopo API Errors**
 
-    - Verify connect key is correct
-    - Check CalTopo Team Account status
-    - Verify internet connectivity
+   - Verify connect key is correct
+   - Check CalTopo Team Account status
+   - Verify internet connectivity
 
 4. **Devices Not Appearing in CalTopo**
 
-    - Ensure connect key is from Team Account access URL
-    - Check that nodes are sending position data
-    - Verify callsign extraction from nodeinfo messages
+   - Ensure connect key is from Team Account access URL
+   - Check that nodes are sending position data
+   - Verify callsign extraction from nodeinfo messages
 
 ---
 

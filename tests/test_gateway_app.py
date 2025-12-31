@@ -11,8 +11,8 @@ def mock_config():
     config = Mock()
     config.mqtt.use_internal_broker = False
     config.mqtt.broker = "mqtt.example.com"
-    config.nodes = {"!823a4edc": {"device_id": "TEAM-LEAD"}}
-    config.get_node_device_id.side_effect = lambda x: {"!823a4edc": "TEAM-LEAD"}.get(x)
+    config.nodes = {"!123a4edc": {"device_id": "TEAM-LEAD"}}
+    config.get_node_device_id.side_effect = lambda x: {"!123a4edc": "TEAM-LEAD"}.get(x)
     config.devices.allow_unknown_devices = False
     config.caltopo.group = None
     config.caltopo.has_group = False
@@ -81,7 +81,7 @@ class TestGatewayApp:
 
         assert app.mqtt_client is not None
         assert app.caltopo_reporter is not None
-        assert "!823a4edc" in app.configured_devices
+        assert "!123a4edc" in app.configured_devices
 
         # Verify DB initialization with configured path in MockPersistentDict
         # The PersistentDict constructor should have been called with our test path
@@ -170,16 +170,16 @@ class TestGatewayApp:
             "from": 123,
             "type": "nodeinfo",
             "payload": {
-                "id": "!823a4edc",
+                "id": "!123a4edc",
                 "longname": "Test Node",
                 "shortname": "TEST",
             },
         }
         app._process_nodeinfo_message(msg, "123")
 
-        assert app.node_id_mapping["123"] == "!823a4edc"
+        assert app.node_id_mapping["123"] == "!123a4edc"
         # Should use configured name
-        assert app.callsign_mapping["!823a4edc"] == "TEAM-LEAD"
+        assert app.callsign_mapping["!123a4edc"] == "TEAM-LEAD"
 
     def test_process_nodeinfo_fallback_names(self, app):
         # Case 1: Longname fallback
@@ -202,10 +202,10 @@ class TestGatewayApp:
         app.caltopo_reporter = Mock()
         # send_position_update is async
         app.caltopo_reporter.send_position_update = AsyncMock(return_value=True)
-        app.node_id_mapping["123"] = "!823a4edc"
-        app._node_id_cache["123"] = "!823a4edc"
-        app.callsign_mapping["!823a4edc"] = "TEAM-LEAD"
-        app._callsign_cache["!823a4edc"] = "TEAM-LEAD"
+        app.node_id_mapping["123"] = "!123a4edc"
+        app._node_id_cache["123"] = "!123a4edc"
+        app.callsign_mapping["!123a4edc"] = "TEAM-LEAD"
+        app._callsign_cache["!123a4edc"] = "TEAM-LEAD"
 
         msg = {
             "type": "position",
@@ -236,7 +236,7 @@ class TestGatewayApp:
         # Not in mapping, sender field ignored
         msg = {
             "type": "position",
-            "sender": "!823a4edc",  # Should be ignored now
+            "sender": "!123a4edc",  # Should be ignored now
             "payload": {"latitude_i": 100000000, "longitude_i": 200000000},
         }
 

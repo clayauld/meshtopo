@@ -15,7 +15,7 @@ caltopo:
 
 # Optional: Node display name overrides
 nodes:
-    "!823a4edc":
+    "!123a4edc":
         device_id: "TEAM-LEAD"
         group: "LEADERSHIP"  # optional per-device GROUP override
 

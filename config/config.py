@@ -3,6 +3,7 @@ Configuration management for the Meshtopo gateway service using Pydantic.
 """
 
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -142,7 +143,29 @@ class Config(BaseModel):
             raise yaml.YAMLError(f"Failed to parse YAML configuration: {e}")
 
         if isinstance(data, dict):
-            return cls.model_validate(data)
+            config = cls.model_validate(data)
+            # Override with environment variables if present
+            mqtt_host = os.getenv("MQTT_BROKER_HOST")
+            if mqtt_host:
+                config.mqtt.broker = mqtt_host
+
+            mqtt_port = os.getenv("MQTT_BROKER_PORT")
+            if mqtt_port:
+                try:
+                    config.mqtt.port = int(mqtt_port)
+                except ValueError:
+                    pass
+
+            # CalTopo overrides
+            caltopo_key = os.getenv("CALTOPO_CONNECT_KEY")
+            if caltopo_key:
+                config.caltopo.connect_key = caltopo_key
+
+            caltopo_group = os.getenv("CALTOPO_GROUP")
+            if caltopo_group:
+                config.caltopo.group = caltopo_group
+
+            return config
         else:
             raise TypeError("Config file must be a dictionary")
 

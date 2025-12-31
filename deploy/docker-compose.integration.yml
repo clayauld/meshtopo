@@ -9,7 +9,7 @@ services:
       - mosquitto
       - mock-server
     volumes:
-      - ../config/config.yaml.docker:/app/config/config.yaml
+      - ../config/config.yaml.example:/app/config/config.yaml
 
   mosquitto:
     image: eclipse-mosquitto:2.0
