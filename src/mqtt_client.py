@@ -43,7 +43,8 @@ class MqttClient:
 
         Args:
             config: Configuration object containing MQTT settings (broker, port, etc.)
-            message_callback: Async function to call when a valid JSON message is received.
+            message_callback: Async function to call when a valid JSON message is
+                              received.
         """
         self.config = config
         self.message_callback = message_callback

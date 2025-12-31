@@ -153,7 +153,8 @@ class Config(BaseModel):
         Load configuration from a YAML file.
 
         This method also applies environment variable overrides after loading
-        the file, allowing for hybrid configuration (file for structure, env for secrets).
+        the file, allowing for hybrid configuration (file for structure, env for
+        secrets).
         """
         config_file = Path(config_path)
 

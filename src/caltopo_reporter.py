@@ -11,22 +11,24 @@ It is designed for robustness and performance using modern asynchronous patterns
     significantly reducing latency for frequent position updates.
 *   **Security:**
     *   **URL Whitelisting:** The base URL is strictly validated against allowed domains
-        (defaulting to `*.caltopo.com`) to prevent SSRF (Server-Side Request Forgery) attacks.
-    *   **Log Sanitization:** Sensitive path parameters (like the `connect_key`) are redacted
-        from logs.
+        (defaulting to `*.caltopo.com`) to prevent SSRF (Server-Side Request Forgery)
+        attacks.
+    *   **Log Sanitization:** Sensitive path parameters (like the `connect_key`) are
+        redacted from logs.
     *   **Input Validation:** Identifiers are validated to ensure they are alphanumeric.
 *   **Resilience:**
-    *   **Exponential Backoff:** The `_make_api_request` method implements a retry loop with
-        jittered exponential backoff. This handles transient network failures (5xx, 429)
-        gracefully without thundering herd problems.
-    *   **Concurrent Requests:** The `send_position_update` method uses `asyncio.gather`
-        to send updates to multiple endpoints (e.g., both a private Connect Key map and
-        a public Group map) in parallel.
+    *   **Exponential Backoff:** The `_make_api_request` method implements a retry
+        loop with jittered exponential backoff. This handles transient network
+        failures (5xx, 429) gracefully without thundering herd problems.
+    *   **Concurrent Requests:** The `send_position_update` method uses
+        `asyncio.gather` to send updates to multiple endpoints (e.g., both a private
+        Connect Key map and a public Group map) in parallel.
 
 ## Usage
 
 This class is typically instantiated once by the `GatewayApp` and remains active for
-the application lifecycle. It requires an initialized `Config` object and an `httpx.AsyncClient`.
+the application lifecycle. It requires an initialized `Config` object and an
+`httpx.AsyncClient`.
 """
 
 import asyncio
@@ -104,7 +106,8 @@ class CalTopoReporter:
 
         Args:
             config: Configuration object containing CalTopo settings
-            client: Shared httpx.AsyncClient (recommended). If None, one will be created.
+            client: Shared httpx.AsyncClient (recommended). If None, one will
+                    be created.
         """
         self.config = config
         self.logger = logging.getLogger(__name__)
@@ -137,7 +140,7 @@ class CalTopoReporter:
         """
         if not self._is_valid_caltopo_identifier(identifier):
             self.logger.error(
-                f"Invalid CalTopo {identifier_type}: {sanitize_for_log(identifier)}"
+                f"Invalid CalTopo {identifier_type}: " f"{sanitize_for_log(identifier)}"
             )
             return False
         return True
@@ -252,7 +255,8 @@ class CalTopoReporter:
         max_retries = 3
         base_delay = 1.0  # seconds
 
-        # Security: Consistently redact sensitive path parameters for both endpoint types.
+        # Security: Consistently redact sensitive path parameters for both endpoint
+        # types.
         log_url = re.sub(f"({self.BASE_URL}/)[^?]+", r"\1<REDACTED>", url)
 
         for attempt in range(max_retries + 1):

@@ -8,29 +8,37 @@ CalTopo API (reporter destination).
 ## Architecture
 
 The application is built on an asynchronous event loop (`asyncio`) to ensure non-blocking
-operation, which is critical for handling network I/O from both MQTT and HTTP simultaneously.
+operation, which is critical for handling network I/O from both MQTT and HTTP
+simultaneously.
 
 ### Core Components
 1.  **MqttClient (`aiomqtt`):** Handles the persistent connection to the MQTT broker.
-    It runs in a dedicated task and pushes incoming messages to the `_process_message` callback.
+    It runs in a dedicated task and pushes incoming messages to the `_process_message`
+    callback.
 2.  **CalTopoReporter (`httpx`):** Manages the connection to CalTopo. It uses a shared
-    `httpx.AsyncClient` for connection pooling and implements exponential backoff for reliability.
-3.  **PersistentDict:** Provides durable state storage for mapping Node IDs to User Metadata.
+    `httpx.AsyncClient` for connection pooling and implements exponential backoff for
+    reliability.
+3.  **PersistentDict:** Provides durable state storage for mapping Node IDs to User
+    Metadata.
     This replaces the older `sqlitedict` implementation to avoid pickle security risks.
 
 ### Data Flow
 1.  **Ingest:** `MqttClient` receives a JSON payload from a subscribed topic.
-2.  **Route:** `_process_message` determines the message type (position, nodeinfo, etc.).
+2.  **Route:** `_process_message` determines the message type (position, nodeinfo,
+    etc.).
 3.  **Process:**
-    *   **NodeInfo:** Updates the `node_id_mapping` and `callsign_mapping` persistent stores.
+    *   **NodeInfo:** Updates the `node_id_mapping` and `callsign_mapping` persistent
+        stores.
         This allows the system to "learn" new nodes and their callsigns.
-    *   **Position:** Looks up the `hardware_id` and `callsign` using the persistent state.
+    *   **Position:** Looks up the `hardware_id` and `callsign` using the persistent
+        state.
         If found, it forwards the coordinates to `CalTopoReporter`.
 4.  **Report:** `CalTopoReporter` sends the data to the configured CalTopo map(s).
 
 ### State Management
 The application maintains two critical mappings:
-*   `node_id_mapping`: Numeric Node ID (from Meshtastic packet) -> Hardware ID (e.g., "!abcdef12")
+*   `node_id_mapping`: Numeric Node ID (from Meshtastic packet) -> Hardware ID (e.g.,
+    "!abcdef12")
 *   `callsign_mapping`: Hardware ID -> Callsign (Display Name)
 
 These are backed by a SQLite database (`meshtopo_state.sqlite`) using JSON serialization
@@ -141,8 +149,10 @@ class GatewayApp:
                     # We continue, letting PersistentDict fail if it must
 
             try:
-                # We use PersistentDict (custom wrapper around sqlite3) instead of sqlitedict
-                # to ensure we use JSON serialization. Pickle is unsafe for untrusted data.
+                # We use PersistentDict (custom wrapper around sqlite3) instead of
+                # sqlitedict
+                # to ensure we use JSON serialization. Pickle is unsafe for untrusted
+                # data.
                 self.node_id_mapping = PersistentDict(
                     db_path,
                     tablename="node_id_mapping",
@@ -168,7 +178,7 @@ class GatewayApp:
                     f"Failed to load state database (likely due to format change): "
                     f"{e}. Resetting state file."
                 )
-                self.close() # Close any open handles
+                self.close()  # Close any open handles
 
                 # Delete the incompatible file
                 if os.path.exists(db_path):
@@ -327,8 +337,10 @@ class GatewayApp:
         """
         Resolve hardware ID from numeric node ID using cache or calculation.
 
-        Meshtastic nodes have a numeric ID (e.g., 12345) and a hardware ID (e.g., !abcd).
-        We prefer to look up the hardware ID from previous NodeInfo packets, but if unknown,
+        Meshtastic nodes have a numeric ID (e.g., 12345) and a hardware ID (e.g.,
+        !abcd).
+        We prefer to look up the hardware ID from previous NodeInfo packets, but if
+        unknown,
         we can deterministically convert the numeric ID to the hardware ID format.
         """
         if numeric_node_id in self._node_id_cache:
@@ -404,8 +416,10 @@ class GatewayApp:
         Resolve or create a callsign for a given hardware ID.
 
         Logic:
-        1.  **Configured Device:** If the ID is in `config.yaml`, use the configured name.
-        2.  **Learned Device:** If we have seen a NodeInfo packet, use the cached callsign.
+        1.  **Configured Device:** If the ID is in `config.yaml`, use the configured
+            name.
+        2.  **Learned Device:** If we have seen a NodeInfo packet, use the cached
+            callsign.
         3.  **Unknown Device:** If `allow_unknown_devices` is True, use the hardware ID.
             Otherwise, return None to block the update.
         """
