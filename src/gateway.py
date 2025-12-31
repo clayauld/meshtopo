@@ -1,17 +1,26 @@
 #!/usr/bin/env python3
 """
-Meshtopo Gateway Service
+Meshtopo Gateway Service Entry Point
 
-A lightweight Python gateway service that bridges Meshtastic LoRa mesh networks
-with CalTopo mapping platforms, enabling real-time position tracking of field
-assets.
+This module serves as the command-line entry point for the Meshtopo gateway.
+It is responsible for:
+1.  Parsing command-line arguments (configuration file path).
+2.  Validating the security of the provided configuration path (traversal prevention).
+3.  Instantiating and running the `GatewayApp`.
+4.  Handling top-level exceptions and safe shutdown.
 
+## Security Mechanisms
+*   **Path Validation:** To prevent directory traversal attacks (where a user might
+    trick the application into reading sensitive files outside the application
+    directory), this module enforces that the configuration file must reside within
+    the application's working directory tree. It uses `os.path.commonpath` to
+    verify this containment.
 
-Usage:
+## Usage
     python gateway.py [config_file]
 
-Arguments:
-    config_file    Path to configuration file (default: config.yaml)
+    Arguments:
+        config_file    Path to configuration file (default: config/config.yaml)
 """
 
 import asyncio
@@ -23,7 +32,16 @@ from gateway_app import GatewayApp  # noqa: E402
 
 
 def main() -> None:
-    """Main entry point for the gateway service."""
+    """
+    Main entry point for the gateway service.
+
+    Orchestrates the startup sequence:
+    1.  Determines config path from args or default.
+    2.  Validates config path security.
+    3.  Checks file existence.
+    4.  Initializes `GatewayApp`.
+    5.  Runs the asyncio event loop.
+    """
     # Get configuration file path from command line argument
     if len(sys.argv) > 1:
         config_path = sys.argv[1]

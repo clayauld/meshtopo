@@ -1,5 +1,32 @@
 """
-CalTopo API integration for sending position reports.
+CalTopo API Integration Module
+
+This module handles all HTTP communication with the CalTopo Position Reporting API.
+It is designed for robustness and performance using modern asynchronous patterns.
+
+## Architecture
+
+*   **HTTP Client Reuse:** The `CalTopoReporter` utilizes a shared `httpx.AsyncClient`
+    passed from `GatewayApp`. This enables persistent connection pooling (Keep-Alive),
+    significantly reducing latency for frequent position updates.
+*   **Security:**
+    *   **URL Whitelisting:** The base URL is strictly validated against allowed domains
+        (defaulting to `*.caltopo.com`) to prevent SSRF (Server-Side Request Forgery) attacks.
+    *   **Log Sanitization:** Sensitive path parameters (like the `connect_key`) are redacted
+        from logs.
+    *   **Input Validation:** Identifiers are validated to ensure they are alphanumeric.
+*   **Resilience:**
+    *   **Exponential Backoff:** The `_make_api_request` method implements a retry loop with
+        jittered exponential backoff. This handles transient network failures (5xx, 429)
+        gracefully without thundering herd problems.
+    *   **Concurrent Requests:** The `send_position_update` method uses `asyncio.gather`
+        to send updates to multiple endpoints (e.g., both a private Connect Key map and
+        a public Group map) in parallel.
+
+## Usage
+
+This class is typically instantiated once by the `GatewayApp` and remains active for
+the application lifecycle. It requires an initialized `Config` object and an `httpx.AsyncClient`.
 """
 
 import asyncio
@@ -18,13 +45,7 @@ from utils import sanitize_for_log
 def _matches_url_pattern(url: str, pattern: str) -> bool:
     """
     Check if a URL matches a pattern with wildcard support.
-
-    Args:
-        url: The URL to check
-        pattern: The pattern to match (supports * wildcard)
-
-    Returns:
-        bool: True if the URL matches the pattern
+    Helper for security validation.
     """
     # Convert pattern to regex: escape special chars except *,
     # then replace * with .*
@@ -34,7 +55,7 @@ def _matches_url_pattern(url: str, pattern: str) -> bool:
 
 class CalTopoReporter:
     """
-    Handles communication with the CalTopo Position Report API.
+    Handles secure and reliable communication with the CalTopo API.
     """
 
     _raw_base_url = os.getenv(
@@ -42,13 +63,14 @@ class CalTopoReporter:
     )
     _parsed_url = urlparse(_raw_base_url)
 
-    # Allow explicit URL patterns for testing/development
+    # Security: Allow explicit URL patterns for testing/development
     _allowed_patterns_str = os.getenv("CALTOPO_ALLOWED_URL_PATTERNS", "")
     _allowed_patterns = [
         p.strip() for p in _allowed_patterns_str.split(",") if p.strip()
     ]
 
-    # Validate URL based on allowed patterns or production rules
+    # Security: Validate URL based on allowed patterns or production rules
+    # This block executes at module load time to fail fast on invalid config.
     if _allowed_patterns:
         # Test/development mode: validate against explicit allowlist
         _url_matches = False
@@ -82,8 +104,7 @@ class CalTopoReporter:
 
         Args:
             config: Configuration object containing CalTopo settings
-            client: Optional shared httpx.AsyncClient. If not provided, a new client
-                   will be created for each request.
+            client: Shared httpx.AsyncClient (recommended). If None, one will be created.
         """
         self.config = config
         self.logger = logging.getLogger(__name__)
@@ -93,22 +114,19 @@ class CalTopoReporter:
         self.timeout = 10  # seconds
 
     async def start(self) -> None:
-        """Initialize the persistent HTTP client."""
+        """
+        Initialize the HTTP client if one was not provided.
+        Called by `GatewayApp.initialize`.
+        """
         if self.client is None:
             self.client = httpx.AsyncClient(timeout=self.timeout)
             self._owns_client = True
 
     def _is_valid_caltopo_identifier(self, identifier: str) -> bool:
         """
-        Validate that a CalTopo identifier (connect_key or group) is safe.
-
-        Args:
-            identifier: The identifier to validate
-
-        Returns:
-            bool: True if the identifier is valid, False otherwise
+        Security: Validate that a CalTopo identifier (connect_key or group) is safe.
+        Strictly alphanumeric to prevent injection.
         """
-        # Allow alphanumeric characters and underscores
         return bool(re.match(r"^[a-zA-Z0-9_]+$", identifier))
 
     def _validate_and_log_identifier(
@@ -116,14 +134,6 @@ class CalTopoReporter:
     ) -> bool:
         """
         Validate a CalTopo identifier and log an error if invalid.
-
-        Args:
-            identifier: The identifier to validate
-            identifier_type: The type of identifier (e.g., 'connect_key', 'group')
-                           for error logging
-
-        Returns:
-            bool: True if the identifier is valid, False otherwise
         """
         if not self._is_valid_caltopo_identifier(identifier):
             self.logger.error(
@@ -142,22 +152,16 @@ class CalTopoReporter:
         """
         Send a position update to CalTopo.
 
-        Args:
-            callsign: Device callsign/identifier
-            latitude: Latitude in decimal degrees
-            longitude: Longitude in decimal degrees
-            group: Optional GROUP for group-based API mode
+        This method will broadcast the update to all configured endpoints (Connect Key
+        and/or Group) concurrently.
 
         Returns:
-            bool: True if at least one endpoint was successful, False otherwise
+            bool: True if at least one endpoint accepted the update.
         """
         # Ensure client is initialized
         if self.client is None:
             await self.start()
 
-        # We can safely assume client is not None after start(),
-        # but type checker might complain
-        # So we use a local variable or assert
         client = self.client
         if client is None:
             raise RuntimeError("httpx.AsyncClient failed to initialize")
@@ -180,7 +184,7 @@ class CalTopoReporter:
         if not tasks:
             return False
 
-        # Execute requests concurrently to reduce latency
+        # Execute requests concurrently to reduce latency using gather
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         success_count = sum(1 for r in results if r is True)
@@ -195,7 +199,7 @@ class CalTopoReporter:
         latitude: float,
         longitude: float,
     ) -> bool:
-        """Send position update to connect_key endpoint."""
+        """Helper to send position update to connect_key endpoint."""
         connect_key = self.config.caltopo.connect_key
         if not self._validate_and_log_identifier(connect_key, "connect_key"):
             return False
@@ -215,7 +219,7 @@ class CalTopoReporter:
         longitude: float,
         group: str,
     ) -> bool:
-        """Send position update to group endpoint."""
+        """Helper to send position update to group endpoint."""
         if not self._validate_and_log_identifier(group, "group"):
             return False
 
@@ -233,11 +237,22 @@ class CalTopoReporter:
         callsign: str,
         endpoint_type: str,
     ) -> bool:
-        """Make an API request with retry logic."""
+        """
+        Make an API request with retry logic and exponential backoff.
+
+        This is the core network reliability layer.
+
+        Logic:
+        1.  Attempt request.
+        2.  If 200 OK -> Success.
+        3.  If 5xx or 429 -> Retry with backoff.
+        4.  If other 4xx -> Fail (client error).
+        5.  Backoff includes Jitter to prevent thundering herd.
+        """
         max_retries = 3
         base_delay = 1.0  # seconds
 
-        # Consistently redact sensitive path parameters for both endpoint types.
+        # Security: Consistently redact sensitive path parameters for both endpoint types.
         log_url = re.sub(f"({self.BASE_URL}/)[^?]+", r"\1<REDACTED>", url)
 
         for attempt in range(max_retries + 1):
@@ -299,11 +314,8 @@ class CalTopoReporter:
 
     async def test_connection(self) -> bool:
         """
-        Test the connection to CalTopo API.
-
-        Returns:
-            bool: True if at least one endpoint connection test successful,
-                False otherwise
+        Test the connection to CalTopo API by sending a dummy request.
+        Used during startup to verify configuration.
         """
         # Ensure client is initialized
         if self.client is None:
@@ -388,7 +400,8 @@ class CalTopoReporter:
 
     async def close(self) -> None:
         """
-        Close the reporter and the underlying HTTP client.
+        Close the reporter resources.
+        Only closes the client if we own it.
         """
         if self.client and self._owns_client:
             await self.client.aclose()

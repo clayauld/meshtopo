@@ -63,6 +63,7 @@ dev = [
     "bandit>=1.7.0",
     "types-PyYAML",
     "types-requests",
+    "pdoc>=14.0.0",
 ]
 
 [project.scripts]
@@ -169,10 +170,10 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+
 [tool.semantic_release]
 version_variables = ["pyproject.toml:version"]
 version_toml = ["pyproject.toml:project.version"]
-version_source = "tag"
 commit_version_number = true
 upload_to_pypi = false
 upload_to_release = true

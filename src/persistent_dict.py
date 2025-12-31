@@ -1,3 +1,29 @@
+"""
+Secure Persistent Dictionary
+
+This module implements a persistent key-value store backed by SQLite.
+It is a replacement for `sqlitedict` specifically designed to avoid the
+security risks associated with Python's `pickle` serialization.
+
+## Security Rationale
+The `sqlitedict` library defaults to using `pickle` for serialization.
+Pickle is unsafe when deserializing data from untrusted sources, as it can
+execute arbitrary code. While `sqlitedict` supports JSON, mixing it
+into a codebase with pickle defaults is risky. This class enforces
+JSON serialization/deserialization strictly.
+
+## Performance
+*   **WAL Mode:** The database is configured in Write-Ahead Logging (WAL) mode.
+    This allows for better concurrency, as readers do not block writers.
+*   **Synchronous Normal:** We use `PRAGMA synchronous=NORMAL` for a good balance
+    between performance and durability.
+
+## Usage
+    d = PersistentDict("my_db.sqlite", tablename="users")
+    d["key"] = {"some": "json", "data": 123}
+    d.close()
+"""
+
 import json
 import logging
 import sqlite3
@@ -10,8 +36,7 @@ logger = logging.getLogger(__name__)
 
 class PersistentDict(MutableMapping[str, Any]):
     """
-    A persistent dictionary backed by SQLite, using JSON serialization.
-    Replaces sqlitedict to avoid pickle security vulnerabilities.
+    A persistent dictionary backed by SQLite, using strict JSON serialization.
     """
 
     def __init__(
@@ -19,18 +44,16 @@ class PersistentDict(MutableMapping[str, Any]):
         filename: str,
         tablename: str = "unnamed",
         autocommit: bool = True,
-        encoder: Optional[Any] = None,  # Kept for compatibility but ignored
-        decoder: Optional[Any] = None,  # Kept for compatibility but ignored
+        encoder: Optional[Any] = None,  # Kept for interface compatibility but ignored
+        decoder: Optional[Any] = None,  # Kept for interface compatibility but ignored
     ):
         """
         Initialize the persistent dictionary.
 
         Args:
             filename: Path to the SQLite database file.
-            tablename: Name of the table to store data in.
+            tablename: Name of the table to store data in. Must be alphanumeric.
             autocommit: Whether to commit changes automatically (default: True).
-            encoder: Ignored, kept for compatibility (always uses json.dumps).
-            decoder: Ignored, kept for compatibility (always uses json.loads).
         """
         self.filename = filename
         if not tablename.replace("_", "").isalnum():
@@ -43,13 +66,16 @@ class PersistentDict(MutableMapping[str, Any]):
         self._create_table()
 
     def _connect(self) -> None:
-        # Use default isolation level to allow manual transaction control
+        """Establish connection and configure PRAGMAs."""
+        # Use default isolation level to allow manual transaction control if needed
         self.conn = sqlite3.connect(self.filename)
-        # optimize for simple key-value storage
+
+        # Performance tuning
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA synchronous=NORMAL")
 
     def _create_table(self) -> None:
+        """Create the KV table if it doesn't exist."""
         if not self.conn:
             return
         query = (
@@ -78,6 +104,7 @@ class PersistentDict(MutableMapping[str, Any]):
         if not self.conn:
             raise RuntimeError("Database connection closed")
 
+        # Strict JSON serialization
         serialized_value = json.dumps(value)
         query = (
             f"INSERT OR REPLACE INTO {self.tablename} "  # nosec

@@ -1,5 +1,40 @@
 """
-Main gateway application that orchestrates MQTT and CalTopo communication.
+Main Gateway Application Logic
+
+This module contains the `GatewayApp` class, which is the heart of the Meshtopo service.
+It orchestrates the flow of data between the MQTT broker (Meshtastic source) and the
+CalTopo API (reporter destination).
+
+## Architecture
+
+The application is built on an asynchronous event loop (`asyncio`) to ensure non-blocking
+operation, which is critical for handling network I/O from both MQTT and HTTP simultaneously.
+
+### Core Components
+1.  **MqttClient (`aiomqtt`):** Handles the persistent connection to the MQTT broker.
+    It runs in a dedicated task and pushes incoming messages to the `_process_message` callback.
+2.  **CalTopoReporter (`httpx`):** Manages the connection to CalTopo. It uses a shared
+    `httpx.AsyncClient` for connection pooling and implements exponential backoff for reliability.
+3.  **PersistentDict:** Provides durable state storage for mapping Node IDs to User Metadata.
+    This replaces the older `sqlitedict` implementation to avoid pickle security risks.
+
+### Data Flow
+1.  **Ingest:** `MqttClient` receives a JSON payload from a subscribed topic.
+2.  **Route:** `_process_message` determines the message type (position, nodeinfo, etc.).
+3.  **Process:**
+    *   **NodeInfo:** Updates the `node_id_mapping` and `callsign_mapping` persistent stores.
+        This allows the system to "learn" new nodes and their callsigns.
+    *   **Position:** Looks up the `hardware_id` and `callsign` using the persistent state.
+        If found, it forwards the coordinates to `CalTopoReporter`.
+4.  **Report:** `CalTopoReporter` sends the data to the configured CalTopo map(s).
+
+### State Management
+The application maintains two critical mappings:
+*   `node_id_mapping`: Numeric Node ID (from Meshtastic packet) -> Hardware ID (e.g., "!abcdef12")
+*   `callsign_mapping`: Hardware ID -> Callsign (Display Name)
+
+These are backed by a SQLite database (`meshtopo_state.sqlite`) using JSON serialization
+to ensure data survives application restarts.
 """
 
 import asyncio
@@ -20,12 +55,19 @@ from utils import sanitize_for_log
 
 class GatewayApp:
     """
-    Main application class that orchestrates the gateway service.
+    Main application orchestrator.
+
+    Lifecycle:
+    1.  `__init__`: Sets up basic state containers.
+    2.  `initialize`: Asynchronous setup. Loads config, opens DB, connects HTTP client.
+        Must be called before `start`.
+    3.  `start`: Main entry point. Connects MQTT and blocks on `stop_event`.
+    4.  `stop`: Graceful shutdown. Closes connections and resources.
     """
 
     def __init__(self, config_path: str = "config/config.yaml"):
         """
-        Initialize the gateway application.
+        Initialize the gateway application instance.
 
         Args:
             config_path: Path to the configuration file
@@ -38,7 +80,7 @@ class GatewayApp:
         self.stop_event: Optional[asyncio.Event] = None
         self.logger = logging.getLogger(__name__)
 
-        # Statistics
+        # Statistics tracking
         self.stats: Dict[str, Union[int, float]] = {
             "messages_received": 0,
             "messages_processed": 0,
@@ -47,23 +89,32 @@ class GatewayApp:
             "start_time": 0.0,
         }
 
-        # Persistent state using sqlitedict
+        # Persistent state (initialized in self.initialize)
+        # We use Any here because the PersistentDict type is generic but simple
         self.node_id_mapping: Any = None
         self.callsign_mapping: Any = None
-        # In-memory caches for performance
+
+        # In-memory caches for performance to avoid disk I/O on every packet
         self._node_id_cache: Dict[str, str] = {}
         self._callsign_cache: Dict[str, str] = {}
 
         self.configured_devices: set = (
             set()
-        )  # Track which devices are in the nodes config
+        )  # Track which devices are explicitly defined in config
 
     async def initialize(self) -> bool:
         """
-        Initialize the application components.
+        Perform asynchronous initialization of all components.
+
+        This method handles:
+        1.  Loading configuration.
+        2.  Setting up logging.
+        3.  Opening/Creating the SQLite state database.
+        4.  Initializing the shared HTTP client.
+        5.  Initializing the CalTopo reporter and MQTT client.
 
         Returns:
-            bool: True if initialization successful, False otherwise
+            bool: True if initialization was successful, False otherwise.
         """
         try:
             # Load configuration
@@ -87,16 +138,17 @@ class GatewayApp:
                     self.logger.error(
                         f"Failed to create database directory {db_dir}: {e}"
                     )
-                    # We continue, letting SqliteDict fail if it must, or maybe it works
+                    # We continue, letting PersistentDict fail if it must
 
             try:
+                # We use PersistentDict (custom wrapper around sqlite3) instead of sqlitedict
+                # to ensure we use JSON serialization. Pickle is unsafe for untrusted data.
                 self.node_id_mapping = PersistentDict(
                     db_path,
                     tablename="node_id_mapping",
                     autocommit=True,
                 )
                 # Trigger a read to ensure the file format is valid
-                # This will raise an exception if the file contains legacy pickle data
                 _ = len(self.node_id_mapping)
 
                 self.callsign_mapping = PersistentDict(
@@ -106,7 +158,7 @@ class GatewayApp:
                 )
                 _ = len(self.callsign_mapping)
 
-                # Load into memory cache
+                # Load into memory cache for faster lookups
                 self.logger.info("Loading state into memory cache...")
                 self._node_id_cache = dict(self.node_id_mapping)
                 self._callsign_cache = dict(self.callsign_mapping)
@@ -116,17 +168,7 @@ class GatewayApp:
                     f"Failed to load state database (likely due to format change): "
                     f"{e}. Resetting state file."
                 )
-                # Close potentially open connections
-                if self.node_id_mapping:
-                    try:
-                        self.node_id_mapping.close()
-                    except Exception:
-                        pass  # nosec
-                if self.callsign_mapping:
-                    try:
-                        self.callsign_mapping.close()
-                    except Exception:
-                        pass  # nosec
+                self.close() # Close any open handles
 
                 # Delete the incompatible file
                 if os.path.exists(db_path):
@@ -150,7 +192,7 @@ class GatewayApp:
                     autocommit=True,
                 )
 
-                # Load into memory cache (empty or after reset)
+                # Reset cache
                 self._node_id_cache = dict(self.node_id_mapping)
                 self._callsign_cache = dict(self.callsign_mapping)
 
@@ -161,6 +203,7 @@ class GatewayApp:
                 self.config.mqtt.broker = "mosquitto"
 
             # Initialize Shared HTTP Client
+            # Connection pooling is handled here.
             self.http_client = httpx.AsyncClient(timeout=10)
 
             # Initialize CalTopo reporter with shared client
@@ -170,7 +213,7 @@ class GatewayApp:
             )
             await self.caltopo_reporter.start()
 
-            # Test CalTopo connectivity
+            # Test CalTopo connectivity early
             if not await self.caltopo_reporter.test_connection():
                 self.logger.warning(
                     "CalTopo API connectivity test failed, but continuing..."
@@ -184,7 +227,7 @@ class GatewayApp:
             self.configured_devices = set(self.config.nodes.keys())
             self.logger.info(f"Configured devices: {self.configured_devices}")
 
-            # Create stop event in the running loop
+            # Create stop event for the main loop
             self.stop_event = asyncio.Event()
 
             self.logger.info("Application initialized successfully")
@@ -197,40 +240,38 @@ class GatewayApp:
     async def start(self) -> None:
         """
         Start the gateway service.
+
+        This is the main blocking call. It:
+        1. Initializes the app.
+        2. Starts the MQTT client task.
+        3. Starts the statistics logging task.
+        4. Waits for `stop_event`.
         """
         try:
             if not await self.initialize():
                 self.logger.error("Failed to initialize application. Exiting.")
                 sys.exit(1)
 
-            # Setup signal handlers for graceful shutdown (managed by main loop really,
-            # but we can hook into asyncio loop too if needed, or just let the caller
-            # handle it.
-            # Gateway.py handles signals by calling stop().
-            # Note: signal.signal only works in main thread.
-            # We'll rely on the caller to cancel the tasks or set the stop event.
-            # But let's keep the logging here if logical.
-
             self.logger.info("Starting Meshtopo gateway service...")
             self.stats["start_time"] = time.time()
 
-            # Connect to MQTT broker
             if self.mqtt_client is None:
                 self.logger.error("MQTT client not initialized. Exiting.")
                 sys.exit(1)
 
-            # Create tasks
+            # Create background tasks
+            # mqtt_client.run() is an infinite loop that handles reconnection
             mqtt_task = asyncio.create_task(self.mqtt_client.run())
             stats_task = asyncio.create_task(self._stats_loop())
 
             self.logger.info("Gateway service started successfully")
 
-            # Wait for stop event
+            # Wait for stop event (triggered by signal or error)
             if not self.stop_event:
                 raise RuntimeError("GatewayApp not initialized: stop_event is None")
             await self.stop_event.wait()
 
-            # Cancel tasks
+            # Graceful shutdown sequence
             mqtt_task.cancel()
             stats_task.cancel()
 
@@ -245,7 +286,7 @@ class GatewayApp:
             await self.stop()
 
     async def _stats_loop(self) -> None:
-        """Log statistics periodically."""
+        """Log statistics every 60 seconds."""
         while self.stop_event and not self.stop_event.is_set():
             await asyncio.sleep(60)
             self._log_statistics()
@@ -253,6 +294,7 @@ class GatewayApp:
     async def stop(self) -> None:
         """
         Stop the gateway service gracefully.
+        Closes all network connections and database handles.
         """
         self.logger.info("Stopping gateway service...")
         if self.stop_event:
@@ -274,7 +316,7 @@ class GatewayApp:
         self.logger.info("Gateway service stopped")
 
     def close(self) -> None:
-        """Close all resources."""
+        """Close database resources specifically."""
         self.logger.info("Closing database connections...")
         if self.node_id_mapping and hasattr(self.node_id_mapping, "close"):
             self.node_id_mapping.close()
@@ -284,7 +326,10 @@ class GatewayApp:
     def _resolve_hardware_id(self, numeric_node_id: str) -> str:
         """
         Resolve hardware ID from numeric node ID using cache or calculation.
-        Does not persist new mappings.
+
+        Meshtastic nodes have a numeric ID (e.g., 12345) and a hardware ID (e.g., !abcd).
+        We prefer to look up the hardware ID from previous NodeInfo packets, but if unknown,
+        we can deterministically convert the numeric ID to the hardware ID format.
         """
         if numeric_node_id in self._node_id_cache:
             return self._node_id_cache[numeric_node_id]
@@ -313,8 +358,7 @@ class GatewayApp:
         """
         Process a message received from MQTT.
 
-        Args:
-            data: JSON data from Meshtastic
+        Dispatches to specific handlers based on the 'type' field in the JSON payload.
         """
         self.stats["messages_received"] += 1
 
@@ -359,11 +403,11 @@ class GatewayApp:
         """
         Resolve or create a callsign for a given hardware ID.
 
-        Args:
-            hardware_id: The hardware ID to resolve.
-
-        Returns:
-            The resolved callsign, or None if it cannot be resolved.
+        Logic:
+        1.  **Configured Device:** If the ID is in `config.yaml`, use the configured name.
+        2.  **Learned Device:** If we have seen a NodeInfo packet, use the cached callsign.
+        3.  **Unknown Device:** If `allow_unknown_devices` is True, use the hardware ID.
+            Otherwise, return None to block the update.
         """
         if self.config is None:
             self.logger.error("Configuration not loaded")
@@ -372,10 +416,6 @@ class GatewayApp:
         # Check configured devices FIRST - Configuration always overrides persistence
         configured_device_id = self.config.get_node_device_id(hardware_id)
         if configured_device_id:
-            # We do NOT write this to the database anymore.
-            # Configuration is the source of truth.
-            # This prevents stale config from persisting if removed from
-            # config.yaml.
             self.logger.debug(
                 f"Using configured device_id as callsign: "
                 f"{sanitize_for_log(hardware_id)} -> "
@@ -394,9 +434,6 @@ class GatewayApp:
         if is_unknown_device:
             if self.config.devices.allow_unknown_devices:
                 # Allow unknown device but use hardware_id as callsign
-                # Fix: Do NOT persist this temporary mapping to avoid
-                # "Permanent Callsign" issue. If nodeinfo arrives later,
-                # it will be persisted then.
                 self.logger.info(
                     f"Allowing unknown device {sanitize_for_log(hardware_id)} "
                     f"(allow_unknown_devices=True). Using hardware_id as callsign."
@@ -437,7 +474,6 @@ class GatewayApp:
             # Format as 8-character lowercase hex with ! prefix
             return f"!{val:08x}"
         except (ValueError, TypeError):
-            # Fallback for invalid inputs, though unlikely with correct upstream parsing
             self.logger.warning(
                 f"Could not convert numeric ID to string: "
                 f"{sanitize_for_log(numeric_id)}"
@@ -450,9 +486,7 @@ class GatewayApp:
         """
         Process a position message.
 
-        Args:
-            data: JSON data from Meshtastic
-            numeric_node_id: Numeric node ID from the message
+        Extracts lat/lon, resolves the user, and sends to CalTopo.
         """
         if self.node_id_mapping is None or self.callsign_mapping is None:
             self.logger.error("State databases not initialized")
@@ -505,27 +539,17 @@ class GatewayApp:
             return
 
         # Get the hardware ID for this numeric node ID
-        # We don't persist it yet, waiting for authorization
         hardware_id = self._resolve_hardware_id(str(numeric_node_id))
         is_new_mapping = str(numeric_node_id) not in self._node_id_cache
-
-        if is_new_mapping and self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(
-                f"Calculated ID for new node: "
-                f"{sanitize_for_log(numeric_node_id)} -> "
-                f"{sanitize_for_log(hardware_id)}"
-            )
 
         # Get callsign for this hardware ID
         callsign = self._get_or_create_callsign(hardware_id)
         if not callsign:
-            # Device denied or configured but not identified
             if self.config is None:
                 self.stats["errors"] += 1
             return
 
         # Device is allowed (we have a callsign). Now we can persist the node ID mapping
-        # if it was new.
         if is_new_mapping:
             self._persist_node_id_mapping(str(numeric_node_id), hardware_id)
 
@@ -547,11 +571,10 @@ class GatewayApp:
         self, data: Dict[str, Any], numeric_node_id: str
     ) -> None:
         """
-        Process a nodeinfo message.
+        Process a nodeinfo message to learn node Metadata.
 
-        Args:
-            data: JSON data from Meshtastic
-            numeric_node_id: Numeric node ID from the message
+        Updates the persistent `node_id_mapping` and `callsign_mapping`.
+        This allows the system to auto-discover nodes on the mesh.
         """
         if self.node_id_mapping is None or self.callsign_mapping is None:
             self.logger.error("State databases not initialized")
@@ -590,30 +613,12 @@ class GatewayApp:
                 self._persist_callsign_mapping(
                     node_id_from_payload, configured_device_id
                 )
-                self.logger.debug(
-                    f"Mapped hardware ID "
-                    f"{sanitize_for_log(node_id_from_payload)} "
-                    f"to configured callsign "
-                    f"{sanitize_for_log(configured_device_id)}"
-                )
             elif longname:
                 # Fallback to Meshtastic longname if no configured device_id
                 self._persist_callsign_mapping(node_id_from_payload, longname)
-                self.logger.debug(
-                    f"Mapped hardware ID "
-                    f"{sanitize_for_log(node_id_from_payload)} "
-                    f"to callsign {sanitize_for_log(longname)} "
-                    f"(from longname)"
-                )
             elif shortname:
                 # Final fallback to shortname if longname not available
                 self._persist_callsign_mapping(node_id_from_payload, shortname)
-                self.logger.debug(
-                    f"Mapped hardware ID "
-                    f"{sanitize_for_log(node_id_from_payload)} "
-                    f"to callsign {sanitize_for_log(shortname)} "
-                    f"(from shortname)"
-                )
 
         self.logger.info(
             f"Node info from {sanitize_for_log(numeric_node_id)}: "
@@ -628,11 +633,7 @@ class GatewayApp:
         self, data: Dict[str, Any], numeric_node_id: str
     ) -> None:
         """
-        Process a telemetry message.
-
-        Args:
-            data: JSON data from Meshtastic
-            numeric_node_id: Numeric node ID from the message
+        Process a telemetry message. Logs stats but does not currently action them.
         """
         payload = data.get("payload")
         if not payload:
@@ -660,13 +661,7 @@ class GatewayApp:
     def _process_traceroute_message(
         self, data: Dict[str, Any], numeric_node_id: str
     ) -> None:
-        """
-        Process a traceroute message.
-
-        Args:
-            data: JSON data from Meshtastic
-            numeric_node_id: Numeric node ID from the message
-        """
+        """Process a traceroute message. Logs only."""
         payload = data.get("payload")
         if not payload:
             self.logger.warning(
@@ -674,7 +669,6 @@ class GatewayApp:
             )
             return
 
-        # Extract route information
         route = payload.get("route", [])
 
         self.logger.info(
@@ -683,7 +677,7 @@ class GatewayApp:
         )
 
     def _log_statistics(self) -> None:
-        """Log current statistics."""
+        """Log current statistics for health monitoring."""
         if not self.stats["start_time"]:
             return
 

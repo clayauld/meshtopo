@@ -1,5 +1,21 @@
 """
-MQTT client for receiving Meshtastic position data.
+AsyncIO MQTT Client Wrapper
+
+This module provides a robust wrapper around `aiomqtt` (which wraps `paho-mqtt`)
+to handle connection management, subscription, and message dispatch.
+
+## Features
+
+*   **Automatic Reconnection:** Implements an infinite loop with exponential backoff
+    to handle broker disconnections and network instability.
+*   **Async Stream:** Consumes messages from `aiomqtt.Client.messages` async generator.
+*   **Security:** Handles authentication via username/password (from `SecretStr`).
+
+## Usage
+
+Instantiate `MqttClient` with a configuration object and a callback function.
+Then, `await client.run()` to start the connection loop. This method blocks
+until cancelled.
 """
 
 import asyncio
@@ -14,7 +30,7 @@ from utils import sanitize_for_log
 
 class MqttClient:
     """
-    MQTT client for connecting to broker and receiving Meshtastic data.
+    Manages the MQTT connection life-cycle.
     """
 
     def __init__(
@@ -26,8 +42,8 @@ class MqttClient:
         Initialize MQTT client.
 
         Args:
-            config: Configuration object containing MQTT settings
-            message_callback: Async function to call when a message is received
+            config: Configuration object containing MQTT settings (broker, port, etc.)
+            message_callback: Async function to call when a valid JSON message is received.
         """
         self.config = config
         self.message_callback = message_callback
@@ -36,8 +52,12 @@ class MqttClient:
 
     async def run(self) -> None:
         """
-        Connect to the MQTT broker and process messages.
-        This method will run indefinitely until cancelled.
+        Main connection loop.
+
+        Connects to the broker, subscribes to topics, and processes messages.
+        If the connection drops, it catches the `MqttError`, waits, and retries.
+
+        The backoff strategy starts at 1s and doubles up to 60s.
         """
         reconnect_interval = 1
         max_reconnect_interval = 60
@@ -69,6 +89,7 @@ class MqttClient:
             except mqtt.MqttError as e:
                 self.logger.error(f"MQTT error: {e}")
             except asyncio.CancelledError:
+                # Allow clean cancellation from parent task
                 raise
             except Exception as e:
                 self.logger.error(f"Unexpected error in MQTT client: {e}")
@@ -83,10 +104,13 @@ class MqttClient:
 
     async def _process_message(self, message: Any) -> None:
         """
-        Process a received MQTT message.
+        Internal message handler.
 
-        Args:
-            message: The received message object
+        1. Decodes payload (UTF-8).
+        2. Logs (sanitized).
+        3. Parses JSON.
+        4. Injects `_mqtt_retain` flag.
+        5. Awaits the callback.
         """
         try:
             payload = message.payload.decode("utf-8")
