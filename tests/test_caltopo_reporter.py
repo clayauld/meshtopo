@@ -223,3 +223,102 @@ async def test_make_api_request_http_error_404(reporter, mock_client):
         mock_client, "http://test.com", "TEST-CALLSIGN", "test_endpoint"
     )
     assert result is False
+
+
+@pytest.mark.asyncio
+async def test_matches_url_pattern():
+    from caltopo_reporter import _matches_url_pattern
+
+    assert _matches_url_pattern("http://localhost:8080/api", "http://localhost:8080/*")
+    assert _matches_url_pattern("http://other:8080/api", "http://*:8080/*")
+    assert not _matches_url_pattern("http://other:8080/api", "http://localhost:8080/*")
+
+
+@pytest.mark.asyncio
+async def test_close(reporter):
+    # Setup a mock client
+    mock_c = AsyncMock()
+    reporter.client = mock_c
+    reporter._owns_client = True
+    await reporter.close()
+    mock_c.aclose.assert_called_once()
+    assert reporter.client is None
+
+
+@pytest.mark.asyncio
+async def test_test_connection_no_tasks(reporter):
+    reporter.config.caltopo.has_connect_key = False
+    reporter.config.caltopo.has_group = False
+    assert not await reporter.test_connection()
+
+
+@pytest.mark.asyncio
+async def test_test_connection_group_endpoint(reporter, mock_client):
+    reporter.config.caltopo.has_connect_key = False
+    reporter.config.caltopo.has_group = True
+    reporter.config.caltopo.group = "test_group"
+
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_client.get.return_value = mock_response
+
+    reporter.client = mock_client
+    assert await reporter.test_connection()
+    mock_client.get.assert_called_once()
+    assert "test_group" in mock_client.get.call_args[0][0]
+
+
+@pytest.mark.asyncio
+async def test_test_connection_failure(reporter, mock_client):
+    reporter.config.caltopo.has_connect_key = True
+    reporter.config.caltopo.connect_key = "key"
+
+    mock_response = Mock()
+    mock_response.status_code = 500
+    # In test_connection, it just checks if it gets ANY response for reachability
+    # Wait, the current implementation says "Any response (even 4xx/5xx)
+    # means we can reach the API"
+    # But wait, let's check the code.
+
+    mock_client.get.side_effect = Exception("Connection Failed")
+    reporter.client = mock_client
+    assert not await reporter.test_connection()
+
+
+@pytest.mark.asyncio
+async def test_send_position_update_no_client_fail(reporter):
+    # This covers the RuntimeError case if start() fails to sets self.client
+    # which is hard to trigger unless we mock start or subclass.
+    # But we can mock self.client to be None after start() call if we are tricky.
+    with patch.object(reporter, "start", AsyncMock()):
+        reporter.client = None
+        with pytest.raises(
+            RuntimeError, match="httpx.AsyncClient failed to initialize"
+        ):
+            await reporter.send_position_update("C", 1, 1)
+
+    with patch.object(reporter, "start", AsyncMock()):
+        reporter.client = None
+        with pytest.raises(
+            RuntimeError, match="httpx.AsyncClient failed to initialize"
+        ):
+            await reporter.test_connection()
+
+
+@pytest.mark.asyncio
+async def test_test_connect_key_endpoint_invalid_id(reporter, mock_client):
+    reporter.config.caltopo.connect_key = "invalid id"
+    assert not await reporter._test_connect_key_endpoint(mock_client)
+
+
+@pytest.mark.asyncio
+async def test_test_group_endpoint_invalid_id(reporter, mock_client):
+    reporter.config.caltopo.group = "invalid id"
+    assert not await reporter._test_group_endpoint(mock_client)
+
+
+@pytest.mark.asyncio
+async def test_test_group_endpoint_exception(reporter, mock_client):
+    reporter.config.caltopo.group = "group"
+    mock_client.get.side_effect = Exception("error")
+    assert not await reporter._test_group_endpoint(mock_client)
