@@ -14,6 +14,7 @@ help:
 	@echo "Docker Deployment:"
 	@echo "  up-full              Run full stack (Gateway + Mosquitto + Traefik)"
 	@echo "  up-simple            Run gateway only (use for external broker)"
+	@echo "  up-ssl               Run full stack with SSL"
 	@echo "  stop                 Stop all services"
 	@echo "  status               Show container status"
 	@echo "  logs                 Show container logs"
@@ -34,7 +35,6 @@ help:
 	@echo "Maintenance:"
 	@echo "  docker-build        Build Docker images locally"
 	@echo "  docker-pull         Pull Docker images from GHCR"
-	@echo "  setup-broker        Setup internal MQTT broker"
 
 # Run the interactive setup wizard
 setup:

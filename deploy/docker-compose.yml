@@ -68,7 +68,6 @@ services:
             - mosquitto_data:/mosquitto/data
             - mosquitto_data:/mosquitto/log
             - ./passwd:/mosquitto/config/passwd:ro
-            - ../config/config.yaml:/mosquitto/config/config.yaml:ro
         labels:
             - "traefik.enable=true"
             - "traefik.tcp.routers.mqtt.rule=HostSNI(`mqtt.${SSL_DOMAIN}`)"
