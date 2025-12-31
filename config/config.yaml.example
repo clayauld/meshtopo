@@ -25,10 +25,10 @@ caltopo:
 # Optional: Node display name overrides
 # If not specified, devices will use their Meshtastic longname as callsign
 nodes:
-    "!823a4edc":                        # Meshtastic hardware ID
+    "!123a4edc":                        # Meshtastic hardware ID
         device_id: "TEAM-LEAD"          # Custom display name in CalTopo
         group: "LEADERSHIP"             # Optional per-device GROUP override
-    "!a4b8c2f0":                        # Meshtastic hardware ID
+    "!456bc2f0":                        # Meshtastic hardware ID
         device_id: "COMMS-1"            # Custom display name in CalTopo
         # group: "COMMS"                # Optional per-device GROUP override
 

@@ -5,12 +5,19 @@ REPO := $(if $(GITHUB_REPOSITORY),$(GITHUB_REPOSITORY),clayauld/meshtopo)
 
 .PHONY: help setup install test lint format clean docker-setup docker-build docker-pull docker-run docker-run-minimal docker-run-ssl docker-stop docker-status docker-logs docker-clean docker-login docker-push docker-push-default dev-setup setup-broker generate-broker-config
 
-# Default target
 help:
 	@echo "Meshtopo Gateway Service - Available Commands:"
 	@echo ""
 	@echo "Onboarding:"
 	@echo "  setup                Run the interactive setup wizard"
+	@echo ""
+	@echo "Docker Deployment:"
+	@echo "  up-full              Run full stack (Gateway + Mosquitto + Traefik)"
+	@echo "  up-simple            Run gateway only (use for external broker)"
+	@echo "  stop                 Stop all services"
+	@echo "  status               Show container status"
+	@echo "  logs                 Show container logs"
+	@echo "  clean                Clean up Docker resources (volumes, networks)"
 	@echo ""
 	@echo "Development:"
 	@echo "  install              Install dependencies"
@@ -22,31 +29,12 @@ help:
 	@echo "  test-gateway         Run gateway tests"
 	@echo "  test-mqtt            Run MQTT topic format tests"
 	@echo "  lint                 Run linting checks"
-	@echo "  format               Format code with black and isort"
-	@echo "  clean                Clean up temporary files"
+	@echo "  format               Format code"
 	@echo ""
-	@echo "Docker:"
-	@echo "  docker-setup        Set up Docker environment (.env file)"
-	@echo "  docker-build        Build Docker images for ghcr.io"
-	@echo "  docker-pull         Pull Docker images from ghcr.io"
-	@echo "  docker-run          Run full stack with Docker Compose"
-	@echo "  docker-run-minimal  Run minimal gateway only"
-	@echo "  docker-run-ssl      Run with SSL/Caddy (requires SSL_DOMAIN)"
-	@echo "  docker-stop         Stop Docker containers"
-	@echo "  docker-status       Show container status"
-	@echo "  docker-logs         Show container logs"
-	@echo "  docker-clean        Clean up Docker resources"
-	@echo "  docker-login        Login to GitHub Container Registry"
-	@echo "  docker-push         Push images to ghcr.io (requires GITHUB_REPOSITORY)"
-	@echo "  docker-push-default Push images with default repository name"
-	@echo ""
-	@echo "Service:"
-	@echo "  run          Run the gateway service"
-	@echo "  config       Show configuration help"
-	@echo ""
-	@echo "MQTT Broker:"
-	@echo "  setup-broker Setup internal MQTT broker"
-	@echo "  generate-broker-config Generate broker configuration files"
+	@echo "Maintenance:"
+	@echo "  docker-build        Build Docker images locally"
+	@echo "  docker-pull         Pull Docker images from GHCR"
+	@echo "  setup-broker        Setup internal MQTT broker"
 
 # Run the interactive setup wizard
 setup:
@@ -146,36 +134,33 @@ docker-pull:
 	docker pull ghcr.io/$(REPO):latest
 
 # Run with Docker Compose (full stack)
-docker-run:
-	@echo "Starting Meshtopo services with Docker Compose..."
-	@if [ ! -f deploy/.env ]; then \
-		echo "Warning: No .env file found. Using defaults. Run 'make docker-setup' to configure."; \
-	fi
+up-full:
+	@echo "Starting Meshtopo services (Full Stack) with Docker Compose..."
 	cd deploy && docker compose --profile core --profile mqtt up -d
-	@echo "Services started! Check status with: make docker-status"
+	@echo "Full stack started! Check status with: make status"
 
-# Run with Docker Compose (minimal - gateway only)
-docker-run-minimal:
-	@echo "Starting Meshtopo gateway (minimal) with Docker Compose..."
-	cd deploy && docker compose -f docker-compose-minimal.yaml up -d
-	@echo "Minimal services started! Check status with: make docker-status"
+# Run with Docker Compose (gateway only)
+up-simple:
+	@echo "Starting Meshtopo gateway (Simple) with Docker Compose..."
+	cd deploy && docker compose -f docker-compose.simple.yml up -d
+	@echo "Gateway started! Check status with: make status"
 
-# Run with Docker Compose (with SSL/Caddy)
-docker-run-ssl:
+# Run with Docker Compose (with SSL/Caddy) - still uses full stack file
+up-ssl:
 	@echo "Starting Meshtopo services with SSL/Caddy..."
 	@if [ -z "$(SSL_DOMAIN)" ]; then echo "Error: SSL_DOMAIN environment variable required"; exit 1; fi
 	cd deploy && docker compose --profile core --profile mqtt --profile ssl up -d
-	@echo "SSL services started! Check status with: make docker-status"
+	@echo "SSL services started! Check status with: make status"
 
 # Stop Docker containers
-docker-stop:
-	@echo "Stopping Meshtopo services..."
+stop:
+	@echo "Stopping all Meshtopo services..."
 	cd deploy && docker compose down
-	cd deploy && docker compose -f docker-compose-minimal.yaml down
+	cd deploy && docker compose -f docker-compose.simple.yml down
 	@echo "Services stopped!"
 
 # Show Docker container status
-docker-status:
+status:
 	@echo "=== Docker Container Status ==="
 	docker ps --filter "name=meshtopo" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 	@echo ""
@@ -183,15 +168,15 @@ docker-status:
 	cd deploy && docker compose ps
 
 # Show Docker logs
-docker-logs:
-	@echo "Showing logs for Meshtopo services..."
+logs:
+	@echo "Showing logs for Meshtopo gateway..."
 	docker logs meshtopo-gateway --tail=50 -f
 
 # Clean up Docker resources
 docker-clean:
 	@echo "Cleaning up Docker resources..."
 	docker compose -f deploy/docker-compose.yml down -v --remove-orphans
-	docker compose -f deploy/docker-compose-minimal.yaml down -v --remove-orphans
+	docker compose -f deploy/docker-compose.simple.yml down -v --remove-orphans
 	docker system prune -f
 	@echo "Docker cleanup complete!"
 

@@ -176,13 +176,13 @@ When `nodeinfo` messages are received, the gateway builds a mapping from numeric
 
 ```json
 {
-    "from": 862485920,
-    "type": "nodeinfo",
-    "payload": {
-        "id": "!33687da0",
-        "longname": "TEST-DEVICE",
-        "shortname": "TEST"
-    }
+  "from": 862485920,
+  "type": "nodeinfo",
+  "payload": {
+    "id": "!33687da0",
+    "longname": "TEST-DEVICE",
+    "shortname": "TEST"
+  }
 }
 ```
 
@@ -194,13 +194,13 @@ When position messages arrive before nodeinfo messages, the gateway uses the `se
 
 ```json
 {
-    "from": 862485920,
-    "sender": "!33687da0",
-    "type": "position",
-    "payload": {
-        "latitude_i": 612188460,
-        "longitude_i": -1499001320
-    }
+  "from": 862485920,
+  "sender": "!33687da0",
+  "type": "position",
+  "payload": {
+    "latitude_i": 612188460,
+    "longitude_i": -1499001320
+  }
 }
 ```
 
@@ -212,8 +212,8 @@ The final step maps hardware IDs to CalTopo device names using the configuration
 
 ```yaml
 nodes:
-    "!33687da0":
-        device_id: "TEST-DEVICE"
+  "!33687da0":
+    device_id: "TEST-DEVICE"
 ```
 
 This creates the complete mapping chain: `862485920` → `!33687da0` → `TEST-DEVICE`
@@ -245,50 +245,50 @@ The system is configured via a single `config.yaml` file that supports both mini
 
 # Configuration for the MQTT Broker connection
 mqtt:
-    broker: "localhost" # Broker hostname
-    port: 1883 # MQTT broker port
-    username: "your_mqtt_user"
-    password: "your_mqtt_password"
-    topic: "msh/US/2/json/+/+"
-    use_internal_broker: false # Use integrated Mosquitto broker
+  broker: "localhost" # Broker hostname
+  port: 1883 # MQTT broker port
+  username: "your_mqtt_user"
+  password: "your_mqtt_password"
+  topic: "msh/US/2/json/+/+"
+  use_internal_broker: false # Use integrated Mosquitto broker
 
 # Configuration for the CalTopo API
 caltopo:
-    connect_key: "aoJpFiwnxxgGEuaMY6W0gcqdeQ3T2bjoQfzvWbduT9LjJ" # From CalTopo Team Account access URL
+  connect_key: "aoJpFiwnxxgGEuaMY6W0gcqdeQ3T2bjoQfzvWbduT9LjJ" # From CalTopo Team Account access URL
 
 # Optional: Node display name overrides
 # If not specified, devices will use their Meshtastic longname as callsign
 nodes:
-    "!823a4edc":
-        device_id: "TEAM-LEAD"
-    "!a4b8c2f0":
-        device_id: "COMMS"
+  "!123a4edc":
+    device_id: "TEAM-LEAD"
+  "!456bc2f0":
+    device_id: "COMMS"
 
 # Internal MQTT Broker Configuration (optional)
 mqtt_broker:
-    enabled: false # Enable internal Mosquitto broker
-    port: 1883 # MQTT broker port
-    websocket_port: 9001 # WebSocket port for web clients
-    persistence: true # Enable message persistence
-    max_connections: 1000 # Maximum concurrent connections
-    allow_anonymous: false # Allow anonymous connections
-    users:
-        - username: "meshtopo"
-          password: "secure_password"
-          acl: "readwrite" # Access level: read, write, readwrite
-        - username: "readonly"
-          password: "readonly_pass"
-          acl: "read" # Read-only access
-    acl_enabled: false # Enable Access Control Lists
+  enabled: false # Enable internal Mosquitto broker
+  port: 1883 # MQTT broker port
+  websocket_port: 9001 # WebSocket port for web clients
+  persistence: true # Enable message persistence
+  max_connections: 1000 # Maximum concurrent connections
+  allow_anonymous: false # Allow anonymous connections
+  users:
+    - username: "meshtopo"
+      password: "secure_password"
+      acl: "readwrite" # Access level: read, write, readwrite
+    - username: "readonly"
+      password: "readonly_pass"
+      acl: "read" # Read-only access
+  acl_enabled: false # Enable Access Control Lists
 
 # Logging configuration
 logging:
-    level: INFO
-    file:
-        enabled: true
-        path: logs/meshtopo.log
-        max_size: 10MB
-        backup_count: 5
+  level: INFO
+  file:
+    enabled: true
+    path: logs/meshtopo.log
+    max_size: 10MB
+    backup_count: 5
 ```
 
 ### 6.2 SSL/TLS Configuration
@@ -296,16 +296,16 @@ logging:
 ```yaml
 # SSL/TLS configuration for automatic certificate provisioning
 ssl:
-    enabled: false # Master toggle for SSL features
-    email: "admin@example.com" # Email for Let's Encrypt notifications
-    domain: "meshtopo.example.com" # Primary domain
-    acme_challenge: "http" # Challenge type: "http" or "dns"
+  enabled: false # Master toggle for SSL features
+  email: "admin@example.com" # Email for Let's Encrypt notifications
+  domain: "meshtopo.example.com" # Primary domain
+  acme_challenge: "http" # Challenge type: "http" or "dns"
 
-    # Per-service SSL configuration
-    services:
-        mqtt:
-            enabled: false # MQTT over TLS (optional)
-            port: 8883
+  # Per-service SSL configuration
+  services:
+    mqtt:
+      enabled: false # MQTT over TLS (optional)
+      port: 8883
 ```
 
 ### 6.3 Internal MQTT Broker Configuration
@@ -313,20 +313,20 @@ ssl:
 ```yaml
 # Internal MQTT Broker Configuration
 mqtt_broker:
-    enabled: true # Enable internal Mosquitto broker
-    port: 1883 # MQTT broker port
-    websocket_port: 9001 # WebSocket port for web clients
-    persistence: true # Enable message persistence
-    max_connections: 1000 # Maximum concurrent connections
-    allow_anonymous: false # Allow anonymous connections
-    users:
-        - username: "meshtopo"
-          password: "secure_password"
-          acl: "readwrite" # Access level: read, write, readwrite
-        - username: "readonly"
-          password: "readonly_pass"
-          acl: "read" # Read-only access
-    acl_enabled: false # Enable Access Control Lists
+  enabled: true # Enable internal Mosquitto broker
+  port: 1883 # MQTT broker port
+  websocket_port: 9001 # WebSocket port for web clients
+  persistence: true # Enable message persistence
+  max_connections: 1000 # Maximum concurrent connections
+  allow_anonymous: false # Allow anonymous connections
+  users:
+    - username: "meshtopo"
+      password: "secure_password"
+      acl: "readwrite" # Access level: read, write, readwrite
+    - username: "readonly"
+      password: "readonly_pass"
+      acl: "read" # Read-only access
+  acl_enabled: false # Enable Access Control Lists
 ```
 
 ### 6.4 Logging Configuration
@@ -334,15 +334,15 @@ mqtt_broker:
 ```yaml
 # Logging configuration
 logging:
-    level: "INFO" # DEBUG, INFO, WARN, ERROR
-    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  level: "INFO" # DEBUG, INFO, WARN, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
-    # File logging (optional)
-    file:
-        enabled: false
-        path: "/app/logs/meshtopo.log"
-        max_size: "10MB"
-        backup_count: 5
+  # File logging (optional)
+  file:
+    enabled: false
+    path: "/app/logs/meshtopo.log"
+    max_size: "10MB"
+    backup_count: 5
 ```
 
 ### 6.5 Deployment Mode Configuration
@@ -353,36 +353,36 @@ The configuration file supports three deployment modes:
 
 ```yaml
 mqtt:
-    broker: "192.168.1.100" # External broker
-    use_internal_broker: false
+  broker: "192.168.1.100" # External broker
+  use_internal_broker: false
 mqtt_broker:
-    enabled: false
+  enabled: false
 ssl:
-    enabled: false
+  enabled: false
 ```
 
 **Standard Mode** (Core + Integrated MQTT):
 
 ```yaml
 mqtt:
-    broker: "mosquitto" # Internal broker
-    use_internal_broker: true
+  broker: "mosquitto" # Internal broker
+  use_internal_broker: true
 mqtt_broker:
-    enabled: true
+  enabled: true
 ssl:
-    enabled: false
+  enabled: false
 ```
 
 **Full Mode** (All features enabled):
 
 ```yaml
 mqtt:
-    broker: "mosquitto" # Internal broker
-    use_internal_broker: true
+  broker: "mosquitto" # Internal broker
+  use_internal_broker: true
 mqtt_broker:
-    enabled: true
+  enabled: true
 ssl:
-    enabled: true
+  enabled: true
 ```
 
 ---
@@ -456,91 +456,91 @@ The complete Docker Compose stack includes all optional components with conditio
 
 ```yaml
 networks:
-    meshtopo:
-        driver: bridge
+  meshtopo:
+    driver: bridge
 
 volumes:
-    mosquitto_data:
-    caddy_data:
-    caddy_config:
+  mosquitto_data:
+  caddy_data:
+  caddy_config:
 
 services:
-    # Caddy reverse proxy with SSL termination (conditional)
-    caddy:
-        image: caddy:2-alpine
-        container_name: caddy
-        restart: unless-stopped
-        ports:
-            - "80:80"
-            - "443:443"
-        volumes:
-            - ./deploy/Caddyfile:/etc/caddy/Caddyfile
-            - caddy_data:/data
-            - caddy_config:/config
-        environment:
-            - SSL_DOMAIN=${SSL_DOMAIN}
-            - SSL_EMAIL=${SSL_EMAIL}
-            - TZ=UTC
-        networks:
-            - meshtopo
-        profiles:
-            - ssl
+  # Caddy reverse proxy with SSL termination (conditional)
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - SSL_DOMAIN=${SSL_DOMAIN}
+      - SSL_EMAIL=${SSL_EMAIL}
+      - TZ=UTC
+    networks:
+      - meshtopo
+    profiles:
+      - ssl
 
-    # Mosquitto MQTT broker (conditional)
-    mosquitto:
-        image: eclipse-mosquitto:2.0
-        container_name: mosquitto
-        restart: unless-stopped
-        ports:
-            - "1883:1883"
-            - "9001:9001"
-        volumes:
-            - mosquitto_data:/mosquitto/data
-            - mosquitto_data:/mosquitto/log
-            - ./deploy/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
-        networks:
-            - meshtopo
-        profiles:
-            - mqtt
+  # Mosquitto MQTT broker (conditional)
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_data:/mosquitto/log
+      - ./deploy/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    networks:
+      - meshtopo
+    profiles:
+      - mqtt
 
-    # Core Meshtopo gateway service
-    meshtopo-gateway:
-        build: .
-        container_name: meshtopo-gateway
-        restart: unless-stopped
-        volumes:
-            - ../config/config.yaml:/app/config/config.yaml:ro
-            # Logs are mounted to /app/logs
-            - ./logs:/app/logs
-            # Data is mounted to /app/data for database file
-            - ./data:/app/data
-        environment:
-            - TZ=UTC
-        deploy:
-            resources:
-                limits:
-                    memory: 128M
-                    cpus: "0.5"
-                reservations:
-                    memory: 64M
-                    cpus: "0.1"
-        healthcheck:
-            test: ["CMD", "python", "-c", "import requests; requests.get('https://caltopo.com/api/v1/position/report/test', timeout=5)"]
-            interval: 30s
-            timeout: 10s
-            retries: 3
-            start_period: 10s
-        logging:
-            driver: "json-file"
-            options:
-                max-size: "10m"
-                max-file: "3"
-        networks:
-            - meshtopo
-        depends_on:
-            - mosquitto
-        profiles:
-            - core
+  # Core Meshtopo gateway service
+  meshtopo-gateway:
+    build: .
+    container_name: meshtopo-gateway
+    restart: unless-stopped
+    volumes:
+      - ../config/config.yaml:/app/config/config.yaml:ro
+      # Logs are mounted to /app/logs
+      - ./logs:/app/logs
+      # Data is mounted to /app/data for database file
+      - ./data:/app/data
+    environment:
+      - TZ=UTC
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.5"
+        reservations:
+          memory: 64M
+          cpus: "0.1"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('https://caltopo.com/api/v1/position/report/test', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - meshtopo
+    depends_on:
+      - mosquitto
+    profiles:
+      - core
 ```
 
 ### 8.3 SSL/TLS Configuration with Caddy
@@ -745,12 +745,12 @@ mosquitto_sub -h localhost -p 1883 -u meshtopo -P secure_password -t "msh/US/2/j
 ```javascript
 // Connect via WebSocket
 const client = mqtt.connect("ws://localhost:9001", {
-    username: "meshtopo",
-    password: "secure_password",
+  username: "meshtopo",
+  password: "secure_password",
 });
 
 client.on("connect", () => {
-    client.subscribe("msh/US/2/json/+/+");
+  client.subscribe("msh/US/2/json/+/+");
 });
 ```
 

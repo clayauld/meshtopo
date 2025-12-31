@@ -1,3 +1,9 @@
+# Meshtopo - Full Stack Deployment (Integrated Broker)
+# This includes:
+# 1. Meshtopo Gateway
+# 2. Mosquitto MQTT Broker
+# 3. Traefik Reverse Proxy (for SSL - optional)
+
 networks:
     meshtopo:
         driver: bridge

@@ -102,12 +102,37 @@ def main() -> None:
         input(f"Enter your CalTopo 'Connect Key' [{caltopo_key}]: ") or caltopo_key
     )
 
-    # MQTT Broker (external)
-    if not config.get("mqtt_broker", {}).get("enabled", False):
-        print("\n--- External MQTT Broker ---")
-        mqtt_broker = config.get("mqtt", {}).get("broker", "")
+    # MQTT Broker Type
+    print("\n--- MQTT Broker Configuration ---")
+    print("Do you want to use the integrated Mosquitto broker or an external one?")
+    print("1. Integrated Mosquitto (included in Docker stack)")
+    print("2. External Broker (e.g. HiveMQ, Home Assistant, etc.)")
+
+    broker_choice = input("Select choice [1]: ") or "1"
+    integrated = broker_choice == "1"
+
+    if "mqtt_broker" not in config:
+        config["mqtt_broker"] = {}
+    config["mqtt_broker"]["enabled"] = integrated
+
+    if integrated:
+        print("\nConfiguring for Integrated Mosquitto.")
+        config["mqtt"]["broker"] = "mosquitto"
+        config["mqtt"]["port"] = 1883
+
+        # Default user for integrated broker
+        if not config["mqtt_broker"].get("users"):
+            config["mqtt_broker"]["users"] = [
+                {"username": "mesh", "password": "changeme", "acl": "readwrite"}
+            ]
+
+        username = config["mqtt_broker"]["users"][0]["username"]
+        config["mqtt"]["username"] = username
+    else:
+        print("\nConfiguring for External MQTT Broker.")
+        mqtt_broker = config.get("mqtt", {}).get("broker", "localhost")
         config["mqtt"]["broker"] = (
-            input(f"MQTT Broker [{mqtt_broker}]: ") or mqtt_broker
+            input(f"MQTT Broker Address [{mqtt_broker}]: ") or mqtt_broker
         )
         mqtt_port = config.get("mqtt", {}).get("port", 1883)
         while True:
@@ -117,12 +142,14 @@ def main() -> None:
                 break
             except ValueError:
                 print("Invalid port. Please enter a number.")
+
         mqtt_username = config.get("mqtt", {}).get("username", "")
         config["mqtt"]["username"] = (
             input(f"MQTT Username [{mqtt_username}]: ") or mqtt_username
         )
-        mqtt_pass = config.get("mqtt", {}).get("password", "")
-        config["mqtt"]["password"] = getpass("MQTT Password: ") or mqtt_pass
+
+    mqtt_pass = config.get("mqtt", {}).get("password", "")
+    config["mqtt"]["password"] = getpass("MQTT Password: ") or mqtt_pass
 
     # Save configuration
     with open(CONFIG_FILE, "w") as f:
