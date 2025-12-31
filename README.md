@@ -60,7 +60,8 @@ Use this if you already have an MQTT broker
 2. **Configure and Launch:**
 
    ```bash
-   # (Edit config.yaml manually or use setup wizard)
+   # To configure, you can either edit config.yaml manually or run the setup wizard:
+   # docker run --rm -it -v $(pwd):/app ghcr.io/clayauld/meshtopo:latest python3 scripts/setup_wizard.py
    docker compose up -d
    ```
 
