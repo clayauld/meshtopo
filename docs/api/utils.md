@@ -1,3 +1,5 @@
+<!-- markdownlint-disable-file MD046 -->
+
 # Module `utils`
 
 Utility Functions

@@ -1,13 +1,13 @@
 """
 Main Gateway Application Logic
 
-This module contains the `GatewayApp` class, which is the heart of the Meshtopo service.
-It orchestrates the flow of data between the MQTT broker (Meshtastic source) and the
-CalTopo API (reporter destination).
+This module contains the `GatewayApp` class, the heart of the Meshtopo service.
+It orchestrates data between MQTT and CalTopo.
 
 ## Architecture
 
-The application is built on an asynchronous event loop (`asyncio`) to ensure non-blocking
+The application is built on an asynchronous event loop (`asyncio`) to ensure
+non-blocking
 operation, which is critical for handling network I/O from both MQTT and HTTP
 simultaneously.
 
