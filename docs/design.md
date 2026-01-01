@@ -70,7 +70,7 @@ The application source code is modular, following the Single Responsibility Prin
 
 ### 3.1 Message Processing Pipeline
 
-1.  **Ingestion:** The `MqttClient` receives a raw byte payload from the subscribed topic (e.g., `msh/US/2/json/+/+`).
+1.  **Ingestion:** The `MqttClient` receives a raw byte payload from the subscribed topic (e.g., `msh/REGION/2/json/+/+`).
 2.  **Decoding:** The payload is decoded to a JSON object. The `type` field is inspected.
 3.  **Routing (`GatewayApp`):**
     *   **`nodeinfo` packet:** Contains metadata (Long Name, Short Name, Hardware ID). The app updates the `StateDB` to map the numeric Node ID to the Hardware ID and Callsign.
@@ -81,6 +81,8 @@ The application source code is modular, following the Single Responsibility Prin
     *   The reporter constructs the API URL.
     *   It sends the request asynchronously.
     *   **Reliability:** If the API fails (5xx or 429), it enters a retry loop with exponential backoff (1s, 2s, 4s...).
+
+The `REGION` in the topic (e.g., `US`, `EU_868`) must match the region configured on your Meshtastic nodes. For a full list of valid region codes, see the [official Meshtastic documentation](httpss://meshtastic.org/docs/configuration/region-by-country/).
 
 ### 3.2 State Persistence Strategy
 The gateway is stateless *logic* but maintains stateful *data* about the mesh network.
