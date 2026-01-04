@@ -6,15 +6,21 @@ MQTT client for receiving Meshtastic position data.
 
 ## `class MqttClient`
 
-MQTT client for connecting to broker and receiving Meshtastic data.
+Asynchronous MQTT client responsible for connecting to a broker,
+subscribing to configured topics, and routing incoming Meshtastic
+JSON messages to the application's processing logic.
+
+Handles automatic reconnection with exponential backoff.
 
 ### `def __init__(self, config: Any, message_callback: Callable[[Dict[str, Any]], Awaitable[NoneType]]) -> None`
 
-Initialize MQTT client.
+Initialize the MQTT client instance.
 
 Args:
-    config: Configuration object containing MQTT settings
-    message_callback: Async function to call when a message is received
+    config: A Config object (see config/config.py) containing
+            broker address, credentials, and topic settings.
+    message_callback: An asynchronous callable that receives the
+                     parsed JSON payload as a dictionary.
 
 ### `def run(self) -> None`
 

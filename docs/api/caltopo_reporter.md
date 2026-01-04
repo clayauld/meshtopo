@@ -6,7 +6,20 @@ CalTopo API integration for sending position reports.
 
 ## `class CalTopoReporter`
 
-Handles communication with the CalTopo Position Report API.
+Asynchronous client for interfacing with the CalTopo Position Report API.
+
+This class handles the transmission of geographic position updates to
+CalTopo endpoints. It supports two primary modes of operation:
+
+1. **Personal Mode**: Individual 'connect_key' identifiers.
+2. **Team Mode**: Group-based reporting using 'group' identifiers.
+
+Features:
+
+- Robust networking with automatic retries and exponential backoff.
+- URL pattern validation for security and flexibility.
+- Sensitive information redaction in logs.
+- Support for shared HTTP clients to improve connection efficiency.
 
 ### `def __init__(self, config: Any, client: Optional[httpx.AsyncClient] = None) -> None`
 
@@ -32,7 +45,8 @@ Args:
     group: Optional GROUP for group-based API mode
 
 Returns:
-    bool: True if at least one endpoint was successful, False otherwise
+    bool: True if at least one endpoint (connect_key or group) was
+          successfully updated, False otherwise.
 
 ### `def start(self) -> None`
 

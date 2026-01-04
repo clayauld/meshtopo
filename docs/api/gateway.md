@@ -17,3 +17,5 @@ Arguments:
 ## `def main() -> None`
 
 Main entry point for the gateway service.
+Parses command-line arguments, enforces security constraints, and
+initializes the main asyncio event loop for the GatewayApp.

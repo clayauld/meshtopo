@@ -34,7 +34,20 @@ def _matches_url_pattern(url: str, pattern: str) -> bool:
 
 class CalTopoReporter:
     """
-    Handles communication with the CalTopo Position Report API.
+    Asynchronous client for interfacing with the CalTopo Position Report API.
+
+    This class handles the transmission of geographic position updates to
+    CalTopo endpoints. It supports two primary modes of operation:
+
+    1. **Personal Mode**: Individual 'connect_key' identifiers.
+    2. **Team Mode**: Group-based reporting using 'group' identifiers.
+
+    Features:
+
+    - Robust networking with automatic retries and exponential backoff.
+    - URL pattern validation for security and flexibility.
+    - Sensitive information redaction in logs.
+    - Support for shared HTTP clients to improve connection efficiency.
     """
 
     _raw_base_url = os.getenv(
@@ -149,7 +162,8 @@ class CalTopoReporter:
             group: Optional GROUP for group-based API mode
 
         Returns:
-            bool: True if at least one endpoint was successful, False otherwise
+            bool: True if at least one endpoint (connect_key or group) was
+                  successfully updated, False otherwise.
         """
         # Ensure client is initialized
         if self.client is None:
@@ -195,11 +209,16 @@ class CalTopoReporter:
         latitude: float,
         longitude: float,
     ) -> bool:
-        """Send position update to connect_key endpoint."""
+        """
+        Internal method to send position data to a personal connect_key endpoint.
+        """
         connect_key = self.config.caltopo.connect_key
+        # Safety check: ensure the key doesn't contain malicious characters
+        # for URL construction.
         if not self._validate_and_log_identifier(connect_key, "connect_key"):
             return False
 
+        # Construct specific endpoint URL
         url = f"{self.BASE_URL}/{connect_key}"
         params = {"id": callsign, "lat": latitude, "lng": longitude}
         query_string = urlencode(params)
@@ -215,7 +234,9 @@ class CalTopoReporter:
         longitude: float,
         group: str,
     ) -> bool:
-        """Send position update to group endpoint."""
+        """
+        Internal method to send position data to a team 'group' endpoint.
+        """
         if not self._validate_and_log_identifier(group, "group"):
             return False
 
@@ -233,7 +254,24 @@ class CalTopoReporter:
         callsign: str,
         endpoint_type: str,
     ) -> bool:
-        """Make an API request with retry logic."""
+        """
+        Execute an HTTP GET request to the CalTopo API with built-in retry logic.
+
+        This method handles:
+        - Exponential backoff with jitter for retries.
+        - Redaction of sensitive keys in logs.
+        - Differentiation between retryable (5xx, 429) and fatal (4xx) errors.
+
+        Args:
+            client: The async HTTP client to use.
+            url: The fully constructed URL (including sensitive keys).
+            callsign: The name/ID of the device being reported (for logging).
+            endpoint_type: Category of endpoint ('connect_key' or 'group').
+
+        Returns:
+            bool: True if the request eventually succeeded (HTTP 200),
+                  False if it failed after all retries or hit a fatal error.
+        """
         max_retries = 3
         base_delay = 1.0  # seconds
 

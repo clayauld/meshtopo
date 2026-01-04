@@ -20,15 +20,19 @@ from utils import sanitize_for_log
 
 class GatewayApp:
     """
-    Main application class that orchestrates the gateway service.
+    Main application engine that orchestrates the Meshtastic-to-CalTopo gateway.
+
+    It manages the lifecycle of the MQTT client, handles state persistence for
+    node identification, and routes incoming position data to the CalTopo API.
     """
 
     def __init__(self, config_path: str = "config/config.yaml"):
         """
-        Initialize the gateway application.
+        Initialize the gateway application instance.
 
         Args:
-            config_path: Path to the configuration file
+            config_path: Filesystem path to the YAML configuration file.
+                        Defaults to 'config/config.yaml'.
         """
         self.config_path = config_path
         self.config: Optional[Config] = None
@@ -60,10 +64,13 @@ class GatewayApp:
 
     async def initialize(self) -> bool:
         """
-        Initialize the application components.
+        Perform a comprehensive startup sequence for all application components.
+        This includes loading configuration, initializing the persistent database,
+        setting up HTTP clients, and preparing the MQTT subscriber.
 
         Returns:
-            bool: True if initialization successful, False otherwise
+            bool: True if all components initialized successfully; False if a
+                  critical failure occurred.
         """
         try:
             # Load configuration
@@ -196,7 +203,9 @@ class GatewayApp:
 
     async def start(self) -> None:
         """
-        Start the gateway service.
+        Execute the primary application loop.
+        Initializes components and then enters a long-running state until
+        a stop signal or fatal error occurs.
         """
         try:
             if not await self.initialize():
@@ -311,10 +320,11 @@ class GatewayApp:
 
     async def _process_message(self, data: Dict[str, Any]) -> None:
         """
-        Process a message received from MQTT.
+        Core message dispatcher. Analyzes the 'type' field of incoming
+        Meshtastic JSON payloads and routes them to specific handlers.
 
         Args:
-            data: JSON data from Meshtastic
+            data: The parsed JSON payload from MQTT.
         """
         self.stats["messages_received"] += 1
 
@@ -448,11 +458,13 @@ class GatewayApp:
         self, data: Dict[str, Any], numeric_node_id: str
     ) -> None:
         """
-        Process a position message.
+        Specific handler for 'position' messages.
+        Extracts GPS coordinates, resolves device callsigns, and forwards
+        the update to the CalTopo Position Report API.
 
         Args:
-            data: JSON data from Meshtastic
-            numeric_node_id: Numeric node ID from the message
+            data: The complete JSON message payload.
+            numeric_node_id: The 'from' ID (numeric string) of the sender.
         """
         if self.node_id_mapping is None or self.callsign_mapping is None:
             self.logger.error("State databases not initialized")
@@ -487,7 +499,7 @@ class GatewayApp:
             )
             return
 
-        # Convert to decimal degrees
+        # Convert large integer coordinate (Meshtastic format) to decimal degrees
         latitude = latitude_i / 1e7
         longitude = longitude_i / 1e7
 
@@ -516,10 +528,11 @@ class GatewayApp:
                 f"{sanitize_for_log(hardware_id)}"
             )
 
-        # Get callsign for this hardware ID
+        # Get callsign for this hardware ID.
+        # This resolves config or learned aliases.
         callsign = self._get_or_create_callsign(hardware_id)
         if not callsign:
-            # Device denied or configured but not identified
+            # Device denied by policy (allow_unknown_devices=False) or no ID yet.
             if self.config is None:
                 self.stats["errors"] += 1
             return
