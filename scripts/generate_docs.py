@@ -99,7 +99,7 @@ def document_class(cls: Any, name: str) -> str:
 
     # Document methods
     for member_name, member in inspect.getmembers(cls):
-        if member_name.startswith("_") and member_name != "__init__":
+        if member_name.startswith('__') and member_name.endswith('__') and member_name != "__init__":
             continue
 
         if inspect.isfunction(member):
