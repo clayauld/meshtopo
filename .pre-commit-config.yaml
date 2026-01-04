@@ -59,7 +59,13 @@ repos:
         additional_dependencies: [pydantic, types-PyYAML, types-requests]
         args: [--ignore-missing-imports, --strict-optional]
         files: ^(src|config)/.*\.py$
-
+  # Documentation coverage
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.7.0
+    hooks:
+      - id: interrogate
+        args: [--config=pyproject.toml]
+        exclude: ^tests/
   # Security scanning
   - repo: https://github.com/PyCQA/bandit
     rev: 1.9.2
