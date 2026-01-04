@@ -1,27 +1,6 @@
-<!-- markdownlint-disable-file MD046 -->
-
 # Module `config.config`
 
-Configuration Management with Pydantic
-
-This module defines the configuration schema for the Meshtopo gateway.
-It uses `pydantic` for robust data validation, type coercion, and setting management.
-
-## Features
-
-* **Type Safety:** All configuration fields are strictly typed.
-* **Secret Management:** Sensitive fields (passwords) use `SecretStr` to prevent
-    accidental exposure in logs or `repr()`.
-* **Environment Overrides:** Configuration values can be overridden by environment
-    variables (e.g., `MQTT_BROKER_HOST`, `CALTOPO_CONNECT_KEY`) at runtime.
-    This is essential for containerized deployments.
-* **Validation:** Custom validators ensure data integrity (e.g., ensuring at least
-    one CalTopo mode is enabled).
-
-## Usage
-
-    config = Config.from_file("config.yaml")
-    print(config.mqtt.broker)
+Configuration management for the Meshtopo gateway service using Pydantic.
 
 ## Classes
 
@@ -40,7 +19,7 @@ validated to form a valid model.
 
 ### `def check_at_least_one_mode(self) -> 'CalTopoConfig'`
 
-Validator: Ensure at least one reporting mode is active.
+
 
 ### `def copy(self, *, include: 'AbstractSetIntStr | MappingIntStrAny | None' = None, exclude: 'AbstractSetIntStr | MappingIntStrAny | None' = None, update: 'Dict[str, Any] | None' = None, deep: 'bool' = False) -> 'Self'`
 
@@ -68,7 +47,11 @@ Returns:
 
 ### `def dict(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False) -> 'Dict[str, Any]'`
 
+
+
 ### `def json(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False, encoder: 'Callable[[Any], Any] | None' = PydanticUndefined, models_as_dict: 'bool' = PydanticUndefined, **dumps_kwargs: 'Any') -> 'str'`
+
+
 
 ### `def model_copy(self, *, update: 'Mapping[str, Any] | None' = None, deep: 'bool' = False) -> 'Self'`
 
@@ -78,7 +61,7 @@ Returns:
 Returns a copy of the model.
 
 !!! note
-    The underlying instance's [`__dict__`][object.**dict**] attribute is copied. This
+    The underlying instance's [`__dict__`][object.__dict__] attribute is copied. This
     might have unexpected side effects if you store anything in it, on top of the model
     fields (e.g. the value of [cached properties][functools.cached_property]).
 
@@ -196,6 +179,8 @@ Returns:
 
 ### `def dict(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False) -> 'Dict[str, Any]'`
 
+
+
 ### `def get_node_device_id(self, node_id: str) -> Optional[str]`
 
 Get the CalTopo device ID for a given Meshtastic node ID.
@@ -206,6 +191,8 @@ Get the GROUP for a given Meshtastic node ID.
 
 ### `def json(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False, encoder: 'Callable[[Any], Any] | None' = PydanticUndefined, models_as_dict: 'bool' = PydanticUndefined, **dumps_kwargs: 'Any') -> 'str'`
 
+
+
 ### `def model_copy(self, *, update: 'Mapping[str, Any] | None' = None, deep: 'bool' = False) -> 'Self'`
 
 !!! abstract "Usage Documentation"
@@ -214,7 +201,7 @@ Get the GROUP for a given Meshtastic node ID.
 Returns a copy of the model.
 
 !!! note
-    The underlying instance's [`__dict__`][object.**dict**] attribute is copied. This
+    The underlying instance's [`__dict__`][object.__dict__] attribute is copied. This
     might have unexpected side effects if you store anything in it, on top of the model
     fields (e.g. the value of [cached properties][functools.cached_property]).
 
@@ -296,7 +283,6 @@ This is useful if you want to do some validation that requires the entire model 
 ### `def setup_logging(self) -> None`
 
 Configure logging based on the configuration.
-Sets up StreamHandler (console) and optional RotatingFileHandler.
 
 ## `class DeviceConfig`
 
@@ -337,7 +323,11 @@ Returns:
 
 ### `def dict(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False) -> 'Dict[str, Any]'`
 
+
+
 ### `def json(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False, encoder: 'Callable[[Any], Any] | None' = PydanticUndefined, models_as_dict: 'bool' = PydanticUndefined, **dumps_kwargs: 'Any') -> 'str'`
+
+
 
 ### `def model_copy(self, *, update: 'Mapping[str, Any] | None' = None, deep: 'bool' = False) -> 'Self'`
 
@@ -347,7 +337,7 @@ Returns:
 Returns a copy of the model.
 
 !!! note
-    The underlying instance's [`__dict__`][object.**dict**] attribute is copied. This
+    The underlying instance's [`__dict__`][object.__dict__] attribute is copied. This
     might have unexpected side effects if you store anything in it, on top of the model
     fields (e.g. the value of [cached properties][functools.cached_property]).
 
@@ -465,7 +455,11 @@ Returns:
 
 ### `def dict(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False) -> 'Dict[str, Any]'`
 
+
+
 ### `def json(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False, encoder: 'Callable[[Any], Any] | None' = PydanticUndefined, models_as_dict: 'bool' = PydanticUndefined, **dumps_kwargs: 'Any') -> 'str'`
+
+
 
 ### `def model_copy(self, *, update: 'Mapping[str, Any] | None' = None, deep: 'bool' = False) -> 'Self'`
 
@@ -475,7 +469,7 @@ Returns:
 Returns a copy of the model.
 
 !!! note
-    The underlying instance's [`__dict__`][object.**dict**] attribute is copied. This
+    The underlying instance's [`__dict__`][object.__dict__] attribute is copied. This
     might have unexpected side effects if you store anything in it, on top of the model
     fields (e.g. the value of [cached properties][functools.cached_property]).
 
@@ -593,7 +587,11 @@ Returns:
 
 ### `def dict(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False) -> 'Dict[str, Any]'`
 
+
+
 ### `def json(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False, encoder: 'Callable[[Any], Any] | None' = PydanticUndefined, models_as_dict: 'bool' = PydanticUndefined, **dumps_kwargs: 'Any') -> 'str'`
+
+
 
 ### `def model_copy(self, *, update: 'Mapping[str, Any] | None' = None, deep: 'bool' = False) -> 'Self'`
 
@@ -603,7 +601,7 @@ Returns:
 Returns a copy of the model.
 
 !!! note
-    The underlying instance's [`__dict__`][object.**dict**] attribute is copied. This
+    The underlying instance's [`__dict__`][object.__dict__] attribute is copied. This
     might have unexpected side effects if you store anything in it, on top of the model
     fields (e.g. the value of [cached properties][functools.cached_property]).
 
@@ -721,7 +719,11 @@ Returns:
 
 ### `def dict(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False) -> 'Dict[str, Any]'`
 
+
+
 ### `def json(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False, encoder: 'Callable[[Any], Any] | None' = PydanticUndefined, models_as_dict: 'bool' = PydanticUndefined, **dumps_kwargs: 'Any') -> 'str'`
+
+
 
 ### `def model_copy(self, *, update: 'Mapping[str, Any] | None' = None, deep: 'bool' = False) -> 'Self'`
 
@@ -731,7 +733,7 @@ Returns:
 Returns a copy of the model.
 
 !!! note
-    The underlying instance's [`__dict__`][object.**dict**] attribute is copied. This
+    The underlying instance's [`__dict__`][object.__dict__] attribute is copied. This
     might have unexpected side effects if you store anything in it, on top of the model
     fields (e.g. the value of [cached properties][functools.cached_property]).
 
@@ -849,7 +851,11 @@ Returns:
 
 ### `def dict(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False) -> 'Dict[str, Any]'`
 
+
+
 ### `def json(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False, encoder: 'Callable[[Any], Any] | None' = PydanticUndefined, models_as_dict: 'bool' = PydanticUndefined, **dumps_kwargs: 'Any') -> 'str'`
+
+
 
 ### `def model_copy(self, *, update: 'Mapping[str, Any] | None' = None, deep: 'bool' = False) -> 'Self'`
 
@@ -859,7 +865,7 @@ Returns:
 Returns a copy of the model.
 
 !!! note
-    The underlying instance's [`__dict__`][object.**dict**] attribute is copied. This
+    The underlying instance's [`__dict__`][object.__dict__] attribute is copied. This
     might have unexpected side effects if you store anything in it, on top of the model
     fields (e.g. the value of [cached properties][functools.cached_property]).
 
@@ -977,7 +983,11 @@ Returns:
 
 ### `def dict(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False) -> 'Dict[str, Any]'`
 
+
+
 ### `def json(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False, encoder: 'Callable[[Any], Any] | None' = PydanticUndefined, models_as_dict: 'bool' = PydanticUndefined, **dumps_kwargs: 'Any') -> 'str'`
+
+
 
 ### `def model_copy(self, *, update: 'Mapping[str, Any] | None' = None, deep: 'bool' = False) -> 'Self'`
 
@@ -987,7 +997,7 @@ Returns:
 Returns a copy of the model.
 
 !!! note
-    The underlying instance's [`__dict__`][object.**dict**] attribute is copied. This
+    The underlying instance's [`__dict__`][object.__dict__] attribute is copied. This
     might have unexpected side effects if you store anything in it, on top of the model
     fields (e.g. the value of [cached properties][functools.cached_property]).
 
@@ -1105,7 +1115,11 @@ Returns:
 
 ### `def dict(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False) -> 'Dict[str, Any]'`
 
+
+
 ### `def json(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False, encoder: 'Callable[[Any], Any] | None' = PydanticUndefined, models_as_dict: 'bool' = PydanticUndefined, **dumps_kwargs: 'Any') -> 'str'`
+
+
 
 ### `def model_copy(self, *, update: 'Mapping[str, Any] | None' = None, deep: 'bool' = False) -> 'Self'`
 
@@ -1115,7 +1129,7 @@ Returns:
 Returns a copy of the model.
 
 !!! note
-    The underlying instance's [`__dict__`][object.**dict**] attribute is copied. This
+    The underlying instance's [`__dict__`][object.__dict__] attribute is copied. This
     might have unexpected side effects if you store anything in it, on top of the model
     fields (e.g. the value of [cached properties][functools.cached_property]).
 
@@ -1233,7 +1247,11 @@ Returns:
 
 ### `def dict(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False) -> 'Dict[str, Any]'`
 
+
+
 ### `def json(self, *, include: 'IncEx | None' = None, exclude: 'IncEx | None' = None, by_alias: 'bool' = False, exclude_unset: 'bool' = False, exclude_defaults: 'bool' = False, exclude_none: 'bool' = False, encoder: 'Callable[[Any], Any] | None' = PydanticUndefined, models_as_dict: 'bool' = PydanticUndefined, **dumps_kwargs: 'Any') -> 'str'`
+
+
 
 ### `def model_copy(self, *, update: 'Mapping[str, Any] | None' = None, deep: 'bool' = False) -> 'Self'`
 
@@ -1243,7 +1261,7 @@ Returns:
 Returns a copy of the model.
 
 !!! note
-    The underlying instance's [`__dict__`][object.**dict**] attribute is copied. This
+    The underlying instance's [`__dict__`][object.__dict__] attribute is copied. This
     might have unexpected side effects if you store anything in it, on top of the model
     fields (e.g. the value of [cached properties][functools.cached_property]).
 
@@ -1321,5 +1339,3 @@ Returns:
 
 Override this method to perform additional initialization after `__init__` and `model_construct`.
 This is useful if you want to do some validation that requires the entire model to be initialized.
-
-[functools.cached_property]: https://docs.python.org/3/library/functools.html#functools.cached_property

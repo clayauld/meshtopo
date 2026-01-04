@@ -1,5 +1,3 @@
-<!-- markdownlint-disable-file MD046 -->
-
 # Module `persistent_dict`
 
 Secure Persistent Dictionary
@@ -9,7 +7,6 @@ It is a replacement for `sqlitedict` specifically designed to avoid the
 security risks associated with Python's `pickle` serialization.
 
 ## Security Rationale
-
 The `sqlitedict` library defaults to using `pickle` for serialization.
 Pickle is unsafe when deserializing data from untrusted sources, as it can
 execute arbitrary code. While `sqlitedict` supports JSON, mixing it
@@ -17,14 +14,12 @@ into a codebase with pickle defaults is risky. This class enforces
 JSON serialization/deserialization strictly.
 
 ## Performance
-
-* **WAL Mode:** The database is configured in Write-Ahead Logging (WAL) mode.
+*   **WAL Mode:** The database is configured in Write-Ahead Logging (WAL) mode.
     This allows for better concurrency, as readers do not block writers.
-* **Synchronous Normal:** We use `PRAGMA synchronous=NORMAL` for a good balance
+*   **Synchronous Normal:** We use `PRAGMA synchronous=NORMAL` for a good balance
     between performance and durability.
 
 ## Usage
-
     d = PersistentDict("my_db.sqlite", tablename="users")
     d["key"] = {"some": "json", "data": 123}
     d.close()
@@ -64,7 +59,7 @@ D.items() -> a set-like object providing a view on D's items
 
 D.keys() -> a set-like object providing a view on D's keys
 
-### `def pop(self, key, default=<object object at 0x740a5df781e0>)`
+### `def pop(self, key, default=<object object at 0x7feb6bf381d0>)`
 
 D.pop(k[,d]) -> v, remove specified key and return the corresponding value.
 If key is not found, d is returned if given, otherwise KeyError is raised.

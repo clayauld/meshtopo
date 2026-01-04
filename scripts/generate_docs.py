@@ -142,11 +142,7 @@ def generate_module_doc(module_name: str) -> None:
 
     output_file = OUTPUT_DIR / f"{short_name}.md"
     with open(output_file, "w") as f:
-        f.write("<!-- markdownlint-disable-file MD046 -->\n\n") # Add this line
         f.write("\n".join(md))
-        # Add common reference links at the_end_
-        f.write("\n")
-        f.write("[functools.cached_property]: https://docs.python.org/3/library/functools.html#functools.cached_property")
 
     print(f"Generated docs for {module_name} -> {output_file}")
 

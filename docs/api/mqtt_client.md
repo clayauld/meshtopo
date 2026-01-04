@@ -1,5 +1,3 @@
-<!-- markdownlint-disable-file MD046 -->
-
 # Module `mqtt_client`
 
 AsyncIO MQTT Client Wrapper
@@ -9,10 +7,10 @@ to handle connection management, subscription, and message dispatch.
 
 ## Features
 
-* **Automatic Reconnection:** Implements an infinite loop with exponential backoff
+*   **Automatic Reconnection:** Implements an infinite loop with exponential backoff
     to handle broker disconnections and network instability.
-* **Async Stream:** Consumes messages from `aiomqtt.Client.messages` async generator.
-* **Security:** Handles authentication via username/password (from `SecretStr`).
+*   **Async Stream:** Consumes messages from `aiomqtt.Client.messages` async generator.
+*   **Security:** Handles authentication via username/password (from `SecretStr`).
 
 ## Usage
 

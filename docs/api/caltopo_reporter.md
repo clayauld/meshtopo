@@ -1,37 +1,22 @@
-<!-- markdownlint-disable-file MD046 -->
-
 # Module `caltopo_reporter`
 
-CalTopo API Integration Module
+CalTopo Reporting Module.
 
-This module handles all HTTP communication with the CalTopo Position Reporting API.
-It is designed for robustness and performance using modern asynchronous patterns.
-
-## Architecture
-
-* **HTTP Client Reuse:** The `CalTopoReporter` utilizes a shared `httpx.AsyncClient`
-    passed from `GatewayApp`. This enables persistent connection pooling (Keep-Alive),
-    significantly reducing latency for frequent position updates.
-* **Security:**
-  * **URL Whitelisting:** The base URL is strictly validated against allowed domains
-        (defaulting to `*.caltopo.com`) to prevent SSRF (Server-Side Request Forgery)
-        attacks.
-  * **Log Sanitization:** Sensitive path parameters (like the `connect_key`) are
-        redacted from logs.
-  * **Input Validation:** Identifiers are validated to ensure they are alphanumeric.
-* **Resilience:**
-  * **Exponential Backoff:** The `_make_api_request` method implements a retry
-        loop with jittered exponential backoff. This handles transient network
-        failures (5xx, 429) gracefully without thundering herd problems.
-  * **Concurrent Requests:** The `send_position_update` method uses
-        `asyncio.gather` to send updates to multiple endpoints (e.g., both a private
-        Connect Key map and a public Group map) in parallel.
+This module is responsible for the egress of location data to the CalTopo API.
+It handles:
+1.  **Connection Management:** Using a shared `httpx.AsyncClient` for connection
+    pooling.
+2.  **Reliability:** Implementing exponential backoff and retry logic for network
+    failures.
+3.  **Concurrency:** Sending updates to multiple endpoints (e.g., legacy connect keys
+    and new groups) in parallel.
+4.  **Security:** Ensuring all traffic is HTTPS.
 
 ## Usage
-
-This class is typically instantiated once by the `GatewayApp` and remains active for
-the application lifecycle. It requires an initialized `Config` object and an
-`httpx.AsyncClient`.
+    reporter = CalTopoReporter(config, client)
+    await reporter.start()
+    await reporter.send_position_update("User A", 34.0, -118.0)
+    await reporter.close()
 
 ## Classes
 
@@ -39,43 +24,62 @@ the application lifecycle. It requires an initialized `Config` object and an
 
 Handles secure and reliable communication with the CalTopo API.
 
-### `def __init__(self, config: Any, client: Optional[httpx.AsyncClient] = None) -> None`
+This class encapsulates the logic for sending position updates to CalTopo.
+It supports both the legacy "Connect Key" API and the newer "Group" API.
 
-Initialize CalTopo reporter.
+Attributes:
+    config (Config): The application configuration.
+    client (httpx.AsyncClient): The shared HTTP client.
+    base_url (str): The base URL for the CalTopo API.
+
+### `def __init__(self, config: config.config.Config, client: Optional[httpx.AsyncClient] = None)`
+
+Initialize the reporter.
 
 Args:
-    config: Configuration object containing CalTopo settings
-    client: Shared httpx.AsyncClient (recommended). If None, one will
-            be created.
+    config: Application configuration.
+    client: Optional shared httpx client. If not provided, one is created.
 
 ### `def close(self) -> None`
 
-Close the reporter resources.
-Only closes the client if we own it.
+Close resources.
 
-### `def send_position_update(self, callsign: str, latitude: float, longitude: float, group: Optional[str] = None) -> bool`
+Closes the HTTP client if it was created by this instance.
+
+### `def send_position_update(self, callsign: str, lat: float, lon: float, group: Optional[str] = None) -> bool`
 
 Send a position update to CalTopo.
 
-This method will broadcast the update to all configured endpoints (Connect Key
-and/or Group) concurrently.
+This method handles the complexity of sending to multiple configured destinations
+(e.g., a global connect key and a specific group) concurrently.
+
+Args:
+    callsign: The display name of the user.
+    lat: Latitude in decimal degrees.
+    lon: Longitude in decimal degrees.
+    group: Optional specific group to send to (overrides config if logic requires).
 
 Returns:
-    bool: True if at least one endpoint accepted the update.
+    bool: True if at least one update succeeded, False if all failed.
 
 ### `def start(self) -> None`
 
-Initialize the HTTP client if one was not provided.
-Called by `GatewayApp.initialize`.
+Prepare the reporter for use.
+
+(Currently a placeholder for any async setup logic).
 
 ### `def test_connection(self) -> bool`
 
-Test the connection to CalTopo API by sending a dummy request.
-Used during startup to verify configuration.
+Verify connectivity to the CalTopo API.
+
+Sends a test request to ensure the endpoint is reachable.
+
+Returns:
+    bool: True if reachable, False otherwise.
 
 ## Functions
 
-## `def _matches_url_pattern(url: str, pattern: str) -> bool`
+## `def _validate_caltopo_url(url: str) -> None`
 
-Check if a URL matches a pattern with wildcard support.
-Helper for security validation.
+Validate that the CALTOPO_API_URL is safe.
+Must be caltopo.com or a subdomain, unless strictly overridden.
