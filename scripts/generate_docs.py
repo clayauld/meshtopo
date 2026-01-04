@@ -11,13 +11,16 @@ import importlib
 import inspect
 import os
 import pkgutil
+import re
 import sys
 from pathlib import Path
 from types import ModuleType
 from typing import Any, List, Optional
 
-# Add src to path so we can import modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+# Add src and root to path so we can import modules
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, project_root)
+sys.path.insert(0, os.path.join(project_root, "src"))
 
 OUTPUT_DIR = Path("docs/api")
 
@@ -64,7 +67,10 @@ def get_signature(obj: Any) -> str:
     """Get the signature of a function or method."""
     try:
         sig = inspect.signature(obj)
-        return str(sig)
+        sig_str = str(sig)
+        # Normalize memory addresses (e.g., 0x7f8b1c...) to 0x...
+        sig_str = re.sub(r"0x[0-9a-fA-F]+", "0x...", sig_str)
+        return sig_str
     except (ValueError, TypeError):
         return "(...)"
 
@@ -123,9 +129,11 @@ def generate_module_doc(module_name: str) -> None:
     short_name = module_name.split(".")[-1]
 
     md.append(f"# Module `{module_name}`")
-    md.append("")
-    md.append(format_docstring(module.__doc__))
-    md.append("")
+
+    doc = format_docstring(module.__doc__)
+    if doc:
+        md.append("")
+        md.append(doc)
 
     # Classes
     classes = inspect.getmembers(module, inspect.isclass)
@@ -133,9 +141,10 @@ def generate_module_doc(module_name: str) -> None:
     classes = [c for c in classes if c[1].__module__ == module_name]
 
     if classes:
-        md.append("## Classes")
         md.append("")
+        md.append("## Classes")
         for name, cls in classes:
+            md.append("")
             md.append(document_class(cls, name))
 
     # Functions
@@ -144,14 +153,28 @@ def generate_module_doc(module_name: str) -> None:
     functions = [f for f in functions if f[1].__module__ == module_name]
 
     if functions:
-        md.append("## Functions")
         md.append("")
+        md.append("## Functions")
         for name, func in functions:
+            md.append("")
             md.append(document_function(func, name))
 
     output_file = OUTPUT_DIR / f"{short_name}.md"
+
+    # Clean up results: no triple blank lines, etc.
+    content = "\n".join(md).strip() + "\n"
+    # Replace 3+ newlines with 2
+    content = re.sub(r"\n{3,}", "\n\n", content)
+    new_content = content
+
+    # Only write if content has changed to avoid triggering pre-commit "modified files"
+    if output_file.exists():
+        with open(output_file, "r") as f:
+            if f.read() == new_content:
+                return
+
     with open(output_file, "w") as f:
-        f.write("\n".join(md))
+        f.write(new_content)
 
     print(f"Generated docs for {module_name} -> {output_file}")
 

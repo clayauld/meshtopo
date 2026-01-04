@@ -2,6 +2,17 @@
 # Install with: pip install pre-commit && pre-commit install
 
 repos:
+
+  # Local hooks 1 - Generate API Documentation
+  - repo: local
+    hooks:
+      - id: generate-docs
+        name: Generate API Documentation
+        entry: python3 scripts/generate_docs.py
+        language: system
+        always_run: true
+        pass_filenames: false
+
   # General hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -110,7 +121,7 @@ repos:
       - id: commitizen
         stages: [commit-msg]
 
-  # Local hooks
+  # Local hooks 2
   - repo: local
     hooks:
       - id: pytest

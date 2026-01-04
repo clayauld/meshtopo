@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Setup wizard for Meshtopo Gateway."""
 
 import os
 import shutil

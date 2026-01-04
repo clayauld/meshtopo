@@ -43,6 +43,7 @@ class PersistentDict(MutableMapping[str, Any]):
         self._create_table()
 
     def _connect(self) -> None:
+        """Connect to the SQLite database and set optimizations."""
         # Use default isolation level to allow manual transaction control
         self.conn = sqlite3.connect(self.filename)
         # optimize for simple key-value storage
@@ -50,6 +51,7 @@ class PersistentDict(MutableMapping[str, Any]):
         self.conn.execute("PRAGMA synchronous=NORMAL")
 
     def _create_table(self) -> None:
+        """Create the backing SQLite table if it does not exist."""
         if not self.conn:
             return
         query = (

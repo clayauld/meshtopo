@@ -65,6 +65,7 @@ class CalTopoConfig(BaseModel):
 
     @model_validator(mode="after")
     def check_at_least_one_mode(self) -> "CalTopoConfig":
+        """Validate that either a connect key or a group is configured."""
         if not self.has_connect_key and not self.has_group:
             raise ValueError(
                 "At least one of 'connect_key' or 'group' must be configured."
