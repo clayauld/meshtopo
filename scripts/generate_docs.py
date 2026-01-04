@@ -97,6 +97,15 @@ def document_class(cls: Any, name: str) -> str:
             continue
 
         if inspect.isfunction(member):
+            # Skip Pydantic/external methods unless they are defined in the module we are likely documenting
+            # or overrides.
+            # A simpler heuristic for now: check if the function's module is "pydantic.*"
+            if member.__module__ and (
+                member.__module__.startswith("pydantic")
+                or member.__module__.startswith("typing")
+            ):
+                continue
+
             md.append(document_function(member, member_name, level=3))
 
     return "\n".join(md)

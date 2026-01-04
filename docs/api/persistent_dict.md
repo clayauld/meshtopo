@@ -62,7 +62,7 @@ D.items() -> a set-like object providing a view on D's items
 
 D.keys() -> a set-like object providing a view on D's keys
 
-### `def pop(self, key, default=<object object at 0x7feb6bf381d0>)`
+### `def pop(self, key, default=<object object at 0x7a58119781e0>)`
 
 D.pop(k[,d]) -> v, remove specified key and return the corresponding value.
 If key is not found, d is returned if given, otherwise KeyError is raised.

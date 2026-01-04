@@ -52,14 +52,16 @@ Closes the HTTP client if it was created by this instance.
 
 Send a position update to CalTopo.
 
-This method handles the complexity of sending to multiple configured destinations
-(e.g., a global connect key and a specific group) concurrently.
+This method handles the complexity of sending to multiple configured
+destinations (e.g., a global connect key and a specific group)
+concurrently.
 
 Args:
     callsign: The display name of the user.
     lat: Latitude in decimal degrees.
     lon: Longitude in decimal degrees.
-    group: Optional specific group to send to (overrides config if logic requires).
+    group: Optional specific group to send to (overrides config if logic
+        requires).
 
 Returns:
     bool: True if at least one update succeeded, False if all failed.

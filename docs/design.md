@@ -38,7 +38,7 @@ graph LR
     end
 
     subgraph "Transport Layer"
-        NodeGW -- WiFi/Cell --> MQTT[MQTT Broker (Mosquitto)]
+        NodeGW -- WiFi/Cell --> MQTT["MQTT Broker (Mosquitto)"]
     end
 
     subgraph "Meshtopo Service (Docker Container)"
@@ -57,15 +57,15 @@ graph LR
 
 The application source code is modular, following the Single Responsibility Principle.
 
-| Module | Responsibility | Key Technologies |
-| :--- | :--- | :--- |
-| **`gateway.py`** | **Entry Point.** Handles CLI arguments, path security validation, and starts the main event loop. | `sys`, `os` |
-| **`gateway_app.py`** | **Orchestrator.** Manages the lifecycle of sub-components, routing logic, and state management. Acts as the "brain" of the operation. | `asyncio` |
-| **`mqtt_client.py`** | **Ingest.** Maintains the persistent connection to the MQTT broker. Handles automatic reconnection and message decoding. | `aiomqtt`, `paho-mqtt` |
-| **`caltopo_reporter.py`** | **Egress.** Manages the HTTP connection to CalTopo. Implements connection pooling, retries, and rate limiting. | `httpx` |
-| **`persistent_dict.py`** | **State Persistence.** A custom, secure key-value store backed by SQLite (WAL mode) that strictly uses JSON serialization to avoid security risks. | `sqlite3`, `json` |
-| **`config/config.py`** | **Configuration.** Defines the strict schema for `config.yaml` using Pydantic models. Handles environment variable overrides and secret masking. | `pydantic`, `PyYAML` |
-| **`utils.py`** | **Utilities.** Provides security helper functions like log sanitization. | `re` |
+| Module                    | Responsibility                                                                                                                                     | Key Technologies       |
+| :------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------- |
+| **`gateway.py`**          | **Entry Point.** Handles CLI arguments, path security validation, and starts the main event loop.                                                  | `sys`, `os`            |
+| **`gateway_app.py`**      | **Orchestrator.** Manages the lifecycle of sub-components, routing logic, and state management. Acts as the "brain" of the operation.              | `asyncio`              |
+| **`mqtt_client.py`**      | **Ingest.** Maintains the persistent connection to the MQTT broker. Handles automatic reconnection and message decoding.                           | `aiomqtt`, `paho-mqtt` |
+| **`caltopo_reporter.py`** | **Egress.** Manages the HTTP connection to CalTopo. Implements connection pooling, retries, and rate limiting.                                     | `httpx`                |
+| **`persistent_dict.py`**  | **State Persistence.** A custom, secure key-value store backed by SQLite (WAL mode) that strictly uses JSON serialization to avoid security risks. | `sqlite3`, `json`      |
+| **`config/config.py`**    | **Configuration.** Defines the strict schema for `config.yaml` using Pydantic models. Handles environment variable overrides and secret masking.   | `pydantic`, `PyYAML`   |
+| **`utils.py`**            | **Utilities.** Provides security helper functions like log sanitization.                                                                           | `re`                   |
 
 ---
 
@@ -76,18 +76,18 @@ The application source code is modular, following the Single Responsibility Prin
 1. **Ingestion:** The `MqttClient` receives a raw byte payload from the subscribed topic (e.g., `msh/US/2/json/+/+`). Note that `msh/REGION/2/json/+/+` is the standard pattern, where `REGION` (e.g., `US`, `EU_868`) corresponds to the LoRa frequency plan. See [Meshtastic Region Codes](https://meshtastic.org/docs/configuration/region-by-country/) for details.
 2. **Decoding:** The payload is decoded to a JSON object. The `type` field is inspected.
 3. **Routing (`GatewayApp`):**
-    - **`nodeinfo` packet:** Contains metadata (Long Name, Short Name, Hardware ID). The app updates the `StateDB` to map the numeric Node ID to the Hardware ID and Callsign.
-    - **`position` packet:** Contains coordinates. The app looks up the sender in the `StateDB`.
-        - *If known:* The Callsign is retrieved.
-        - *If unknown:* The packet is dropped (unless `allow_unknown_devices` is enabled).
+   - **`nodeinfo` packet:** Contains metadata (Long Name, Short Name, Hardware ID). The app updates the `StateDB` to map the numeric Node ID to the Hardware ID and Callsign.
+   - **`position` packet:** Contains coordinates. The app looks up the sender in the `StateDB`.
+     - _If known:_ The Callsign is retrieved.
+     - _If unknown:_ The packet is dropped (unless `allow_unknown_devices` is enabled).
 4. **Reporting (`CalTopoReporter`):**
-    - The reporter constructs the API URL.
-    - It sends the request asynchronously.
-    - **Reliability:** If the API fails (5xx or 429), it enters a retry loop with exponential backoff (1s, 2s, 4s...).
+   - The reporter constructs the API URL.
+   - It sends the request asynchronously.
+   - **Reliability:** If the API fails (5xx or 429), it enters a retry loop with exponential backoff (1s, 2s, 4s...).
 
 ### 3.2 State Persistence Strategy
 
-The gateway is stateless *logic* but maintains stateful *data* about the mesh network.
+The gateway is stateless _logic_ but maintains stateful _data_ about the mesh network.
 
 - **Problem:** Meshtastic nodes transmit their "Node Info" (Name) infrequently, but "Position" frequently. If the gateway restarts, it might receive a position from a node it hasn't "met" yet.
 - **Solution:** The `PersistentDict` module stores learned mappings in `meshtopo_state.sqlite`. This file persists across container restarts, ensuring immediate recognition of known nodes.
@@ -107,7 +107,7 @@ The gateway is stateless *logic* but maintains stateful *data* about the mesh ne
 
 ### 4.2 Resilience
 
-- **Non-Blocking I/O:** The system uses Python's `asyncio` loop. A slow CalTopo API response does *not* block the MQTT listener.
+- **Non-Blocking I/O:** The system uses Python's `asyncio` loop. A slow CalTopo API response does _not_ block the MQTT listener.
 - **Connection Pooling:** `httpx.AsyncClient` is reused across requests, maintaining persistent TCP/TLS connections to CalTopo for lower latency.
 - **Database Concurrency:** SQLite is configured in **WAL (Write-Ahead Logging)** mode, allowing non-blocking concurrent reads and writes.
 
@@ -119,17 +119,17 @@ The gateway is stateless *logic* but maintains stateful *data* about the mesh ne
 
 The recommended deployment uses Docker Compose. The stack can be configured in three "profiles" depending on your needs.
 
-| Profile | Services | Use Case |
-| :--- | :--- | :--- |
-| **`core`** | `meshtopo-gateway` | You already have an MQTT broker. You just need the bridge. |
-| **`mqtt`** | `core` + `mosquitto` | You need a self-hosted MQTT broker for your mesh. |
-| **`ssl`** | `mqtt` + `caddy` | You need the broker to be accessible over the public internet with secure WebSockets (WSS). |
+| Profile    | Services             | Use Case                                                                                    |
+| :--------- | :------------------- | :------------------------------------------------------------------------------------------ |
+| **`core`** | `meshtopo-gateway`   | You already have an MQTT broker. You just need the bridge.                                  |
+| **`mqtt`** | `core` + `mosquitto` | You need a self-hosted MQTT broker for your mesh.                                           |
+| **`ssl`**  | `mqtt` + `caddy`     | You need the broker to be accessible over the public internet with secure WebSockets (WSS). |
 
 ### 5.2 Configuration
 
 The system is configured via `config/config.yaml`. Environment variables can override any setting (ideal for Kubernetes or secure credential injection).
 
-**Example: Overriding Secrets**
+### Example: Overriding Secrets
 
 ```yaml
 # config.yaml
@@ -158,5 +158,5 @@ The Docker container exposes a health check that verifies connectivity to the Ca
 
 ### 6.3 Common Issues
 
-1. **"Unknown Device" Logs:** The gateway is receiving positions from a node it hasn't seen a `nodeinfo` packet for yet. *Remediation:* Wait for the node to beacon (or force a refresh), or manually add the ID to `config.yaml`.
+1. **"Unknown Device" Logs:** The gateway is receiving positions from a node it hasn't seen a `nodeinfo` packet for yet. _Remediation:_ Wait for the node to beacon (or force a refresh), or manually add the ID to `config.yaml`.
 2. **"Permission Denied" on SQLite:** Ensure the Docker volume is writable by the container user (UID 1000).

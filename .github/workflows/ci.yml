@@ -113,6 +113,12 @@ jobs:
         bandit -r -f json src/ > bandit-results.json || echo "BANDIT_FAILED=true" >> $GITHUB_ENV
       continue-on-error: true
 
+    - name: Run Interrogate (docstring coverage)
+      id: interrogate
+      run: |
+        interrogate -c pyproject.toml . || echo "INTERROGATE_FAILED=true" >> $GITHUB_ENV
+      continue-on-error: true
+
     - name: Create lint results summary
       if: always()
       run: |
@@ -184,8 +190,19 @@ jobs:
           echo "" >> lint-summary.md
         fi
 
+        # Interrogate results
+        if [ "$INTERROGATE_FAILED" = "true" ]; then
+          echo "### ❌ Interrogate (Doc Coverage)" >> lint-summary.md
+          echo "Documentation coverage is below threshold." >> lint-summary.md
+          echo "**Fix:** Add docstrings to classes and methods." >> lint-summary.md
+          echo "" >> lint-summary.md
+        else
+          echo "### ✅ Interrogate (Doc Coverage) - PASSED" >> lint-summary.md
+          echo "" >> lint-summary.md
+        fi
+
         # Overall status
-        if [ "$BLACK_FAILED" = "true" ] || [ "$FLAKE8_FAILED" = "true" ] || [ "$ISORT_FAILED" = "true" ] || [ "$BANDIT_FAILED" = "true" ]; then
+        if [ "$BLACK_FAILED" = "true" ] || [ "$FLAKE8_FAILED" = "true" ] || [ "$ISORT_FAILED" = "true" ] || [ "$BANDIT_FAILED" = "true" ] || [ "$INTERROGATE_FAILED" = "true" ]; then
           echo "## 🚨 Action Required" >> lint-summary.md
           echo "Some linting checks failed. Please fix the issues above and push your changes." >> lint-summary.md
         else

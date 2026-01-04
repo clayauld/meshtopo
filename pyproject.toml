@@ -64,6 +64,7 @@ dev = [
     "types-PyYAML",
     "types-requests",
     "pdoc>=14.0.0",
+    "interrogate>=1.5.0",
 ]
 
 [project.scripts]
@@ -184,3 +185,19 @@ template_dir = ".templates"
 
 [tool.semantic_release.branches.main]
 match = "main"
+
+[tool.interrogate]
+ignore-init-method = true
+ignore-init-module = false
+ignore-magic = true
+ignore-semiprivate = false
+ignore-private = false
+ignore-property-decorators = false
+ignore-module = false
+ignore-nested-functions = false
+ignore-nested-classes = false
+ignore-setters = false
+fail-under = 95
+exclude = ["setup.py", "docs", "build", "tests/"]
+verbose = 2
+color = true

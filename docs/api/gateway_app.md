@@ -8,9 +8,9 @@ CalTopo API (reporter destination).
 
 ## Architecture
 
-The application is built on an asynchronous event loop (`asyncio`) to ensure non-blocking
-operation, which is critical for handling network I/O from both MQTT and HTTP
-simultaneously.
+The application is built on an asynchronous event loop (`asyncio`) to ensure
+non-blocking operation, which is critical for handling network I/O from both
+MQTT and HTTP simultaneously.
 
 ### Core Components
 
