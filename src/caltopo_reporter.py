@@ -22,7 +22,6 @@ import asyncio
 import logging
 import os
 import random
-import re
 from typing import Any, Dict, List, Optional, Tuple, cast
 from urllib.parse import urlparse
 
@@ -129,15 +128,15 @@ class CalTopoReporter:
             domain = self.base_url.split("/api")[0]
             # Ensure client is available
             if not self._client or self._client.is_closed:
-                 # If closed or none, and we own it, recreate it
-                 if self._owns_client:
-                     self._client = httpx.AsyncClient(timeout=10.0)
-                 else:
-                     # If we don't own it and it's missing, we can't do much
-                     return False
+                # If closed or none, and we own it, recreate it
+                if self._owns_client:
+                    self._client = httpx.AsyncClient(timeout=10.0)
+                else:
+                    # If we don't own it and it's missing, we can't do much
+                    return False
 
             response = await self._client.get(domain, timeout=5.0)
-            return response.status_code < 500
+            return bool(response.status_code < 500)
         except Exception as e:
             self.logger.error(f"Connectivity test failed: {e}")
             return False
@@ -148,14 +147,16 @@ class CalTopoReporter:
         """
         Send a position update to CalTopo.
 
-        This method handles the complexity of sending to multiple configured destinations
-        (e.g., a global connect key and a specific group) concurrently.
+        This method handles the complexity of sending to multiple configured
+        destinations (e.g., a global connect key and a specific group)
+        concurrently.
 
         Args:
             callsign: The display name of the user.
             lat: Latitude in decimal degrees.
             lon: Longitude in decimal degrees.
-            group: Optional specific group to send to (overrides config if logic requires).
+            group: Optional specific group to send to (overrides config if logic
+                requires).
 
         Returns:
             bool: True if at least one update succeeded, False if all failed.
@@ -204,9 +205,7 @@ class CalTopoReporter:
             if success:
                 success_count += 1
             else:
-                self.logger.warning(
-                    f"Failed to send to {endpoint_desc}: {error}"
-                )
+                self.logger.warning(f"Failed to send to {endpoint_desc}: {error}")
 
         return success_count > 0
 
@@ -246,7 +245,8 @@ class CalTopoReporter:
                 # However, my test expects POST.
                 # Let's check the previous file again.
                 # The previous file used:
-                # response = await client.get(url)  <-- It constructed the full URL with query params!
+                # response = await client.get(url)  <-- It constructed the full URL
+                # with query params!
 
                 # So I should probably support GET here or params.
                 # Let's use params argument in client.post/get
@@ -270,16 +270,18 @@ class CalTopoReporter:
                     return description, False, e
                 # 5xx errors, we retry
                 self.logger.warning(
-                    f"Server error sending to {description} (Attempt {attempt+1}/{max_retries}): {e}"
+                    f"Server error sending to {description} "
+                    f"(Attempt {attempt+1}/{max_retries}): {e}"
                 )
 
             except httpx.RequestError as e:
                 self.logger.warning(
-                    f"Network error sending to {description} (Attempt {attempt+1}/{max_retries}): {e}"
+                    f"Network error sending to {description} "
+                    f"(Attempt {attempt+1}/{max_retries}): {e}"
                 )
 
             # Wait before retry (exponentialish backoff)
             if attempt < max_retries - 1:
-                await asyncio.sleep(1.0 * (2**attempt) + random.uniform(0, 1))
+                await asyncio.sleep(1.0 * (2**attempt) + random.uniform(0, 1))  # nosec
 
         return description, False, Exception("Max retries exceeded")

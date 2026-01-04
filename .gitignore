@@ -84,3 +84,7 @@ archived/
 # .beads/*.db-*
 meshtopo_state.sqlite
 .mypy_cache
+
+# AI Tools
+.gemini/
+

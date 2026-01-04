@@ -90,7 +90,7 @@ async def test_send_position_update_connect_key(reporter, mock_client):
     mock_client.post.assert_called_once()
     args, kwargs = mock_client.post.call_args
     assert "secret_key" in args[0]
-    assert kwargs['json'] == {"id": "User", "lat": 10.0, "lon": 20.0}
+    assert kwargs["json"] == {"id": "User", "lat": 10.0, "lon": 20.0}
 
 
 @pytest.mark.asyncio
@@ -148,7 +148,7 @@ async def test_send_position_update_retry_logic(reporter, mock_client):
     mock_client.post.side_effect = [
         httpx.RequestError("Fail 1"),
         httpx.RequestError("Fail 2"),
-        mock_response
+        mock_response,
     ]
 
     # Patch sleep to speed up test

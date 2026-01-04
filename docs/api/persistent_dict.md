@@ -7,6 +7,7 @@ It is a replacement for `sqlitedict` specifically designed to avoid the
 security risks associated with Python's `pickle` serialization.
 
 ## Security Rationale
+
 The `sqlitedict` library defaults to using `pickle` for serialization.
 Pickle is unsafe when deserializing data from untrusted sources, as it can
 execute arbitrary code. While `sqlitedict` supports JSON, mixing it
@@ -14,12 +15,14 @@ into a codebase with pickle defaults is risky. This class enforces
 JSON serialization/deserialization strictly.
 
 ## Performance
-*   **WAL Mode:** The database is configured in Write-Ahead Logging (WAL) mode.
+
+* **WAL Mode:** The database is configured in Write-Ahead Logging (WAL) mode.
     This allows for better concurrency, as readers do not block writers.
-*   **Synchronous Normal:** We use `PRAGMA synchronous=NORMAL` for a good balance
+* **Synchronous Normal:** We use `PRAGMA synchronous=NORMAL` for a good balance
     between performance and durability.
 
 ## Usage
+
     d = PersistentDict("my_db.sqlite", tablename="users")
     d["key"] = {"some": "json", "data": 123}
     d.close()

@@ -4,15 +4,17 @@ CalTopo Reporting Module.
 
 This module is responsible for the egress of location data to the CalTopo API.
 It handles:
-1.  **Connection Management:** Using a shared `httpx.AsyncClient` for connection
+
+1. **Connection Management:** Using a shared `httpx.AsyncClient` for connection
     pooling.
-2.  **Reliability:** Implementing exponential backoff and retry logic for network
+2. **Reliability:** Implementing exponential backoff and retry logic for network
     failures.
-3.  **Concurrency:** Sending updates to multiple endpoints (e.g., legacy connect keys
+3. **Concurrency:** Sending updates to multiple endpoints (e.g., legacy connect keys
     and new groups) in parallel.
-4.  **Security:** Ensuring all traffic is HTTPS.
+4. **Security:** Ensuring all traffic is HTTPS.
 
 ## Usage
+
     reporter = CalTopoReporter(config, client)
     await reporter.start()
     await reporter.send_position_update("User A", 34.0, -118.0)
