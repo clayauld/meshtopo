@@ -30,6 +30,64 @@ Args:
     client: Optional shared httpx.AsyncClient. If not provided, a new client
            will be created for each request.
 
+### `def _is_valid_caltopo_identifier(self, identifier: str) -> bool`
+
+Validate that a CalTopo identifier (connect_key or group) is safe.
+
+Args:
+    identifier: The identifier to validate
+
+Returns:
+    bool: True if the identifier is valid, False otherwise
+
+### `def _make_api_request(self, client: httpx.AsyncClient, url: str, callsign: str, endpoint_type: str) -> bool`
+
+Execute an HTTP GET request to the CalTopo API with built-in retry logic.
+
+This method handles:
+
+- Exponential backoff with jitter for retries.
+- Redaction of sensitive keys in logs.
+- Differentiation between retryable (5xx, 429) and fatal (4xx) errors.
+
+Args:
+    client: The async HTTP client to use.
+    url: The fully constructed URL (including sensitive keys).
+    callsign: The name/ID of the device being reported (for logging).
+    endpoint_type: Category of endpoint ('connect_key' or 'group').
+
+Returns:
+    bool: True if the request eventually succeeded (HTTP 200),
+          False if it failed after all retries or hit a fatal error.
+
+### `def _send_to_connect_key(self, client: httpx.AsyncClient, callsign: str, latitude: float, longitude: float) -> bool`
+
+Internal method to send position data to a personal connect_key endpoint.
+
+### `def _send_to_group(self, client: httpx.AsyncClient, callsign: str, latitude: float, longitude: float, group: str) -> bool`
+
+Internal method to send position data to a team 'group' endpoint.
+
+### `def _test_connect_key_endpoint(self, client: httpx.AsyncClient) -> bool`
+
+Test connection to connect_key endpoint.
+
+### `def _test_group_endpoint(self, client: httpx.AsyncClient) -> bool`
+
+Test connection to group endpoint.
+
+### `def _validate_and_log_identifier(self, identifier: str, identifier_type: str) -> bool`
+
+Validate a CalTopo identifier and log an error if invalid.
+
+Args:
+    identifier: The identifier to validate
+    identifier_type: The type of identifier (e.g., 'connect_key', 'group')
+                   for error logging
+
+Returns:
+    bool: True if the identifier is valid, False otherwise
+
 ### `def close(self) -> None`
 
 Close the reporter and the underlying HTTP client.

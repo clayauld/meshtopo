@@ -21,6 +21,17 @@ One of these must be present to successfully send data to CalTopo.
 The root configuration object for the Meshtopo service.
 Encapsulates all child configuration models.
 
+### `def _get_node_mapping(self, node_id: str) -> Optional[config.config.NodeMapping]`
+
+Locate the mapping configuration for a given node ID,
+handling the optional '!' prefix used by Meshtastic.
+
+Args:
+    node_id: The numeric or hex node ID (e.g., '!1234abcd' or '1234abcd').
+
+Returns:
+    The NodeMapping object if found, otherwise None.
+
 ### `def get_node_device_id(self, node_id: str) -> Optional[str]`
 
 Resolve the CalTopo device ID for a Meshtastic node.

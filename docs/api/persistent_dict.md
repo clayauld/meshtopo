@@ -25,6 +25,16 @@ Args:
     encoder: Ignored, kept for compatibility (always uses json.dumps).
     decoder: Ignored, kept for compatibility (always uses json.loads).
 
+### `def _connect(self) -> None`
+
+Establish a connection to the SQLite database and configure
+performance-optimizing pragmas.
+
+### `def _create_table(self) -> None`
+
+Initialize the database schema if the target table does not already exist.
+The schema uses a simple key (TEXT) and value (TEXT) structure.
+
 ### `def clear(self)`
 
 D.clear() -> None.  Remove all items from D.

@@ -22,6 +22,15 @@ Args:
     message_callback: An asynchronous callable that receives the
                      parsed JSON payload as a dictionary.
 
+### `def _process_message(self, message: Any) -> None`
+
+Internal handler for incoming MQTT messages.
+Performs byte decoding, JSON parsing, and basic sanitization before
+invoking the application callback.
+
+Args:
+    message: The raw message object from aiomqtt.
+
 ### `def run(self) -> None`
 
 Connect to the MQTT broker and process messages.

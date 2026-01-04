@@ -258,6 +258,7 @@ class CalTopoReporter:
         Execute an HTTP GET request to the CalTopo API with built-in retry logic.
 
         This method handles:
+
         - Exponential backoff with jitter for retries.
         - Redaction of sensitive keys in logs.
         - Differentiation between retryable (5xx, 429) and fatal (4xx) errors.
