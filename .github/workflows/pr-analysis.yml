@@ -118,7 +118,7 @@ jobs:
             for filename, file_data in cov_data['files'].items():
                 if 'src/' in filename or 'config/' in filename:
                     file_cov = file_data['summary']['percent_covered']
-                    files_summary.append(f"- `{filename.split('/')[-1]}`: {file_cov:.1f}%")
+                    files_summary.append(f"- `{filename}`: {file_cov:.1f}%")
 
             files_summary_str = '\n'.join(files_summary[:10])  # Top 10 files
 
@@ -140,8 +140,9 @@ jobs:
       id: doc-check
       run: |
         interrogate -c pyproject.toml . -v > doc-check.txt
-        # Extract total coverage percentage
-        DOC_COV=$(grep "TOTAL" doc-check.txt | awk '{print $NF}' | tr -d '%')
+        # Extract total coverage percentage, defaulting to 0 if not found
+        DOC_COV=$(grep "TOTAL" doc-check.txt | awk '{print $NF}' | tr -d '%' || echo "0")
+        if [ -z "$DOC_COV" ]; then DOC_COV="0"; fi
         echo "DOC_COVERAGE=$DOC_COV" >> $GITHUB_ENV
         cat doc-check.txt
 
@@ -212,7 +213,9 @@ jobs:
           echo "" >> analysis-report.md
         fi
 
-          echo "- Keep up the great work maintaining high code quality!" >> analysis-report.md
+        if (( $(echo "${{ env.SUCCESS_RATE }} == 100" | bc -l) )) && (( $(echo "${{ env.TOTAL_COVERAGE }} >= 80" | bc -l) )); then
+          echo "### ✅ Excellent Code Quality" >> analysis-report.md
+          echo "- Great work maintaining high test pass rate and coverage!" >> analysis-report.md
           echo "" >> analysis-report.md
         fi
 
