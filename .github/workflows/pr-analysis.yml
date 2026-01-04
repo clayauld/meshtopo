@@ -140,8 +140,8 @@ jobs:
       id: doc-check
       run: |
         interrogate -c pyproject.toml . -v > doc-check.txt
-        # Extract total coverage percentage, defaulting to 0 if not found
-        DOC_COV=$(grep "TOTAL" doc-check.txt | awk '{print $NF}' | tr -d '%' || echo "0")
+        # Extract total coverage percentage from the table format (look for the last percentage value)
+        DOC_COV=$(grep "TOTAL" doc-check.txt | grep -oE "[0-9.]+\s*%" | tr -d ' %' | tail -1 || echo "0")
         if [ -z "$DOC_COV" ]; then DOC_COV="0"; fi
         echo "DOC_COVERAGE=$DOC_COV" >> $GITHUB_ENV
         cat doc-check.txt
@@ -152,7 +152,8 @@ jobs:
         python3 scripts/generate_docs.py
         if [ -n "$(git status --porcelain docs/api/)" ]; then
           echo "DOCS_STALE=true" >> $GITHUB_ENV
-          echo "Documentation is out of date. Please run 'scripts/generate_docs.py' locally."
+          echo "Documentation is out of date. Changes detected:"
+          git diff docs/api/
         else
           echo "DOCS_STALE=false" >> $GITHUB_ENV
         fi
