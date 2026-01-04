@@ -51,7 +51,7 @@ def test_end_to_end_flow(docker_stack):
             "deploy/docker-compose.integration.yml",
             "ps",
             "-q",
-            "meshtopo-gateway",
+            "gateway",
         ],
         capture_output=True,
         text=True,
