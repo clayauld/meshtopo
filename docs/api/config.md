@@ -11,15 +11,45 @@ CalTopo API integration configuration.
 Requires either a personal connect key or a group ID (or both)
 to authorize position updates.
 
+### `def __init__(self, /, **data: 'Any') -> 'None'`
+
+Create a new model by parsing and validating input data from keyword arguments.
+
+Raises [`ValidationError`][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.
+
+`self` is explicitly positional-only to allow `self` as a field name.
+
 ### `def check_at_least_one_mode(self) -> 'CalTopoConfig'`
 
 Validate that either a connect key or a group is configured.
 One of these must be present to successfully send data to CalTopo.
 
+### `property has_connect_key`
+
+Check if a non-empty connect_key is configured.
+
+### `property has_group`
+
+Check if a non-empty group ID is configured.
+
+### `def strip_whitespace(v: Optional[str]) -> Optional[str]`
+
+Auto-strip whitespace from string inputs and convert empty strings to None.
+
 ## `class Config`
 
 The root configuration object for the Meshtopo service.
 Encapsulates all child configuration models.
+
+### `def __init__(self, /, **data: 'Any') -> 'None'`
+
+Create a new model by parsing and validating input data from keyword arguments.
+
+Raises [`ValidationError`][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.
+
+`self` is explicitly positional-only to allow `self` as a field name.
 
 ### `def _get_node_mapping(self, node_id: str) -> Optional[config.config.NodeMapping]`
 
@@ -31,6 +61,22 @@ Args:
 
 Returns:
     The NodeMapping object if found, otherwise None.
+
+### `def from_file(config_path: str) -> 'Config'`
+
+Load configuration from a YAML file and apply environment variable overrides.
+
+Args:
+    config_path: Absolute or relative path to the config.yaml file.
+
+Returns:
+    A populated and validated Config object.
+
+Raises:
+    FileNotFoundError: If the configuration file doesn't exist.
+    yaml.YAMLError: If the file contains invalid YAML.
+    TypeError: If the YAML root is not a dictionary.
+    pydantic.ValidationError: If the configuration fails validation.
 
 ### `def get_node_device_id(self, node_id: str) -> Optional[str]`
 
@@ -62,6 +108,15 @@ Sets the log level, format, and configures rotating file handlers if enabled.
 
 Settings for device discovery and management.
 
+### `def __init__(self, /, **data: 'Any') -> 'None'`
+
+Create a new model by parsing and validating input data from keyword arguments.
+
+Raises [`ValidationError`][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.
+
+`self` is explicitly positional-only to allow `self` as a field name.
+
 ## `class FileLoggingConfig`
 
 Settings for logging output to a rotating file.
@@ -72,6 +127,15 @@ Attributes:
     max_size: Maximum size of a single log file (e.g., '10MB', '500KB').
     backup_count: Number of rotated log files to retain.
 
+### `def __init__(self, /, **data: 'Any') -> 'None'`
+
+Create a new model by parsing and validating input data from keyword arguments.
+
+Raises [`ValidationError`][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.
+
+`self` is explicitly positional-only to allow `self` as a field name.
+
 ## `class LoggingConfig`
 
 General logging system configuration.
@@ -80,6 +144,15 @@ Attributes:
     level: Logging verbosity level (DEBUG, INFO, WARNING, ERROR).
     format: Standard Python logging format string.
     file: Specific settings for file-based logging.
+
+### `def __init__(self, /, **data: 'Any') -> 'None'`
+
+Create a new model by parsing and validating input data from keyword arguments.
+
+Raises [`ValidationError`][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.
+
+`self` is explicitly positional-only to allow `self` as a field name.
 
 ## `class MqttBrokerConfig`
 
@@ -95,6 +168,15 @@ Attributes:
     users: List of authorized MQTT users and their ACLs.
     acl_enabled: If True, enforces ACL rules for connected users.
 
+### `def __init__(self, /, **data: 'Any') -> 'None'`
+
+Create a new model by parsing and validating input data from keyword arguments.
+
+Raises [`ValidationError`][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.
+
+`self` is explicitly positional-only to allow `self` as a field name.
+
 ## `class MqttConfig`
 
 MQTT broker connection configuration.
@@ -108,6 +190,15 @@ Attributes:
     keepalive: Keepalive interval in seconds (default: 60).
     use_internal_broker: If True, connects to the internal Mosquitto instance.
 
+### `def __init__(self, /, **data: 'Any') -> 'None'`
+
+Create a new model by parsing and validating input data from keyword arguments.
+
+Raises [`ValidationError`][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.
+
+`self` is explicitly positional-only to allow `self` as a field name.
+
 ## `class MqttUser`
 
 MQTT user configuration for the internal broker.
@@ -117,6 +208,15 @@ Attributes:
     password: The secret password for the MQTT user.
     acl: Access control level (e.g., 'readwrite', 'readonly'). Defaults to 'readwrite'.
 
+### `def __init__(self, /, **data: 'Any') -> 'None'`
+
+Create a new model by parsing and validating input data from keyword arguments.
+
+Raises [`ValidationError`][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.
+
+`self` is explicitly positional-only to allow `self` as a field name.
+
 ## `class NodeMapping`
 
 Configuration for mapping specific Meshtastic nodes to CalTopo markers.
@@ -125,6 +225,24 @@ Attributes:
     device_id: The custom ID to use in CalTopo for this node.
     group: Optional specific CalTopo group for this node's markers.
 
+### `def __init__(self, /, **data: 'Any') -> 'None'`
+
+Create a new model by parsing and validating input data from keyword arguments.
+
+Raises [`ValidationError`][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.
+
+`self` is explicitly positional-only to allow `self` as a field name.
+
 ## `class StorageConfig`
 
 Configuration for local state storage.
+
+### `def __init__(self, /, **data: 'Any') -> 'None'`
+
+Create a new model by parsing and validating input data from keyword arguments.
+
+Raises [`ValidationError`][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.
+
+`self` is explicitly positional-only to allow `self` as a field name.
