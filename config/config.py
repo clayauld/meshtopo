@@ -148,7 +148,7 @@ class LoggingConfig(BaseModel):
         file: Specific settings for file-based logging.
     """
 
-    level: str = "INFO"
+    level: str = _DEFAULT_LOG_LEVEL
     format: str = _LOG_FORMAT
     file: FileLoggingConfig = Field(default_factory=FileLoggingConfig)
 
