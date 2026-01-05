@@ -118,7 +118,7 @@ jobs:
             for filename, file_data in cov_data['files'].items():
                 if 'src/' in filename or 'config/' in filename:
                     file_cov = file_data['summary']['percent_covered']
-                    files_summary.append(f"- `{filename.split('/')[-1]}`: {file_cov:.1f}%")
+                    files_summary.append(f"- `{filename}`: {file_cov:.1f}%")
 
             files_summary_str = '\n'.join(files_summary[:10])  # Top 10 files
 
@@ -135,6 +135,28 @@ jobs:
                 f.write("MISSING_LINES=0\n")
                 f.write("FILES_SUMMARY=Coverage data not available\n")
         EOF
+
+    - name: Run documentation check
+      id: doc-check
+      run: |
+        interrogate -c pyproject.toml . -v > doc-check.txt
+        # Extract total coverage percentage from the table format (look for the last percentage value)
+        DOC_COV=$(grep "TOTAL" doc-check.txt | grep -oE "[0-9.]+\s*%" | tr -d ' %' | tail -1 || echo "0")
+        if [ -z "$DOC_COV" ]; then DOC_COV="0"; fi
+        echo "DOC_COVERAGE=$DOC_COV" >> $GITHUB_ENV
+        cat doc-check.txt
+
+    - name: Verify documentation is up-to-date
+      id: doc-freshness
+      run: |
+        python3 scripts/generate_docs.py
+        if [ -n "$(git status --porcelain docs/api/)" ]; then
+          echo "DOCS_STALE=true" >> $GITHUB_ENV
+          echo "Documentation is out of date. Changes detected:"
+          git diff docs/api/
+        else
+          echo "DOCS_STALE=false" >> $GITHUB_ENV
+        fi
 
     - name: Generate analysis report
       run: |
@@ -161,6 +183,13 @@ jobs:
         | **Covered Lines** | ${{ env.COVERED_LINES }} |
         | **Missing Lines** | ${{ env.MISSING_LINES }} |
 
+        ## 📚 Documentation Report
+
+        | Metric | Value |
+        |--------|--------|
+        | **Documentation Coverage** | ${{ env.DOC_COVERAGE }}% |
+        | **Status** | ${{ env.DOCS_STALE == 'true' && '❌ Out of date' || '✅ Up to date' }} |
+
         ### 📁 File Coverage Breakdown
         ${{ env.FILES_SUMMARY }}
 
@@ -185,10 +214,23 @@ jobs:
           echo "" >> analysis-report.md
         fi
 
-        if (( $(echo "${{ env.TOTAL_COVERAGE }} >= 90" | bc -l) )); then
-          echo "### 🎉 Excellent Coverage!" >> analysis-report.md
-          echo "- Your code has excellent test coverage (${{ env.TOTAL_COVERAGE }}%)." >> analysis-report.md
-          echo "- Keep up the great work maintaining high code quality!" >> analysis-report.md
+        if (( $(echo "${{ env.SUCCESS_RATE }} == 100" | bc -l) )) && (( $(echo "${{ env.TOTAL_COVERAGE }} >= 80" | bc -l) )); then
+          echo "### ✅ Excellent Code Quality" >> analysis-report.md
+          echo "- Great work maintaining high test pass rate and coverage!" >> analysis-report.md
+          echo "" >> analysis-report.md
+        fi
+
+        if [[ "${{ env.DOCS_STALE }}" == "true" ]]; then
+          echo "### ❌ Documentation Out of Date" >> analysis-report.md
+          echo "- The generated API documentation in \`docs/api/\` does not match the source code." >> analysis-report.md
+          echo "- Please run \`python3 scripts/generate_docs.py\` locally and commit the changes." >> analysis-report.md
+          echo "" >> analysis-report.md
+        fi
+
+        if (( $(echo "${{ env.DOC_COVERAGE }} < 95" | bc -l) )); then
+          echo "### 📉 Documentation Coverage Low" >> analysis-report.md
+          echo "- Current docstring coverage is ${{ env.DOC_COVERAGE }}%, recommend >95%." >> analysis-report.md
+          echo "- Use \`make doc-check\` locally to find missing docstrings." >> analysis-report.md
           echo "" >> analysis-report.md
         fi
 

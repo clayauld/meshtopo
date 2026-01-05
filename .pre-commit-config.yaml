@@ -2,6 +2,17 @@
 # Install with: pip install pre-commit && pre-commit install
 
 repos:
+
+  # Local hooks 1 - Generate API Documentation
+  - repo: local
+    hooks:
+      - id: generate-docs
+        name: Generate API Documentation
+        entry: python3 scripts/generate_docs.py
+        language: system
+        always_run: true
+        pass_filenames: false
+
   # General hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -59,7 +70,13 @@ repos:
         additional_dependencies: [pydantic, types-PyYAML, types-requests]
         args: [--ignore-missing-imports, --strict-optional]
         files: ^(src|config)/.*\.py$
-
+  # Documentation coverage
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.7.0
+    hooks:
+      - id: interrogate
+        args: [--config=pyproject.toml]
+        exclude: ^tests/
   # Security scanning
   - repo: https://github.com/PyCQA/bandit
     rev: 1.9.2
@@ -104,7 +121,7 @@ repos:
       - id: commitizen
         stages: [commit-msg]
 
-  # Local hooks
+  # Local hooks 2
   - repo: local
     hooks:
       - id: pytest
