@@ -58,6 +58,6 @@ This second cycle of engineering review focuses on **Developer Experience (DX)**
 
 This roadmap is currently in execution.
 
-1. **Deep Dive & Docstring Update:** **Not Started**. Source code is now fully documented.
+1. **Deep Dive & Docstring Update:** **Not Started**. Source code is almost fully documented and needs a final pass.
 2. **Tooling Setup:** **Not Started**. `scripts/generate_docs.py` is operational.
-3. **Config Fix:** **Not Started**. `pyproject.toml` is updated.
+3. **Config Fix:** **Not Started**. `pyproject.toml` is not fixed yet and creates a stray blank `changelog.md` file.
