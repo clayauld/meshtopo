@@ -23,7 +23,11 @@ from gateway_app import GatewayApp  # noqa: E402
 
 
 def main() -> None:
-    """Main entry point for the gateway service."""
+    """
+    Main entry point for the gateway service.
+    Parses command-line arguments, enforces security constraints, and
+    initializes the main asyncio event loop for the GatewayApp.
+    """
     # Get configuration file path from command line argument
     if len(sys.argv) > 1:
         config_path = sys.argv[1]
@@ -44,6 +48,9 @@ def main() -> None:
         # Can happen on Windows if drives are different
         common_prefix = ""
 
+    # Security enforcement: Configuration files MUST be located within the
+    # current working directory (project root) to prevent directory traversal
+    # or execution with arbitrary system files.
     if common_prefix != cwd:
         print(
             f"Error: Configuration file must be within the application "

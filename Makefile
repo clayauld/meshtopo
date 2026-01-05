@@ -3,7 +3,7 @@
 # Determine repository name from GITHUB_REPOSITORY environment variable
 REPO := $(if $(GITHUB_REPOSITORY),$(GITHUB_REPOSITORY),clayauld/meshtopo)
 
-.PHONY: help setup install test lint format clean docker-setup docker-build docker-pull docker-run docker-run-minimal docker-run-ssl docker-stop docker-status docker-logs docker-clean docker-login docker-push docker-push-default dev-setup setup-broker generate-broker-config
+.PHONY: help setup install test lint format clean docker-setup docker-build docker-pull docker-run docker-run-minimal docker-run-ssl docker-stop docker-status docker-logs docker-clean docker-login docker-push docker-push-default dev-setup setup-broker generate-broker-config doc-check
 
 help:
 	@echo "Meshtopo Gateway Service - Available Commands:"
@@ -31,6 +31,7 @@ help:
 	@echo "  test-mqtt            Run MQTT topic format tests"
 	@echo "  lint                 Run linting checks"
 	@echo "  format               Format code"
+	@echo "  doc-check            Check documentation coverage"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  docker-build        Build Docker images locally"
@@ -91,6 +92,11 @@ format:
 	$(VENV_CHECK)
 	pre-commit run --all-files
 	@echo "Code formatting and linting complete!"
+
+# Check documentation coverage
+doc-check:
+	$(VENV_CHECK)
+	interrogate -c pyproject.toml .
 
 # Clean up temporary files
 clean:
