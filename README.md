@@ -21,7 +21,7 @@ Key features include:
 
 ---
 
-## 🚀 Quickstart
+## Quickstart
 
 Deployment simplified. Choose your path:
 
@@ -67,7 +67,7 @@ Use this if you already have an MQTT broker
 
 ---
 
-## 🛠️ Installation & Setup
+## Installation & Setup
 
 For full repository access and development:
 
