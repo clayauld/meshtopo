@@ -37,7 +37,7 @@ repos:
 
   # Python formatting
   - repo: https://github.com/psf/black
-    rev: 25.12.0
+    rev: 26.1.0
     hooks:
       - id: black
         language_version: python3
@@ -79,7 +79,7 @@ repos:
         exclude: ^tests/
   # Security scanning
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.9.2
+    rev: 1.9.3
     hooks:
       - id: bandit
         args: ["-f", "screen"]
@@ -95,7 +95,7 @@ repos:
 
   # YAML linting
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.37.1
+    rev: v1.38.0
     hooks:
       - id: yamllint
         args: [-d, relaxed]
@@ -116,7 +116,7 @@ repos:
 
   # Conventional Commits
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.11.1
+    rev: v4.13.6
     hooks:
       - id: commitizen
         stages: [commit-msg]
