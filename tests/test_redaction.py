@@ -1,8 +1,9 @@
+from unittest.mock import MagicMock
 
 import pytest
-import re
-from unittest.mock import MagicMock
-from src.caltopo_reporter import CalTopoReporter, _matches_url_pattern
+
+from src.caltopo_reporter import CalTopoReporter
+
 
 class TestRedaction:
     """Test secret redaction in CalTopoReporter."""
@@ -24,12 +25,20 @@ class TestRedaction:
         # Valid identifier characters
         text = "https://caltopo.com/api/v1/position/report/SECRET_KEY_123?id=FOO"
         redacted = reporter._redact_secrets(text)
-        assert redacted == "https://caltopo.com/api/v1/position/report/<REDACTED>?id=FOO"
+        assert (
+            redacted == "https://caltopo.com/api/v1/position/report/<REDACTED>?id=FOO"
+        )
 
         # With trailing punctuation
-        text = "Error connecting to https://caltopo.com/api/v1/position/report/SECRET_KEY. Retrying..."
+        text = (
+            "Error connecting to "
+            "https://caltopo.com/api/v1/position/report/SECRET_KEY. Retrying..."
+        )
         redacted = reporter._redact_secrets(text)
-        assert redacted == "Error connecting to https://caltopo.com/api/v1/position/report/<REDACTED>. Retrying..."
+        assert redacted == (
+            "Error connecting to "
+            "https://caltopo.com/api/v1/position/report/<REDACTED>. Retrying..."
+        )
 
         # With hyphens
         text = "https://caltopo.com/api/v1/position/report/SECRET-KEY-123"
@@ -37,9 +46,15 @@ class TestRedaction:
         assert redacted == "https://caltopo.com/api/v1/position/report/<REDACTED>"
 
         # Multiple occurrences? (Should check if regex replaces all)
-        text = "Tried https://caltopo.com/api/v1/position/report/KEY1 and https://caltopo.com/api/v1/position/report/KEY2"
+        text = (
+            "Tried https://caltopo.com/api/v1/position/report/KEY1 and "
+            "https://caltopo.com/api/v1/position/report/KEY2"
+        )
         redacted = reporter._redact_secrets(text)
-        assert redacted == "Tried https://caltopo.com/api/v1/position/report/<REDACTED> and https://caltopo.com/api/v1/position/report/<REDACTED>"
+        assert redacted == (
+            "Tried https://caltopo.com/api/v1/position/report/<REDACTED> and "
+            "https://caltopo.com/api/v1/position/report/<REDACTED>"
+        )
 
     def test_validate_and_log_identifier_redaction(self, reporter):
         """Test that invalid identifiers are redacted in logs."""
@@ -63,11 +78,15 @@ class TestRedaction:
 
         # Mock client.get to raise an exception with the secret URL
         secret_url = f"{reporter.BASE_URL}/SECRET_KEY"
-        reporter.client.get = MagicMock(side_effect=httpx.ConnectError(f"Connection failed to {secret_url}"))
+        reporter.client.get = MagicMock(
+            side_effect=httpx.ConnectError(f"Connection failed to {secret_url}")
+        )
         reporter.logger = MagicMock()
 
         # Call the method
-        await reporter._make_api_request(reporter.client, secret_url, "CALLSIGN", "connect_key")
+        await reporter._make_api_request(
+            reporter.client, secret_url, "CALLSIGN", "connect_key"
+        )
 
         # Check logger calls
         # There should be a warning or error log
@@ -85,11 +104,13 @@ class TestRedaction:
 
         # If no warning (maybe max_retries=0?), check error
         if not found_redacted_log:
-             for call in reporter.logger.error.call_args_list:
+            for call in reporter.logger.error.call_args_list:
                 args = call[0][0]
                 if "Unexpected error" in args or "Failed to send" in args:
                     # Depending on where it fails
                     pass
 
         # Since we mocked ConnectError, it should be caught in the first except block
-        assert found_redacted_log, "Did not find redacted warning log for connection error"
+        assert (
+            found_redacted_log
+        ), "Did not find redacted warning log for connection error"

@@ -163,7 +163,8 @@ class CalTopoReporter:
         # Escape BASE_URL for safe regex usage
         base_url_pattern = re.escape(self.BASE_URL)
 
-        # Pattern matches: BASE_URL/ followed by valid identifier characters [a-zA-Z0-9_-]+
+        # Pattern matches: BASE_URL/ followed by valid identifier characters
+        # [a-zA-Z0-9_-]+
         # We capture the base URL part in group 1 to preserve it in replacement
         pattern = f"({base_url_pattern}/)[a-zA-Z0-9_-]+"
 
@@ -323,7 +324,8 @@ class CalTopoReporter:
                     self.logger.warning(
                         f"CalTopo API error for {sanitize_for_log(callsign)} "
                         f"({endpoint_type}): HTTP {response.status_code} - "
-                        f"{self._redact_secrets(sanitize_for_log(response.text))}. Retrying..."
+                        f"{self._redact_secrets(sanitize_for_log(response.text))}."
+                        f" Retrying..."
                     )
                 else:
                     # Don't retry on other client errors (e.g., 400, 401, 404)
@@ -337,12 +339,14 @@ class CalTopoReporter:
             except (httpx.ConnectError, httpx.TimeoutException) as e:
                 self.logger.warning(
                     f"CalTopo API connection/timeout error for "
-                    f"{sanitize_for_log(callsign)} ({endpoint_type}): {self._redact_secrets(str(e))}. Retrying..."
+                    f"{sanitize_for_log(callsign)} ({endpoint_type}): "
+                    f"{self._redact_secrets(str(e))}. Retrying..."
                 )
             except Exception as e:
                 self.logger.error(
                     f"Unexpected error sending position update for "
-                    f"{sanitize_for_log(callsign)} ({endpoint_type}): {self._redact_secrets(str(e))}"
+                    f"{sanitize_for_log(callsign)} ({endpoint_type}): "
+                    f"{self._redact_secrets(str(e))}"
                 )
                 return False
 
@@ -425,7 +429,8 @@ class CalTopoReporter:
             return True
         except Exception as e:
             self.logger.error(
-                f"CalTopo connect_key endpoint test failed: {self._redact_secrets(str(e))}"
+                f"CalTopo connect_key endpoint test failed: "
+                f"{self._redact_secrets(str(e))}"
             )
             return False
 
