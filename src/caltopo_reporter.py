@@ -105,6 +105,13 @@ class CalTopoReporter:
         self._owns_client = client is None
         self.timeout = 10  # seconds
 
+        # Pre-compile the redaction regex
+        base_url_pattern = re.escape(self.BASE_URL)
+        # Pattern matches: BASE_URL/ followed by valid identifier characters
+        # [a-zA-Z0-9_-]+
+        # We capture the base URL part in group 1 to preserve it in replacement
+        self._redaction_regex = re.compile(f"({base_url_pattern}/)[a-zA-Z0-9_-]+")
+
     async def start(self) -> None:
         """Initialize the persistent HTTP client."""
         if self.client is None:
@@ -160,15 +167,7 @@ class CalTopoReporter:
         if not text:
             return text
 
-        # Escape BASE_URL for safe regex usage
-        base_url_pattern = re.escape(self.BASE_URL)
-
-        # Pattern matches: BASE_URL/ followed by valid identifier characters
-        # [a-zA-Z0-9_-]+
-        # We capture the base URL part in group 1 to preserve it in replacement
-        pattern = f"({base_url_pattern}/)[a-zA-Z0-9_-]+"
-
-        return re.sub(pattern, r"\1<REDACTED>", text)
+        return self._redaction_regex.sub(r"\1<REDACTED>", text)
 
     async def send_position_update(
         self,

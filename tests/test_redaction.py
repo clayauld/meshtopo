@@ -108,7 +108,8 @@ class TestRedaction:
                 args = call[0][0]
                 if "Unexpected error" in args or "Failed to send" in args:
                     # Depending on where it fails
-                    pass
+                    if "SECRET_KEY" not in args and "<REDACTED>" in args:
+                        found_redacted_log = True
 
         # Since we mocked ConnectError, it should be caught in the first except block
         assert (
