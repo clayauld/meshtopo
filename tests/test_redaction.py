@@ -62,7 +62,7 @@ class TestRedaction:
         reporter.logger = MagicMock()
 
         # Test with invalid identifier
-        invalid_id = "INVALID-ID"
+        invalid_id = "INVALID ID"  # An identifier with a space is guaranteed to be invalid.
         result = reporter._validate_and_log_identifier(invalid_id, "connect_key")
 
         assert result is False
