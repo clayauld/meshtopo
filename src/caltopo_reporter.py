@@ -106,7 +106,8 @@ class CalTopoReporter:
         self.timeout = 10  # seconds
 
         # Pre-compile the redaction regex
-        base_url_pattern = re.escape(self.BASE_URL)
+        # Normalize BASE_URL by stripping trailing slash
+        base_url_pattern = re.escape(self.BASE_URL.rstrip("/"))
         # Pattern matches: BASE_URL/ followed by valid identifier characters
         # [a-zA-Z0-9_-]+
         # We capture the base URL part in group 1 to preserve it in replacement
