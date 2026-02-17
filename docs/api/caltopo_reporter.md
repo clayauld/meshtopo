@@ -60,6 +60,20 @@ Returns:
     bool: True if the request eventually succeeded (HTTP 200),
           False if it failed after all retries or hit a fatal error.
 
+### `def _redact_secrets(self, text: str) -> str`
+
+Redact sensitive information (connect_key/group) from text.
+
+This method replaces any occurrence of a secret key in the CalTopo URL
+path with '<REDACTED>'. It targets segments following the BASE_URL that
+consist of valid identifier characters.
+
+Args:
+    text: The text to redact (e.g. log message, exception string)
+
+Returns:
+    str: The redacted text
+
 ### `def _send_to_connect_key(self, client: httpx.AsyncClient, callsign: str, latitude: float, longitude: float) -> bool`
 
 Internal method to send position data to a personal connect_key endpoint.

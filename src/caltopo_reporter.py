@@ -105,6 +105,14 @@ class CalTopoReporter:
         self._owns_client = client is None
         self.timeout = 10  # seconds
 
+        # Pre-compile the redaction regex
+        # Normalize BASE_URL by stripping trailing slash
+        base_url_pattern = re.escape(self.BASE_URL.rstrip("/"))
+        # Pattern matches: BASE_URL/ followed by valid identifier characters
+        # [a-zA-Z0-9_-]+
+        # We capture the base URL part in group 1 to preserve it in replacement
+        self._redaction_regex = re.compile(f"({base_url_pattern}/)[a-zA-Z0-9_-]+")
+
     async def start(self) -> None:
         """Initialize the persistent HTTP client."""
         if self.client is None:
@@ -139,11 +147,28 @@ class CalTopoReporter:
             bool: True if the identifier is valid, False otherwise
         """
         if not self._is_valid_caltopo_identifier(identifier):
-            self.logger.error(
-                f"Invalid CalTopo {identifier_type}: {sanitize_for_log(identifier)}"
-            )
+            self.logger.error(f"Invalid CalTopo {identifier_type}: <REDACTED>")
             return False
         return True
+
+    def _redact_secrets(self, text: str) -> str:
+        """
+        Redact sensitive information (connect_key/group) from text.
+
+        This method replaces any occurrence of a secret key in the CalTopo URL
+        path with '<REDACTED>'. It targets segments following the BASE_URL that
+        consist of valid identifier characters.
+
+        Args:
+            text: The text to redact (e.g. log message, exception string)
+
+        Returns:
+            str: The redacted text
+        """
+        if not text:
+            return text
+
+        return self._redaction_regex.sub(r"\1<REDACTED>", text)
 
     async def send_position_update(
         self,
@@ -277,7 +302,7 @@ class CalTopoReporter:
         base_delay = 1.0  # seconds
 
         # Consistently redact sensitive path parameters for both endpoint types.
-        log_url = re.sub(f"({self.BASE_URL}/)[^?]+", r"\1<REDACTED>", url)
+        log_url = self._redact_secrets(url)
 
         for attempt in range(max_retries + 1):
             try:
@@ -299,26 +324,29 @@ class CalTopoReporter:
                     self.logger.warning(
                         f"CalTopo API error for {sanitize_for_log(callsign)} "
                         f"({endpoint_type}): HTTP {response.status_code} - "
-                        f"{sanitize_for_log(response.text)}. Retrying..."
+                        f"{self._redact_secrets(sanitize_for_log(response.text))}."
+                        f" Retrying..."
                     )
                 else:
                     # Don't retry on other client errors (e.g., 400, 401, 404)
                     self.logger.error(
                         f"CalTopo API error for {sanitize_for_log(callsign)} "
                         f"({endpoint_type}): HTTP {response.status_code} - "
-                        f"{sanitize_for_log(response.text)}"
+                        f"{self._redact_secrets(sanitize_for_log(response.text))}"
                     )
                     return False
 
             except (httpx.ConnectError, httpx.TimeoutException) as e:
                 self.logger.warning(
                     f"CalTopo API connection/timeout error for "
-                    f"{sanitize_for_log(callsign)} ({endpoint_type}): {e}. Retrying..."
+                    f"{sanitize_for_log(callsign)} ({endpoint_type}): "
+                    f"{self._redact_secrets(str(e))}. Retrying..."
                 )
             except Exception as e:
                 self.logger.error(
                     f"Unexpected error sending position update for "
-                    f"{sanitize_for_log(callsign)} ({endpoint_type}): {e}"
+                    f"{sanitize_for_log(callsign)} ({endpoint_type}): "
+                    f"{self._redact_secrets(str(e))}"
                 )
                 return False
 
@@ -400,7 +428,10 @@ class CalTopoReporter:
             )
             return True
         except Exception as e:
-            self.logger.error(f"CalTopo connect_key endpoint test failed: {e}")
+            self.logger.error(
+                f"CalTopo connect_key endpoint test failed: "
+                f"{self._redact_secrets(str(e))}"
+            )
             return False
 
     async def _test_group_endpoint(self, client: httpx.AsyncClient) -> bool:
@@ -422,7 +453,9 @@ class CalTopoReporter:
             )
             return True
         except Exception as e:
-            self.logger.error(f"CalTopo group endpoint test failed: {e}")
+            self.logger.error(
+                f"CalTopo group endpoint test failed: {self._redact_secrets(str(e))}"
+            )
             return False
 
     async def close(self) -> None:
