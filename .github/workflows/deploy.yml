@@ -30,4 +30,5 @@ jobs:
             az containerapp update \
               --name meshtopo \
               --resource-group AMRG-Infrastructure-RG \
+              --container-name meshtopo-gateway \
               --image ghcr.io/${{ github.repository }}:latest
