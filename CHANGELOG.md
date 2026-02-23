@@ -15,7 +15,6 @@
   delete the changelog.
   ([`34af72a`](https://github.com/clayauld/meshtopo/commit/34af72ad9fd221e8523f33e065578ad2139883eb))
 
-
 ## v1.2.0 (2026-02-23)
 
 ### Features
@@ -28,7 +27,6 @@
 - Update deployment workflow to trigger on successful Release workflow completion and remove Docker
   image build steps.
   ([`d5eb6d4`](https://github.com/clayauld/meshtopo/commit/d5eb6d44e20b910394c9a31214606a3cef4ebd7f))
-
 
 ## v1.1.1 (2026-02-23)
 
@@ -100,7 +98,6 @@
   configuration.
   ([`cd710ac`](https://github.com/clayauld/meshtopo/commit/cd710ac0212394862d0c6e4159c26613d63714b2))
 
-
 ## v1.1.0 (2026-01-05)
 
 ### Bug Fixes
@@ -159,7 +156,6 @@
   ([#63](https://github.com/clayauld/meshtopo/pull/63),
   [`89471fb`](https://github.com/clayauld/meshtopo/commit/89471fb70be6828bc453e7fa71c5d2f8daf1b7fc))
 
-
 ## v1.0.0 (2025-12-31)
 
 ### Chores
@@ -213,7 +209,6 @@
 - Use explicit environment variables for Mosquitto MQTT credentials and simplify its healthcheck
   command in docker-compose.
   ([`7e8485a`](https://github.com/clayauld/meshtopo/commit/7e8485ae22e99c92b1c5f1d92327ec6a3e101bc2))
-
 
 ## v0.1.0 (2025-12-21)
 
