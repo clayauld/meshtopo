@@ -46,7 +46,7 @@ repos:
 
   # Python import sorting
   - repo: https://github.com/pycqa/isort
-    rev: 7.0.0
+    rev: 8.0.0
     hooks:
       - id: isort
         args: [--profile=black, --line-length=88]
@@ -116,7 +116,7 @@ repos:
 
   # Conventional Commits
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.13.7
+    rev: v4.13.8
     hooks:
       - id: commitizen
         stages: [commit-msg]
