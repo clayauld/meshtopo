@@ -16,7 +16,7 @@ This document outlines the improved Docker testing strategy that separates test 
 
 ```dockerfile
 # Base stage - common dependencies
-FROM python:3.9-slim as base
+FROM python:3.10-slim as base
 # ... install production dependencies
 
 # Test stage - includes test dependencies

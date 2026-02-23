@@ -8,7 +8,7 @@ The service is designed to be lightweight and easy to deploy, with a focus on Do
 
 **Key Technologies:**
 
-- **Programming Language:** Python 3.9+
+- **Programming Language:** Python 3.10+
 - **Core Libraries:**
   - `asyncio-mqtt`: For asynchronous MQTT communication.
   - `httpx`: For asynchronous HTTP requests to the CalTopo API.
@@ -36,46 +36,46 @@ The core logic is encapsulated in the `GatewayApp` class (`src/gateway_app.py`),
 
 1. **Clone the repository:**
 
-    ```bash
-    git clone https://github.com/clayauld/meshtopo.git
-    cd meshtopo
-    ```
+   ```bash
+   git clone https://github.com/clayauld/meshtopo.git
+   cd meshtopo
+   ```
 
 2. **Run the setup wizard:**
 
-    ```bash
-    make setup
-    ```
+   ```bash
+   make setup
+   ```
 
-    This will guide you through creating your `config.yaml` file.
+   This will guide you through creating your `config.yaml` file.
 
 ### Running the Service
 
 - **Using Docker (recommended):**
 
-    ```bash
-    docker compose up -d
-    ```
+  ```bash
+  docker compose up -d
+  ```
 
 - **Running directly:**
 
-    ```bash
-    make run
-    ```
+  ```bash
+  make run
+  ```
 
 ### Running Tests
 
 - **Run all tests:**
 
-    ```bash
-    make test-full
-    ```
+  ```bash
+  make test-full
+  ```
 
 - **Run tests without integration tests:**
 
-    ```bash
-    make test
-    ```
+  ```bash
+  make test
+  ```
 
 ## Development Conventions
 

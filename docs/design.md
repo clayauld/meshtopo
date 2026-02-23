@@ -80,7 +80,7 @@ This enhanced architecture supports three deployment modes:
 
 ### 4.1 Software Stack
 
-- **Language**: **Python 3.9+**. Chosen for its rapid development, excellent library support, and suitability for I/O-bound tasks.
+- **Language**: **Python 3.10+**. Chosen for its rapid development, excellent library support, and suitability for I/O-bound tasks.
 - **Key Libraries**:
   - `paho-mqtt`: The de facto standard for MQTT communication in Python.
   - `requests`: Simplifies making HTTP requests to the CalTopo endpoint.
@@ -409,7 +409,7 @@ The recommended deployment method is via Docker Compose for process isolation, d
 The core gateway service uses a lightweight Python container:
 
 ```dockerfile
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 # Set working directory
 WORKDIR /app

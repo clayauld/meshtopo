@@ -33,16 +33,21 @@ echo "=============================================="
 # Check if Python 3 is installed
 if ! command -v python3 &> /dev/null; then
     print_error "Python 3 is required but not installed."
-    echo "Please install Python 3.9 or higher and try again."
+    echo "Please install Python 3.10 or higher and try again."
     exit 1
 fi
 
 # Check Python version
 PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
-REQUIRED_VERSION="3.9"
+REQUIRED_VERSION="3.10"
+# Extract major and minor version numbers
+PYTHON_MAJOR=$(echo "$PYTHON_VERSION" | cut -d. -f1)
+PYTHON_MINOR=$(echo "$PYTHON_VERSION" | cut -d. -f2)
+REQUIRED_MAJOR=$(echo "$REQUIRED_VERSION" | cut -d. -f1)
+REQUIRED_MINOR=$(echo "$REQUIRED_VERSION" | cut -d. -f2)
 
-if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$PYTHON_VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
-    print_error "Python 3.9 or higher is required. Found: $PYTHON_VERSION"
+if [ "$PYTHON_MAJOR" -lt "$REQUIRED_MAJOR" ] || { [ "$PYTHON_MAJOR" -eq "$REQUIRED_MAJOR" ] && [ "$PYTHON_MINOR" -lt "$REQUIRED_MINOR" ]; }; then
+    print_error "Python 3.10 or higher is required. Found: $PYTHON_VERSION"
     exit 1
 fi
 

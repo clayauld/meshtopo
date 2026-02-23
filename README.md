@@ -179,7 +179,7 @@ Interested in contributing to Meshtopo? Here's how to get your development envir
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.10+
 - `pre-commit` for code quality checks
 
 ### Setup
@@ -243,25 +243,21 @@ meshtopo/
 ### Common Issues
 
 1. **MQTT Connection Failed**
-
    - Verify broker address and credentials
    - Check network connectivity
    - Ensure MQTT broker is running
 
 2. **No Position Updates**
-
    - Verify Meshtastic MQTT gateway is configured
    - Check topic pattern in configuration
    - Ensure nodes are broadcasting position data
 
 3. **CalTopo API Errors**
-
    - Verify connect key is correct
    - Check CalTopo Team Account status
    - Verify internet connectivity
 
 4. **Devices Not Appearing in CalTopo**
-
    - Ensure connect key is from Team Account access URL
    - Check that nodes are sending position data
    - Verify callsign extraction from nodeinfo messages

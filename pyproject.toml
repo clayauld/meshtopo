@@ -7,7 +7,7 @@ name = "meshtopo"
 version = "1.2.0"
 description = "Meshtastic to CalTopo Gateway Service"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {text = "AGPL-3.0"}
 authors = [
     {name = "Clayton Auld", email = "clayton@clayauld.com"}
@@ -19,7 +19,6 @@ classifiers = [
     "License :: OSI Approved :: GNU Affero General Public License v3",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -71,7 +70,7 @@ meshtopo = "gateway:main"
 
 [tool.black]
 line-length = 88
-target-version = ['py39']
+target-version = ['py310']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -108,7 +107,7 @@ exclude = [
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
-python_version = "3.9"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true

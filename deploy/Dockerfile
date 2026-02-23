@@ -1,5 +1,5 @@
 # Build stage
-FROM python:3.9-slim AS builder
+FROM python:3.10-slim AS builder
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ COPY config/ config/
 RUN pip install --no-cache-dir --prefix=/install .
 
 # Production stage
-FROM python:3.9-slim AS production
+FROM python:3.10-slim AS production
 
 WORKDIR /app
 
