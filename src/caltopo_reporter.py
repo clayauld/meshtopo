@@ -113,6 +113,9 @@ class CalTopoReporter:
         # We capture the base URL part in group 1 to preserve it in replacement
         self._redaction_regex = re.compile(f"({base_url_pattern}/)[a-zA-Z0-9_-]+")
 
+        # Pre-compile the identifier validation regex
+        self._identifier_regex = re.compile(r"^[a-zA-Z0-9_]+$")
+
     async def start(self) -> None:
         """Initialize the persistent HTTP client."""
         if self.client is None:
@@ -130,7 +133,7 @@ class CalTopoReporter:
             bool: True if the identifier is valid, False otherwise
         """
         # Allow alphanumeric characters and underscores
-        return bool(re.match(r"^[a-zA-Z0-9_]+$", identifier))
+        return bool(self._identifier_regex.match(identifier))
 
     def _validate_and_log_identifier(
         self, identifier: str, identifier_type: str
