@@ -164,8 +164,7 @@ class PersistentDict(MutableMapping[str, Any]):
             raise RuntimeError("Database connection closed")
 
         query = f"SELECT COUNT(*) FROM {self.tablename}"  # nosec
-        result = self.conn.execute(query).fetchone()
-        return result[0] if result else 0
+        return self.conn.execute(query).fetchone()["COUNT(*)"]
 
     def close(self) -> None:
         """Close the database connection."""
