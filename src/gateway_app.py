@@ -599,15 +599,11 @@ class GatewayApp:
                 return
             configured_device_id = self.config.get_node_device_id(node_id_from_payload)
             if configured_device_id:
-                # Use configured device_id as callsign
-                self._persist_callsign_mapping(
-                    node_id_from_payload, configured_device_id
-                )
+                # We do NOT write this to the database anymore.
+                # Configuration is the source of truth.
                 self.logger.debug(
-                    f"Mapped hardware ID "
-                    f"{sanitize_for_log(node_id_from_payload)} "
-                    f"to configured callsign "
-                    f"{sanitize_for_log(configured_device_id)}"
+                    f"Hardware ID {sanitize_for_log(node_id_from_payload)} "
+                    f"is in configuration, skipping persistent callsign mapping."
                 )
             elif longname:
                 # Fallback to Meshtastic longname if no configured device_id
