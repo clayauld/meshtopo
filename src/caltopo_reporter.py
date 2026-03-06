@@ -114,7 +114,7 @@ class CalTopoReporter:
         self._redaction_regex = re.compile(f"({base_url_pattern}/)[a-zA-Z0-9_-]+")
 
         # Pre-compile the identifier validation regex
-        self._identifier_regex = re.compile(r"^[a-zA-Z0-9_]+$")
+        self._identifier_regex = re.compile(r"^[a-zA-Z0-9_-]+$")
 
     async def start(self) -> None:
         """Initialize the persistent HTTP client."""
