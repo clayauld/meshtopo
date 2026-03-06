@@ -59,6 +59,7 @@ class PersistentDict(MutableMapping[str, Any]):
         # Isolation level is left as default to allow manual transaction
         # control via .commit()
         self.conn = sqlite3.connect(self.filename)
+        self.conn.row_factory = sqlite3.Row
 
         # Write-Ahead Logging (WAL) significantly improves concurrency
         # for key-value loads.
@@ -101,15 +102,14 @@ class PersistentDict(MutableMapping[str, Any]):
             raise RuntimeError("Database connection closed")
 
         query = f"SELECT value FROM {self.tablename} WHERE key = ?"  # nosec
-        cursor = self.conn.execute(query, (key,))
-        row = cursor.fetchone()
+        row = self.conn.execute(query, (key,)).fetchone()
 
         if row is None:
             raise KeyError(key)
 
         try:
             # We strictly use JSON to avoid the security risks of pickle
-            return json.loads(row[0])
+            return json.loads(row["value"])
         except json.JSONDecodeError:
             logger.error(f"Failed to decode JSON for key {key}. Data may be corrupted.")
             raise KeyError(key)
@@ -157,17 +157,14 @@ class PersistentDict(MutableMapping[str, Any]):
             raise RuntimeError("Database connection closed")
 
         query = f"SELECT key FROM {self.tablename}"  # nosec
-        cursor = self.conn.execute(query)
-        for row in cursor:
-            yield row[0]
+        yield from (row["key"] for row in self.conn.execute(query))
 
     def __len__(self) -> int:
         if not self.conn:
             raise RuntimeError("Database connection closed")
 
         query = f"SELECT COUNT(*) FROM {self.tablename}"  # nosec
-        cursor = self.conn.execute(query)
-        result = cursor.fetchone()
+        result = self.conn.execute(query).fetchone()
         return result[0] if result else 0
 
     def close(self) -> None:
