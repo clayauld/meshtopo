@@ -221,6 +221,11 @@ def main() -> None:
                     "\nPassword file was not updated due to errors during the process."
                 )
 
+        finally:
+            # Clean up the temp file if it still exists
+            if os.path.exists(tmp_passwd_file):
+                os.remove(tmp_passwd_file)
+
         # Final check for weak passwords
         weak_passwords = ["pass", "password", "changeme", "your_mqtt_password"]
         current_pass = config.get("mqtt", {}).get("password", "")
@@ -234,8 +239,6 @@ def main() -> None:
         for user in config.get("mqtt_broker", {}).get("users", []):
             if any(w in user.get("password", "").lower() for w in weak_passwords):
                 print(f"\nWARNING: User '{user.get('username')}' has a weak password.")
-
-        finally:
             # Clean up the temp file if it still exists
             if os.path.exists(tmp_passwd_file):
                 os.remove(tmp_passwd_file)
