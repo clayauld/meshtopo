@@ -2,6 +2,7 @@
 """Setup wizard for Meshtopo Gateway."""
 
 import os
+import secrets
 import shutil
 import subprocess
 from getpass import getpass
@@ -124,7 +125,11 @@ def main() -> None:
         # Default user for integrated broker
         if not config["mqtt_broker"].get("users"):
             config["mqtt_broker"]["users"] = [
-                {"username": "mesh", "password": "changeme", "acl": "readwrite"}
+                {
+                    "username": "mesh",
+                    "password": secrets.token_urlsafe(16),
+                    "acl": "readwrite",
+                }
             ]
 
         username = config["mqtt_broker"]["users"][0]["username"]
@@ -151,6 +156,10 @@ def main() -> None:
 
     mqtt_pass = config.get("mqtt", {}).get("password", "")
     config["mqtt"]["password"] = getpass("MQTT Password: ") or mqtt_pass
+
+    # Synchronize gateway password to internal broker user if using integrated broker
+    if integrated and config.get("mqtt_broker", {}).get("users"):
+        config["mqtt_broker"]["users"][0]["password"] = config["mqtt"]["password"]
 
     # Save configuration
     with open(CONFIG_FILE, "w") as f:
@@ -185,10 +194,13 @@ def main() -> None:
                     print("Skipping user with no username.")
                     continue
 
-                print(f"Setting password for user '{username}'.")
-                password = getpass("Password: ")
+                password = user.get("password")
                 if not password:
-                    print("Password cannot be empty. Skipping user.")
+                    print(f"Setting password for user '{username}'.")
+                    password = getpass("Password: ")
+
+                if not password:
+                    print(f"Password for user '{username}' cannot be empty. Skipping.")
                     continue
 
                 try:
@@ -210,6 +222,23 @@ def main() -> None:
                 )
 
         finally:
+            # Clean up the temp file if it still exists
+            if os.path.exists(tmp_passwd_file):
+                os.remove(tmp_passwd_file)
+
+        # Final check for weak passwords
+        weak_passwords = ["pass", "password", "changeme", "your_mqtt_password"]
+        current_pass = config.get("mqtt", {}).get("password", "")
+        if any(w in current_pass.lower() for w in weak_passwords):
+            print("\n" + "!" * 40)
+            print("WARNING: WEAK PASSWORD DETECTED")
+            print("Your configuration uses a common default password.")
+            print("Please consider changing it to a more secure one.")
+            print("!" * 40)
+
+        for user in config.get("mqtt_broker", {}).get("users", []):
+            if any(w in user.get("password", "").lower() for w in weak_passwords):
+                print(f"\nWARNING: User '{user.get('username')}' has a weak password.")
             # Clean up the temp file if it still exists
             if os.path.exists(tmp_passwd_file):
                 os.remove(tmp_passwd_file)
