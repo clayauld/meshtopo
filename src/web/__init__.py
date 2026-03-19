@@ -1,14 +1,28 @@
-from aiohttp import web
+"""Web UI module for Gateway Configuration."""
+
+import os
+from typing import TYPE_CHECKING
+
 import aiohttp_jinja2
 import jinja2
-import os
+from aiohttp import web
 
-from .routes import setup_routes
 from .auth import setup_auth
+from .routes import setup_routes
+
+if TYPE_CHECKING:
+    from gateway_app import GatewayApp
 
 
-async def create_app(gateway_app):
-    """Create and configure the aiohttp web application."""
+async def create_app(gateway_app: "GatewayApp") -> web.Application:
+    """Create and configure the aiohttp web application.
+
+    Args:
+        gateway_app: The main gateway application instance.
+
+    Returns:
+        The configured aiohttp web application.
+    """
     app = web.Application()
 
     # Attach gateway_app so handlers can access it

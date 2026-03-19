@@ -10,6 +10,7 @@ import time
 from typing import Any, Dict, Optional, Union
 
 import httpx
+from aiohttp import web
 
 from caltopo_reporter import CalTopoReporter
 from config.config import Config
@@ -17,7 +18,6 @@ from mqtt_client import MqttClient
 from persistent_dict import PersistentDict
 from utils import sanitize_for_log
 from web import create_app
-from aiohttp import web
 
 
 class GatewayApp:
@@ -259,7 +259,9 @@ class GatewayApp:
                 web_app = await create_app(self)
                 web_runner = web.AppRunner(web_app)
                 await web_runner.setup()
-                site = web.TCPSite(web_runner, "0.0.0.0", self.config.web.port)
+                site = web.TCPSite(
+                    web_runner, "0.0.0.0", self.config.web.port  # nosec B104
+                )
                 await site.start()
                 self.logger.info("Web UI started successfully")
 
