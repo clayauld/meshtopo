@@ -23,6 +23,12 @@ nodes:
 devices:
     allow_unknown_devices: true  # Allow unknown devices to send position updates
 
+# Optional: Web UI Configuration
+web:
+    enabled: true
+    port: 8080
+    admin_password: "admin"
+
 # Optional: Internal MQTT broker
 mqtt_broker:
     enabled: false

@@ -16,6 +16,8 @@ from config.config import Config
 from mqtt_client import MqttClient
 from persistent_dict import PersistentDict
 from utils import sanitize_for_log
+from web import create_app
+from aiohttp import web
 
 
 class GatewayApp:
@@ -54,6 +56,7 @@ class GatewayApp:
         # Persistent state using sqlitedict
         self.node_id_mapping: Any = None
         self.callsign_mapping: Any = None
+        self.web_config: Any = None
         # In-memory caches for performance
         self._node_id_cache: Dict[str, str] = {}
         self._callsign_cache: Dict[str, str] = {}
@@ -113,6 +116,12 @@ class GatewayApp:
                 )
                 _ = len(self.callsign_mapping)
 
+                self.web_config = PersistentDict(
+                    db_path,
+                    tablename="web_config",
+                    autocommit=True,
+                )
+
                 # Load into memory cache
                 self.logger.info("Loading state into memory cache...")
                 self._node_id_cache = dict(self.node_id_mapping)
@@ -132,6 +141,11 @@ class GatewayApp:
                 if self.callsign_mapping:
                     try:
                         self.callsign_mapping.close()
+                    except Exception:
+                        pass  # nosec
+                if self.web_config:
+                    try:
+                        self.web_config.close()
                     except Exception:
                         pass  # nosec
 
@@ -154,6 +168,11 @@ class GatewayApp:
                 self.callsign_mapping = PersistentDict(
                     db_path,
                     tablename="callsign_mapping",
+                    autocommit=True,
+                )
+                self.web_config = PersistentDict(
+                    db_path,
+                    tablename="web_config",
                     autocommit=True,
                 )
 
@@ -229,8 +248,20 @@ class GatewayApp:
                 sys.exit(1)
 
             # Create tasks
-            mqtt_task = asyncio.create_task(self.mqtt_client.run())
-            stats_task = asyncio.create_task(self._stats_loop())
+            tasks = [
+                asyncio.create_task(self.mqtt_client.run()),
+                asyncio.create_task(self._stats_loop()),
+            ]
+
+            web_runner = None
+            if self.config and self.config.web and self.config.web.enabled:
+                self.logger.info(f"Starting Web UI on port {self.config.web.port}...")
+                web_app = await create_app(self)
+                web_runner = web.AppRunner(web_app)
+                await web_runner.setup()
+                site = web.TCPSite(web_runner, "0.0.0.0", self.config.web.port)
+                await site.start()
+                self.logger.info("Web UI started successfully")
 
             self.logger.info("Gateway service started successfully")
 
@@ -240,11 +271,14 @@ class GatewayApp:
             await self.stop_event.wait()
 
             # Cancel tasks
-            mqtt_task.cancel()
-            stats_task.cancel()
+            for task in tasks:
+                task.cancel()
 
             # Wait for tasks to finish (suppress cancellation errors)
-            await asyncio.gather(mqtt_task, stats_task, return_exceptions=True)
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+            if web_runner:
+                await web_runner.cleanup()
 
         except asyncio.CancelledError:
             self.logger.info("Service cancelled")

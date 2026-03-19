@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meshtopo Web UI - Dashboard</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 1rem; margin-bottom: 2rem; }
+        .logout-btn { text-decoration: none; color: white; background-color: #dc3545; padding: 8px 16px; border-radius: 4px; font-weight: bold; }
+        .logout-btn:hover { background-color: #c82333; }
+
+        form { display: flex; flex-direction: column; }
+        label { margin-top: 15px; font-weight: bold; color: #555; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .help-text { font-size: 0.85em; color: #888; margin-top: -5px; margin-bottom: 10px; display: block; }
+
+        button[type="submit"] { margin-top: 20px; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button[type="submit"]:hover { background-color: #218838; }
+
+        .success-msg { background-color: #d4edda; color: #155724; padding: 15px; border-radius: 4px; border: 1px solid #c3e6cb; margin-bottom: 20px; text-align: center; font-weight: bold; }
+        .section { margin-bottom: 30px; padding: 20px; border: 1px solid #eee; border-radius: 5px; background: #fafafa; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Meshtopo Configuration</h1>
+        <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+
+    {% if success %}
+    <div class="success-msg">Configuration saved successfully! Note: Some settings may require a restart to fully apply.</div>
+    {% endif %}
+
+    <form action="/config" method="post">
+
+        <div class="section">
+            <h2>General Settings</h2>
+
+            <label for="team_id">Team ID / Incident ID:</label>
+            <input type="text" id="team_id" name="team_id" value="{{ team_id }}" placeholder="e.g., SAR-TEAM-1">
+            <span class="help-text">Used to identify the team or incident for shared locations.</span>
+        </div>
+
+        <div class="section">
+            <h2>CalTopo Settings</h2>
+
+            <label for="caltopo_connect_key">CalTopo API Connect Key (Personal Mode):</label>
+            <input type="password" id="caltopo_connect_key" name="caltopo_connect_key" placeholder="{% if caltopo_connect_key_set %}•••••••• (Set){% else %}Leave blank to keep unchanged{% endif %}">
+            <span class="help-text">Your CalTopo Team Account connect key. Required for Personal Mode.</span>
+
+            <label for="caltopo_group">Default CalTopo Group (Team Mode):</label>
+            <input type="text" id="caltopo_group" name="caltopo_group" value="{{ caltopo_group }}" placeholder="e.g., SARTEAM">
+            <span class="help-text">Global group identifier for tracking. Required for Team Mode.</span>
+        </div>
+
+        <!-- Multiple groups can be added here in the future -->
+
+        <div class="section">
+            <h2>Security</h2>
+
+            <label for="admin_password">Change Web Admin Password:</label>
+            <input type="password" id="admin_password" name="admin_password" placeholder="Leave blank to keep current password">
+            <span class="help-text">Update the password used to access this configuration interface.</span>
+        </div>
+
+        <button type="submit">Save Configuration</button>
+    </form>
+</div>
+
+</body>
+</html>

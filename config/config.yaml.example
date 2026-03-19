@@ -40,6 +40,12 @@ devices:
 # - allow_unknown_devices: true  (default) - Unknown devices are tracked and can send position updates
 # - allow_unknown_devices: false - Unknown devices are tracked but position updates are blocked
 
+# Web UI Configuration (optional)
+web:
+    enabled: true                       # Enable the Web UI (default: false)
+    port: 8080                          # Port to run the Web UI on
+    admin_password: "admin"             # Default admin password. You can also use WEB_ADMIN_PASSWORD env var
+
 # Internal MQTT Broker Configuration (optional)
 mqtt_broker:
     enabled: false                      # Enable internal Mosquitto broker
