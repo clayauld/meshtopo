@@ -6,15 +6,16 @@ from aiohttp_session import get_session
 import aiohttp_session
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
 import bcrypt
+from cryptography import fernet
 
 
 def setup_auth(app: web.Application) -> None:
     # Use a secure, random key for session storage if not provided in environment
     secret_key = os.getenv("WEB_SESSION_KEY")
     if secret_key:
-        fernet_key = base64.urlsafe_b64encode(secret_key.encode().ljust(32)[:32])
+        fernet_key = base64.urlsafe_b64encode(secret_key.encode().ljust(32, b"0")[:32])
     else:
-        fernet_key = base64.urlsafe_b64encode(os.urandom(32))
+        fernet_key = fernet.Fernet.generate_key()
 
     aiohttp_session.setup(app, EncryptedCookieStorage(fernet_key))
 
