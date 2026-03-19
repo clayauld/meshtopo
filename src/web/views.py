@@ -33,7 +33,7 @@ async def login_post(request: web.Request) -> dict:
 
     # 1. Environment variable check
     env_password = os.getenv("WEB_ADMIN_PASSWORD")
-    if env_password and password == env_password:
+    if env_password and __import__('hmac').compare_digest(password, env_password):
         session = await get_session(request)
         session["logged_in"] = True
         raise web.HTTPFound("/config")
