@@ -46,6 +46,7 @@ dependencies = [
     "aiohttp>=3.13.3",
     "aiohttp-jinja2>=1.6",
     "aiohttp-session>=2.12.1",
+    "cryptography>=41.0.0",
 ]
 
 [project.optional-dependencies]
