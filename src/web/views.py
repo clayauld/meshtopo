@@ -47,13 +47,16 @@ async def login_post(request: web.Request) -> dict:
             session = await get_session(request)
             session["logged_in"] = True
             raise web.HTTPFound("/config")
-
-    # 3. Check for default admin password from config file
-    config_password = gateway_app.config.web.admin_password
-    if config_password and password == config_password:
-        session = await get_session(request)
-        session["logged_in"] = True
-        raise web.HTTPFound("/config")
+    # 3. Check for default admin password from config file ONLY if no hash is set
+    else:
+        config_password = gateway_app.config.web.admin_password
+        if config_password and __import__('hmac').compare_digest(password, config_password):
+            session = await get_session(request)
+            session["logged_in"] = True
+            # Hash the default password on first successful login for future use
+            hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+            db["admin_password_hash"] = hashed
+            raise web.HTTPFound("/config")
 
     return {"error": "Invalid password"}
 
