@@ -13,9 +13,9 @@ def setup_auth(app: web.Application) -> None:
     # Use a secure, random key for session storage if not provided in environment
     secret_key = os.getenv("WEB_SESSION_KEY")
     if secret_key:
-        fernet_key = base64.urlsafe_b64encode(secret_key.encode().ljust(32, b"0")[:32])
+        fernet_key = secret_key.encode().ljust(32, b"0")[:32]
     else:
-        fernet_key = fernet.Fernet.generate_key()
+        fernet_key = os.urandom(32)
 
     aiohttp_session.setup(app, EncryptedCookieStorage(fernet_key))
 
