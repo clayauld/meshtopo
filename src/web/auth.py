@@ -19,21 +19,31 @@ def setup_auth(app: web.Application, gateway_app: Any = None) -> None:
         fernet_key = secret_key.encode().ljust(32, b"0")[:32]
     else:
         # Check persistent db for a saved key
-        if gateway_app and gateway_app.web_config and "session_secret_key" in gateway_app.web_config:
+        if (
+            gateway_app
+            and gateway_app.web_config
+            and "session_secret_key" in gateway_app.web_config
+        ):
             import base64
+
             encoded_key = gateway_app.web_config["session_secret_key"]
             try:
-                fernet_key = base64.b64decode(encoded_key.encode('utf-8'))
+                fernet_key = base64.b64decode(encoded_key.encode("utf-8"))
                 if len(fernet_key) != 32:
                     raise ValueError("Key length invalid")
             except Exception:
                 fernet_key = os.urandom(32)
-                gateway_app.web_config["session_secret_key"] = base64.b64encode(fernet_key).decode('utf-8')
+                gateway_app.web_config["session_secret_key"] = base64.b64encode(
+                    fernet_key
+                ).decode("utf-8")
         else:
             fernet_key = os.urandom(32)
             if gateway_app and gateway_app.web_config is not None:
                 import base64
-                gateway_app.web_config["session_secret_key"] = base64.b64encode(fernet_key).decode('utf-8')
+
+                gateway_app.web_config["session_secret_key"] = base64.b64encode(
+                    fernet_key
+                ).decode("utf-8")
 
     aiohttp_session.setup(app, EncryptedCookieStorage(fernet_key))
 

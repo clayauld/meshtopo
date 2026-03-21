@@ -60,10 +60,10 @@ class GatewayApp:
         # In-memory caches for performance
         self._node_id_cache: Dict[str, str] = {}
         self._callsign_cache: Dict[str, str] = {}
-        
+
         # Track latest status and metrics from devices
         self.device_states: Dict[str, Any] = {}
-        
+
         # Signal for internal app restarts
         self.restart_requested: bool = False
 
@@ -188,17 +188,32 @@ class GatewayApp:
 
             # --- Apply Web UI Configuration Overrides ---
             try:
-                if "caltopo_connect_key" in self.web_config and self.web_config["caltopo_connect_key"]:
-                    self.config.caltopo.connect_key = self.web_config["caltopo_connect_key"]
-                if "caltopo_group" in self.web_config and self.web_config["caltopo_group"]:
+                if (
+                    "caltopo_connect_key" in self.web_config
+                    and self.web_config["caltopo_connect_key"]
+                ):
+                    self.config.caltopo.connect_key = self.web_config[
+                        "caltopo_connect_key"
+                    ]
+                if (
+                    "caltopo_group" in self.web_config
+                    and self.web_config["caltopo_group"]
+                ):
                     self.config.caltopo.group = self.web_config["caltopo_group"]
                 if "allow_unknown_devices" in self.web_config:
-                    self.config.devices.allow_unknown_devices = self.web_config["allow_unknown_devices"]
-                
+                    self.config.devices.allow_unknown_devices = self.web_config[
+                        "allow_unknown_devices"
+                    ]
+
                 if "nodes" in self.web_config:
                     from config.config import NodeMapping
+
                     web_nodes = self.web_config["nodes"]
-                    nodes_dict = {k: NodeMapping(**v) for k, v in web_nodes.items() if isinstance(v, dict)}
+                    nodes_dict = {
+                        k: NodeMapping(**v)
+                        for k, v in web_nodes.items()
+                        if isinstance(v, dict)
+                    }
                     # Merge or override nodes
                     self.config.nodes = nodes_dict
             except Exception as e:
@@ -655,7 +670,7 @@ class GatewayApp:
         # Build mapping from numeric node ID to hardware ID
         if node_id_from_payload:
             self._persist_node_id_mapping(str(numeric_node_id), node_id_from_payload)
-            
+
             # Update device state
             if node_id_from_payload not in self.device_states:
                 self.device_states[node_id_from_payload] = {}

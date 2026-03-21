@@ -3,16 +3,17 @@
 from aiohttp import web
 
 from .views import (
+    api_logs_get,
     config_get,
     config_post,
     index,
     login_get,
     login_post,
     logout,
-    status_get,
     restart_post,
-    api_logs_get,
+    status_get,
 )
+
 
 def setup_routes(app: web.Application) -> None:
     """Register all routes for the web application."""

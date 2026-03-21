@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Download and extract Litestream
 ARG LS_VERSION=0.5.7
-RUN wget https://github.com/benbjohnson/litestream/releases/download/v${LS_VERSION}/litestream-${LS_VERSION}-linux-x86_64.tar.gz \
+RUN wget -q https://github.com/benbjohnson/litestream/releases/download/v${LS_VERSION}/litestream-${LS_VERSION}-linux-x86_64.tar.gz \
     && tar -xzf litestream-${LS_VERSION}-linux-x86_64.tar.gz -C /usr/local/bin \
     && chmod +x /usr/local/bin/litestream
 
@@ -20,7 +20,8 @@ COPY src/ src/
 COPY config/ config/
 
 # Install dependencies into a temporary directory
-RUN pip install --upgrade pip && pip install --no-cache-dir --prefix=/install .
+# hadolint ignore=DL3013
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir --prefix=/install .
 
 # Production stage
 FROM python:3.10-slim AS production

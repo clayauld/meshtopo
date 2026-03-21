@@ -68,7 +68,7 @@ def main() -> None:
 
     # Create and start the gateway application
     import time
-    
+
     while True:
         app = GatewayApp(config_path)
 
@@ -80,8 +80,8 @@ def main() -> None:
         except Exception as e:
             print(f"Fatal error: {e}")
             sys.exit(1)
-            
-        if getattr(app, 'restart_requested', False):
+
+        if getattr(app, "restart_requested", False):
             print("\nRestart requested from Web UI. Restarting application...")
             time.sleep(1.5)  # Allow sockets and tasks to cleanly close
             continue

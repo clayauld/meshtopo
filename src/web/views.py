@@ -83,9 +83,15 @@ async def config_get(request: web.Request) -> Dict[str, Any]:
 
     config_data = {
         "team_id": db.get("team_id", ""),
-        "caltopo_connect_key_set": bool(db.get("caltopo_connect_key", gateway_app.config.caltopo.connect_key)),
-        "caltopo_group": db.get("caltopo_group", gateway_app.config.caltopo.group or ""),
-        "allow_unknown_devices": db.get("allow_unknown_devices", gateway_app.config.devices.allow_unknown_devices),
+        "caltopo_connect_key_set": bool(
+            db.get("caltopo_connect_key", gateway_app.config.caltopo.connect_key)
+        ),
+        "caltopo_group": db.get(
+            "caltopo_group", gateway_app.config.caltopo.group or ""
+        ),
+        "allow_unknown_devices": db.get(
+            "allow_unknown_devices", gateway_app.config.devices.allow_unknown_devices
+        ),
         "nodes": db.get("nodes", gateway_app.config.nodes),
         "multiple_groups": db.get("multiple_groups", []),
         "success": request.query.get("success") == "1",
@@ -143,75 +149,86 @@ async def config_post(request: web.Request) -> web.Response:
     gateway_app = request.app["gateway_app"]
     gateway_app.restart_requested = True
 
-    async def delayed_config_restart():
+    async def delayed_config_restart() -> None:
         import asyncio
+
         await asyncio.sleep(1.0)
         if gateway_app.stop_event:
             gateway_app.stop_event.set()
 
     import asyncio
+
     asyncio.create_task(delayed_config_restart())
 
-    # Direct user back to config page, they will temporarily get connection refused or login until app boots up fully
+    # Direct user back to config page, they will temporarily get connection refused
+    # or login until app boots up fully
     raise web.HTTPFound("/config?success=1")
+
 
 @login_required
 async def restart_post(request: web.Request) -> web.Response:
     """Handle POST requests to trigger an internal application restart."""
     gateway_app = request.app["gateway_app"]
     gateway_app.restart_requested = True
-    
+
     # Give the web response time to finish before setting the stop event
-    async def delayed_stop():
+    async def delayed_stop() -> None:
         import asyncio
+
         await asyncio.sleep(1.0)
         if gateway_app.stop_event:
             gateway_app.stop_event.set()
-            
+
     import asyncio
+
     asyncio.create_task(delayed_stop())
-    
+
     return web.json_response({"status": "success", "message": "Restarting..."})
+
 
 @login_required
 async def api_logs_get(request: web.Request) -> web.Response:
     """Handle GET requests for just the system logs."""
     import collections
+
     gateway_app = request.app["gateway_app"]
     log_content = "No logs available."
-    
+
     log_path = gateway_app.config.logging.file.path
     if log_path:
         try:
             import os
+
             if os.path.exists(log_path):
-                with open(log_path, 'r', encoding='utf-8') as f:
+                with open(log_path, "r", encoding="utf-8") as f:
                     deque = collections.deque(f, 100)
                     log_content = "".join(deque)
         except Exception as e:
             log_content = f"Error reading logs: {e}"
-        
+
     # Return as plain text
     return web.Response(text=log_content, content_type="text/plain")
+
 
 @login_required
 @aiohttp_jinja2.template("status.html")  # type: ignore
 async def status_get(request: web.Request) -> Dict[str, Any]:
     """Handle GET requests for the status dashboard."""
     import collections
+
     gateway_app = request.app["gateway_app"]
-    
+
     # Read last 100 lines of log
     log_lines = []
     log_path = gateway_app.config.logging.file.path
     if log_path and os.path.exists(log_path):
         try:
-            with open(log_path, 'r', encoding='utf-8') as f:
+            with open(log_path, "r", encoding="utf-8") as f:
                 deque = collections.deque(f, 100)
                 log_lines = list(deque)
         except Exception:
-            pass
-            
+            pass  # nosec B110
+
     return {
         "stats": gateway_app.stats,
         "device_states": gateway_app.device_states,
