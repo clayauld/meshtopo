@@ -67,9 +67,9 @@ repos:
     rev: v1.19.1
     hooks:
       - id: mypy
-        additional_dependencies: [pydantic, types-PyYAML, types-requests]
-        args: [--ignore-missing-imports, --strict-optional]
-        files: ^(src|config)/.*\.py$
+        additional_dependencies: [pydantic, types-PyYAML, types-requests, aiohttp, aiohttp-jinja2]
+        args: [--ignore-missing-imports, --strict-optional, src/, config/]
+        pass_filenames: false
   # Documentation coverage
   - repo: https://github.com/econchick/interrogate
     rev: 1.7.0

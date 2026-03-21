@@ -6,7 +6,7 @@ import hashlib
 import os
 import secrets
 from functools import wraps
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 import aiohttp_session
 import bcrypt
@@ -75,7 +75,9 @@ async def generate_csrf(request: web.Request) -> str:
     return str(session["csrf_token"])
 
 
-async def validate_csrf(request: web.Request, form_data: dict | None = None) -> bool:
+async def validate_csrf(
+    request: web.Request, form_data: Mapping[str, Any] | None = None
+) -> bool:
     """Validate a CSRF token from a form submission or header."""
     session = await get_session(request)
     expected = session.get("csrf_token")

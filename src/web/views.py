@@ -1,7 +1,5 @@
 """View handlers for the Web UI."""
 
-# mypy: disable-error-code="untyped-decorator"
-
 import asyncio
 import collections
 import logging
