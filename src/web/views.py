@@ -2,6 +2,8 @@
 
 # mypy: disable-error-code="untyped-decorator"
 
+import asyncio
+import collections
 import logging
 import os
 from typing import Any, Dict
@@ -163,13 +165,10 @@ async def config_post(request: web.Request) -> web.Response:
     gateway_app.restart_requested = True
 
     async def delayed_config_restart() -> None:
-        import asyncio
 
         await asyncio.sleep(1.0)
         if gateway_app.stop_event:
             gateway_app.stop_event.set()
-
-    import asyncio
 
     asyncio.create_task(delayed_config_restart())
 
@@ -189,13 +188,10 @@ async def restart_post(request: web.Request) -> web.Response:
 
     # Give the web response time to finish before setting the stop event
     async def delayed_stop() -> None:
-        import asyncio
 
         await asyncio.sleep(1.0)
         if gateway_app.stop_event:
             gateway_app.stop_event.set()
-
-    import asyncio
 
     asyncio.create_task(delayed_stop())
 
@@ -205,7 +201,6 @@ async def restart_post(request: web.Request) -> web.Response:
 @login_required
 async def api_logs_get(request: web.Request) -> web.Response:
     """Handle GET requests for just the system logs."""
-    import collections
 
     gateway_app = request.app[GATEWAY_APP_KEY]
     log_content = "No logs available."
@@ -213,8 +208,6 @@ async def api_logs_get(request: web.Request) -> web.Response:
     log_path = gateway_app.config.logging.file.path
     if log_path:
         try:
-            import os
-
             if os.path.exists(log_path):
                 with open(log_path, "r", encoding="utf-8") as f:
                     deque = collections.deque(f, 100)
@@ -231,7 +224,6 @@ async def api_logs_get(request: web.Request) -> web.Response:
 @aiohttp_jinja2.template("status.html")
 async def status_get(request: web.Request) -> Dict[str, Any]:
     """Handle GET requests for the status dashboard."""
-    import collections
 
     gateway_app = request.app[GATEWAY_APP_KEY]
 

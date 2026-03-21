@@ -17,6 +17,7 @@ Arguments:
 import asyncio
 import os
 import sys
+import time
 from pathlib import Path
 
 from gateway_app import GatewayApp  # noqa: E402
@@ -67,8 +68,6 @@ def main() -> None:
         sys.exit(1)
 
     # Create and start the gateway application
-    import time
-
     while True:
         app = GatewayApp(config_path)
 
