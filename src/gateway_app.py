@@ -668,17 +668,15 @@ class GatewayApp:
             self._persist_node_id_mapping(str(numeric_node_id), node_id_from_payload)
 
             # Update device state
-            if node_id_from_payload not in self.device_states:
-                self.device_states[node_id_from_payload] = {}
-            self.device_states[node_id_from_payload]["last_seen"] = time.time()
-            if longname:
-                self.device_states[node_id_from_payload]["longname"] = longname
-            if shortname:
-                self.device_states[node_id_from_payload]["shortname"] = shortname
-            if hardware:
-                self.device_states[node_id_from_payload]["hardware"] = hardware
-            if role:
-                self.device_states[node_id_from_payload]["role"] = role
+            state = self.device_states.setdefault(node_id_from_payload, {})
+            state["last_seen"] = time.time()
+            updates = {
+                "longname": longname,
+                "shortname": shortname,
+                "hardware": hardware,
+                "role": role,
+            }
+            state.update({k: v for k, v in updates.items() if v})
             self.logger.debug(
                 f"Mapped numeric node ID {sanitize_for_log(numeric_node_id)} "
                 f"to hardware ID {sanitize_for_log(node_id_from_payload)}"
