@@ -310,7 +310,7 @@ class TestGatewayApp:
             # Verify we tried to create dir
             import gateway_app
 
-            gateway_app.os.makedirs.assert_called_once()
+            gateway_app.os.makedirs.assert_any_call("/protected/dir", exist_ok=True)
 
     @pytest.mark.asyncio
     async def test_caltopo_connection_fail_continue(self, mock_config):

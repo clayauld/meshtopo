@@ -9,6 +9,7 @@ from aiohttp import web
 from aiohttp_session import get_session
 
 from .auth import login_required, verify_password
+from .keys import GATEWAY_APP_KEY
 
 
 async def index(request: web.Request) -> web.Response:
@@ -38,7 +39,7 @@ async def login_post(request: web.Request) -> Dict[str, Any]:
     password = str(password_val)
 
     # Simple single-user auth: look for admin password in ENV or db
-    gateway_app = request.app["gateway_app"]
+    gateway_app = request.app[GATEWAY_APP_KEY]
 
     # 1. Environment variable check
     env_password = os.getenv("WEB_ADMIN_PASSWORD")
@@ -78,7 +79,7 @@ async def logout(request: web.Request) -> web.Response:
 @aiohttp_jinja2.template("config.html")  # type: ignore
 async def config_get(request: web.Request) -> Dict[str, Any]:
     """Handle GET requests for the config dashboard."""
-    gateway_app = request.app["gateway_app"]
+    gateway_app = request.app[GATEWAY_APP_KEY]
     db = gateway_app.web_config
 
     config_data = {
@@ -103,7 +104,7 @@ async def config_get(request: web.Request) -> Dict[str, Any]:
 @login_required
 async def config_post(request: web.Request) -> web.Response:
     """Handle POST requests to update the configuration."""
-    gateway_app = request.app["gateway_app"]
+    gateway_app = request.app[GATEWAY_APP_KEY]
     db = gateway_app.web_config
 
     data = await request.post()
@@ -146,7 +147,7 @@ async def config_post(request: web.Request) -> web.Response:
     # Update the multiple groups json.
 
     # Schedule an internal restart to apply the new configurations smoothly
-    gateway_app = request.app["gateway_app"]
+    gateway_app = request.app[GATEWAY_APP_KEY]
     gateway_app.restart_requested = True
 
     async def delayed_config_restart() -> None:
@@ -168,7 +169,7 @@ async def config_post(request: web.Request) -> web.Response:
 @login_required
 async def restart_post(request: web.Request) -> web.Response:
     """Handle POST requests to trigger an internal application restart."""
-    gateway_app = request.app["gateway_app"]
+    gateway_app = request.app[GATEWAY_APP_KEY]
     gateway_app.restart_requested = True
 
     # Give the web response time to finish before setting the stop event
@@ -191,7 +192,7 @@ async def api_logs_get(request: web.Request) -> web.Response:
     """Handle GET requests for just the system logs."""
     import collections
 
-    gateway_app = request.app["gateway_app"]
+    gateway_app = request.app[GATEWAY_APP_KEY]
     log_content = "No logs available."
 
     log_path = gateway_app.config.logging.file.path
@@ -216,7 +217,7 @@ async def status_get(request: web.Request) -> Dict[str, Any]:
     """Handle GET requests for the status dashboard."""
     import collections
 
-    gateway_app = request.app["gateway_app"]
+    gateway_app = request.app[GATEWAY_APP_KEY]
 
     # Read last 100 lines of log
     log_lines = []

@@ -9,6 +9,7 @@ from aiohttp import web
 
 from .auth import setup_auth
 from .routes import setup_routes
+from .keys import GATEWAY_APP_KEY
 
 if TYPE_CHECKING:
     from gateway_app import GatewayApp
@@ -25,8 +26,8 @@ async def create_app(gateway_app: "GatewayApp") -> web.Application:
     """
     app = web.Application()
 
-    # Attach gateway_app so handlers can access it
-    app["gateway_app"] = gateway_app
+    # Attach gateway_app so handlers can access it using strict AppKey
+    app[GATEWAY_APP_KEY] = gateway_app
 
     # Setup Jinja2 templates
     template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
