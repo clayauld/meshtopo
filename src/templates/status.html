@@ -17,15 +17,15 @@
         .logout-btn { text-decoration: none; color: white; background-color: #dc3545; padding: 8px 16px; border-radius: 4px; font-weight: bold; }
         .logout-btn:hover { background-color: #c82333; }
         .section { margin-bottom: 30px; padding: 20px; border: 1px solid #eee; border-radius: 5px; background: #fafafa; }
-        
+
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
         .stat-card { background: white; padding: 15px; border-radius: 5px; border: 1px solid #eee; text-align: center; }
         .stat-card .value { font-size: 24px; font-weight: bold; color: #28a745; display: block; margin-top: 5px; }
-        
+
         table { width: 100%; border-collapse: collapse; background: white; }
         th, td { padding: 10px; border: 1px solid #eee; text-align: left; }
         th { background: #f8f9fa; }
-        
+
         .logs-container { background: #333; color: #0f0; padding: 15px; border-radius: 5px; height: 300px; overflow-y: scroll; font-family: monospace; font-size: 13px; line-height: 1.4; white-space: pre-wrap;}
     </style>
 </head>
@@ -88,7 +88,7 @@
 
     <div class="section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h2 style="margin: 0;">System Logs (tail)</h2>
+            <h2 style="margin: 0;">System Logs</h2>
             <div>
                 <label for="autoRefresh" style="font-weight: bold; margin-right: 10px;">Auto-Refresh:</label>
                 <select id="autoRefresh" onchange="updateRefreshInterval()" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
@@ -118,7 +118,7 @@
             clearInterval(refreshIntervalId);
             refreshIntervalId = null;
         }
-        
+
         const interval = parseInt(document.getElementById('autoRefresh').value);
         if (interval > 0) {
             refreshIntervalId = setInterval(fetchLogs, interval);
@@ -133,12 +133,12 @@
             .then(response => response.text())
             .then(data => {
                 const logsBoxEl = document.getElementById('logsBox');
-                
+
                 // Only autoscroll if user was already at the bottom (or very close)
                 const isAtBottom = logsBoxEl.scrollHeight - logsBoxEl.scrollTop <= logsBoxEl.clientHeight + 20;
-                
+
                 logsBoxEl.innerText = data;
-                
+
                 if (isAtBottom) {
                     logsBoxEl.scrollTop = logsBoxEl.scrollHeight;
                 }
@@ -148,7 +148,7 @@
 
     function restartService() {
         if (!confirm("Are you sure you want to restart the background service? This will disconnect momentarily.")) return;
-        
+
         fetch('/api/restart', { method: 'POST' })
             .then(response => response.json())
             .then(data => {
