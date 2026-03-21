@@ -42,6 +42,13 @@ Args:
 Returns:
     The resolved callsign, or None if it cannot be resolved.
 
+### `def _init_persistent_dicts(self, db_path: str) -> None`
+
+Initialize persistent dictionaries for state storage.
+
+Args:
+    db_path: Path to the SQLite database file.
+
 ### `def _log_statistics(self) -> None`
 
 Log current statistics.

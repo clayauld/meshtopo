@@ -172,6 +172,14 @@ class DeviceConfig(BaseModel):
     allow_unknown_devices: bool = True
 
 
+class WebConfig(BaseModel):
+    """Configuration for the Web UI."""
+
+    enabled: bool = False
+    port: int = 8080
+    admin_password: Optional[str] = None
+
+
 class StorageConfig(BaseModel):
     """Configuration for local state storage."""
 
@@ -191,6 +199,7 @@ class Config(BaseModel):
     mqtt_broker: MqttBrokerConfig = Field(default_factory=MqttBrokerConfig)
     devices: DeviceConfig = Field(default_factory=DeviceConfig)
     storage: StorageConfig = Field(default_factory=StorageConfig)
+    web: WebConfig = Field(default_factory=WebConfig)
 
     @classmethod
     def from_file(cls, config_path: str) -> "Config":

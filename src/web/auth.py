@@ -1,0 +1,95 @@
+"""Authentication utilities for the Web UI."""
+
+import base64
+import binascii
+import hashlib
+import os
+import secrets
+from functools import wraps
+from typing import Any, Callable, Mapping
+
+import aiohttp_session
+import bcrypt
+from aiohttp import web
+from aiohttp_session import get_session
+from aiohttp_session.cookie_storage import EncryptedCookieStorage
+
+
+def setup_auth(app: web.Application, gateway_app: Any = None) -> None:
+    """Setup session and authentication parameters for the app."""
+    # Use a secure, random key for session storage if no environment key
+    secret_key = os.getenv("WEB_SESSION_KEY")
+    if secret_key:
+        fernet_key = hashlib.sha256(secret_key.encode("utf-8")).digest()
+    else:
+        # Check persistent db for a saved key
+        if (
+            gateway_app
+            and gateway_app.web_config
+            and "session_secret_key" in gateway_app.web_config
+        ):
+            encoded_key = gateway_app.web_config["session_secret_key"]
+            try:
+                fernet_key = base64.b64decode(encoded_key.encode("utf-8"))
+                if len(fernet_key) != 32:
+                    raise ValueError("Key length invalid")
+            except (ValueError, binascii.Error):
+                fernet_key = os.urandom(32)
+                enc = base64.b64encode(fernet_key).decode("utf-8")
+                gateway_app.web_config["session_secret_key"] = enc
+        else:
+            fernet_key = os.urandom(32)
+            if gateway_app and gateway_app.web_config is not None:
+                enc = base64.b64encode(fernet_key).decode("utf-8")
+                gateway_app.web_config["session_secret_key"] = enc
+
+    aiohttp_session.setup(app, EncryptedCookieStorage(fernet_key))
+
+
+def login_required(func: Callable) -> Callable:
+    """Decorator to require login for a specific route."""
+
+    @wraps(func)
+    async def wrapper(request: web.Request, *args: Any, **kwargs: Any) -> Any:
+        session = await get_session(request)
+        if not session.get("logged_in"):
+            raise web.HTTPFound("/login")
+        return await func(request, *args, **kwargs)
+
+    return wrapper
+
+
+def verify_password(password: str, hashed: bytes) -> bool:
+    """Verify a given password against a hashed one."""
+    try:
+        return bool(bcrypt.checkpw(password.encode("utf-8"), hashed))
+    except Exception:
+        return False
+
+
+async def generate_csrf(request: web.Request) -> str:
+    """Generate or retrieve a CSRF token for the current session."""
+    session = await get_session(request)
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_hex(16)
+    return str(session["csrf_token"])
+
+
+async def validate_csrf(
+    request: web.Request, form_data: Mapping[str, Any] | None = None
+) -> bool:
+    """Validate a CSRF token from a form submission or header."""
+    session = await get_session(request)
+    expected = session.get("csrf_token")
+    token = ""  # nosec B105
+
+    if form_data and "csrf_token" in form_data:
+        token = form_data["csrf_token"]
+    elif "X-CSRF-Token" in request.headers:
+        token = request.headers["X-CSRF-Token"]
+
+    if not expected or not token:
+        return False
+    if not secrets.compare_digest(expected, token):
+        return False
+    return True
