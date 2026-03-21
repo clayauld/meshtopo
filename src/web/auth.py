@@ -2,7 +2,7 @@
 
 import os
 from functools import wraps
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 import aiohttp_session
 import bcrypt
@@ -79,16 +79,18 @@ async def generate_csrf(request: web.Request) -> str:
     session = await get_session(request)
     if "csrf_token" not in session:
         session["csrf_token"] = secrets.token_hex(16)
-    return session["csrf_token"]
+    return str(session["csrf_token"])
 
 
-async def validate_csrf(request: web.Request, form_data: dict = None) -> bool:
+async def validate_csrf(
+    request: web.Request, form_data: Mapping[str, Any] | None = None
+) -> bool:
     """Validate a CSRF token from a form submission or header."""
     import secrets
 
     session = await get_session(request)
     expected = session.get("csrf_token")
-    token = ""
+    token: str | None = None
 
     if form_data and "csrf_token" in form_data:
         token = form_data["csrf_token"]
