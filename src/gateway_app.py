@@ -10,6 +10,7 @@ import time
 from typing import Any, Dict, Optional, Union
 
 import httpx
+import pydantic
 from aiohttp import web
 
 from caltopo_reporter import CalTopoReporter
@@ -212,8 +213,8 @@ class GatewayApp:
                     }
                     # Merge or override nodes
                     self.config.nodes = nodes_dict
-            except Exception:
-                self.logger.exception("Failed to apply Web UI configs")
+            except (KeyError, TypeError, pydantic.ValidationError) as e:
+                self.logger.error(f"Failed to apply Web UI configs: {e}")
             # --------------------------------------------
 
             # Check if we should use internal MQTT broker

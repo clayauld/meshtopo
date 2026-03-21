@@ -19,6 +19,13 @@ dbs:
 EOF
 
     echo "Starting Litestream replication..."
+    if [ ! -f "/app/data/meshtopo_state.sqlite" ]; then
+        echo "No local database found. Attempting restore..."
+        litestream restore -if-replica-exists -config /tmp/litestream.yml /app/data/meshtopo_state.sqlite
+        echo "Restore complete."
+    else
+        echo "Local database found. Skipping restore."
+    fi
     exec litestream replicate -config /tmp/litestream.yml -exec "python src/gateway.py"
 else
     echo "Litestream disabled. Starting application directly..."

@@ -26,7 +26,7 @@ async def index(request: web.Request) -> web.Response:
         raise web.HTTPFound("/login")
 
 
-@aiohttp_jinja2.template("login.html")  # type: ignore
+@aiohttp_jinja2.template("login.html")
 async def login_get(request: web.Request) -> Dict[str, Any]:
     """Handle GET requests for the login page."""
     session = await get_session(request)
@@ -35,7 +35,7 @@ async def login_get(request: web.Request) -> Dict[str, Any]:
     return {"error": "", "csrf_token": await generate_csrf(request)}
 
 
-@aiohttp_jinja2.template("login.html")  # type: ignore
+@aiohttp_jinja2.template("login.html")
 async def login_post(request: web.Request) -> Dict[str, Any]:
     """Handle POST requests for the login page."""
     data = await request.post()
@@ -87,7 +87,7 @@ async def logout(request: web.Request) -> web.Response:
 
 
 @login_required
-@aiohttp_jinja2.template("config.html")  # type: ignore
+@aiohttp_jinja2.template("config.html")
 async def config_get(request: web.Request) -> Dict[str, Any]:
     """Handle GET requests for the config dashboard."""
     gateway_app = request.app[GATEWAY_APP_KEY]
@@ -221,7 +221,7 @@ async def api_logs_get(request: web.Request) -> web.Response:
 
 
 @login_required
-@aiohttp_jinja2.template("status.html")  # type: ignore
+@aiohttp_jinja2.template("status.html")
 async def status_get(request: web.Request) -> Dict[str, Any]:
     """Handle GET requests for the status dashboard."""
 
