@@ -20,7 +20,7 @@ COPY src/ src/
 COPY config/ config/
 
 # Install dependencies into a temporary directory
-RUN pip install --no-cache-dir --prefix=/install .
+RUN pip install --upgrade pip && pip install --no-cache-dir --prefix=/install .
 
 # Production stage
 FROM python:3.10-slim AS production

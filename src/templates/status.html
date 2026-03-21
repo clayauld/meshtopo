@@ -87,7 +87,19 @@
     </div>
 
     <div class="section">
-        <h2>System Logs</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h2 style="margin: 0;">System Logs (tail)</h2>
+            <div>
+                <label for="autoRefresh" style="font-weight: bold; margin-right: 10px;">Auto-Refresh:</label>
+                <select id="autoRefresh" onchange="updateRefreshInterval()" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="0">Off</option>
+                    <option value="2000">2 Seconds</option>
+                    <option selected value="5000">5 Seconds</option>
+                    <option value="10000">10 Seconds</option>
+                    <option value="30000">30 Seconds</option>
+                </select>
+            </div>
+        </div>
         <div class="logs-container" id="logsBox">{{ logs }}</div>
     </div>
 </div>
@@ -97,6 +109,41 @@
     const logsBox = document.getElementById('logsBox');
     if (logsBox) {
         logsBox.scrollTop = logsBox.scrollHeight;
+    }
+
+    let refreshIntervalId = null;
+
+    function updateRefreshInterval() {
+        if (refreshIntervalId) {
+            clearInterval(refreshIntervalId);
+            refreshIntervalId = null;
+        }
+        
+        const interval = parseInt(document.getElementById('autoRefresh').value);
+        if (interval > 0) {
+            refreshIntervalId = setInterval(fetchLogs, interval);
+        }
+    }
+
+    // Start with 5 seconds by default
+    updateRefreshInterval();
+
+    function fetchLogs() {
+        fetch('/api/logs')
+            .then(response => response.text())
+            .then(data => {
+                const logsBoxEl = document.getElementById('logsBox');
+                
+                // Only autoscroll if user was already at the bottom (or very close)
+                const isAtBottom = logsBoxEl.scrollHeight - logsBoxEl.scrollTop <= logsBoxEl.clientHeight + 20;
+                
+                logsBoxEl.innerText = data;
+                
+                if (isAtBottom) {
+                    logsBoxEl.scrollTop = logsBoxEl.scrollHeight;
+                }
+            })
+            .catch(err => console.error("Failed to fetch logs.", err));
     }
 
     function restartService() {

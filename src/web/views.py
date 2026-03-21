@@ -174,6 +174,27 @@ async def restart_post(request: web.Request) -> web.Response:
     return web.json_response({"status": "success", "message": "Restarting..."})
 
 @login_required
+async def api_logs_get(request: web.Request) -> web.Response:
+    """Handle GET requests for just the system logs."""
+    import collections
+    gateway_app = request.app["gateway_app"]
+    log_content = "No logs available."
+    
+    log_path = gateway_app.config.logging.file.path
+    if log_path:
+        try:
+            import os
+            if os.path.exists(log_path):
+                with open(log_path, 'r', encoding='utf-8') as f:
+                    deque = collections.deque(f, 100)
+                    log_content = "".join(deque)
+        except Exception as e:
+            log_content = f"Error reading logs: {e}"
+        
+    # Return as plain text
+    return web.Response(text=log_content, content_type="text/plain")
+
+@login_required
 @aiohttp_jinja2.template("status.html")  # type: ignore
 async def status_get(request: web.Request) -> Dict[str, Any]:
     """Handle GET requests for the status dashboard."""

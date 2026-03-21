@@ -95,8 +95,15 @@ services:
         image: ghcr.io/${GITHUB_REPOSITORY:-clayauld/meshtopo}:latest
         container_name: meshtopo-gateway
         restart: unless-stopped
+        # Disable direct host port mapping when using Traefik reverse proxy securely
         ports:
             - "8080:8080"
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.meshtopo.rule=Host(`${SSL_DOMAIN}`)"
+            - "traefik.http.routers.meshtopo.entrypoints=websecure"
+            - "traefik.http.routers.meshtopo.tls.certresolver=myresolver"
+            - "traefik.http.services.meshtopo.loadbalancer.server.port=8080"
         volumes:
             - ../config/config.yaml:/app/config/config.yaml:ro
             - ./logs:/app/logs

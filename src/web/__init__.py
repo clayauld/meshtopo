@@ -33,7 +33,7 @@ async def create_app(gateway_app: "GatewayApp") -> web.Application:
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(template_dir))
 
     # Setup session and auth
-    setup_auth(app)
+    setup_auth(app, gateway_app)
 
     # Setup routes
     setup_routes(app)

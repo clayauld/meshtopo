@@ -11,14 +11,29 @@ from aiohttp_session import get_session
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
 
 
-def setup_auth(app: web.Application) -> None:
+def setup_auth(app: web.Application, gateway_app: Any = None) -> None:
     """Setup session and authentication parameters for the app."""
     # Use a secure, random key for session storage if no environment key
     secret_key = os.getenv("WEB_SESSION_KEY")
     if secret_key:
         fernet_key = secret_key.encode().ljust(32, b"0")[:32]
     else:
-        fernet_key = os.urandom(32)
+        # Check persistent db for a saved key
+        if gateway_app and gateway_app.web_config and "session_secret_key" in gateway_app.web_config:
+            import base64
+            encoded_key = gateway_app.web_config["session_secret_key"]
+            try:
+                fernet_key = base64.b64decode(encoded_key.encode('utf-8'))
+                if len(fernet_key) != 32:
+                    raise ValueError("Key length invalid")
+            except Exception:
+                fernet_key = os.urandom(32)
+                gateway_app.web_config["session_secret_key"] = base64.b64encode(fernet_key).decode('utf-8')
+        else:
+            fernet_key = os.urandom(32)
+            if gateway_app and gateway_app.web_config is not None:
+                import base64
+                gateway_app.web_config["session_secret_key"] = base64.b64encode(fernet_key).decode('utf-8')
 
     aiohttp_session.setup(app, EncryptedCookieStorage(fernet_key))
 
