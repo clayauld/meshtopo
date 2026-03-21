@@ -1,8 +1,12 @@
 """Authentication utilities for the Web UI."""
 
+import base64
+import binascii
+import hashlib
 import os
+import secrets
 from functools import wraps
-from typing import Any, Callable, Mapping
+from typing import Any, Callable
 
 import aiohttp_session
 import bcrypt
@@ -16,8 +20,6 @@ def setup_auth(app: web.Application, gateway_app: Any = None) -> None:
     # Use a secure, random key for session storage if no environment key
     secret_key = os.getenv("WEB_SESSION_KEY")
     if secret_key:
-        import hashlib
-
         fernet_key = hashlib.sha256(secret_key.encode("utf-8")).digest()
     else:
         # Check persistent db for a saved key
@@ -26,9 +28,6 @@ def setup_auth(app: web.Application, gateway_app: Any = None) -> None:
             and gateway_app.web_config
             and "session_secret_key" in gateway_app.web_config
         ):
-            import base64
-            import binascii
-
             encoded_key = gateway_app.web_config["session_secret_key"]
             try:
                 fernet_key = base64.b64decode(encoded_key.encode("utf-8"))
@@ -36,17 +35,13 @@ def setup_auth(app: web.Application, gateway_app: Any = None) -> None:
                     raise ValueError("Key length invalid")
             except (ValueError, binascii.Error):
                 fernet_key = os.urandom(32)
-                gateway_app.web_config["session_secret_key"] = base64.b64encode(
-                    fernet_key
-                ).decode("utf-8")
+                enc = base64.b64encode(fernet_key).decode("utf-8")
+                gateway_app.web_config["session_secret_key"] = enc
         else:
             fernet_key = os.urandom(32)
             if gateway_app and gateway_app.web_config is not None:
-                import base64
-
-                gateway_app.web_config["session_secret_key"] = base64.b64encode(
-                    fernet_key
-                ).decode("utf-8")
+                enc = base64.b64encode(fernet_key).decode("utf-8")
+                gateway_app.web_config["session_secret_key"] = enc
 
     aiohttp_session.setup(app, EncryptedCookieStorage(fernet_key))
 
@@ -74,29 +69,25 @@ def verify_password(password: str, hashed: bytes) -> bool:
 
 async def generate_csrf(request: web.Request) -> str:
     """Generate or retrieve a CSRF token for the current session."""
-    import secrets
-
     session = await get_session(request)
     if "csrf_token" not in session:
         session["csrf_token"] = secrets.token_hex(16)
     return str(session["csrf_token"])
 
 
-async def validate_csrf(
-    request: web.Request, form_data: Mapping[str, Any] | None = None
-) -> bool:
+async def validate_csrf(request: web.Request, form_data: dict | None = None) -> bool:
     """Validate a CSRF token from a form submission or header."""
-    import secrets
-
     session = await get_session(request)
     expected = session.get("csrf_token")
-    token: str | None = None
+    token = ""  # nosec B105
 
     if form_data and "csrf_token" in form_data:
         token = form_data["csrf_token"]
     elif "X-CSRF-Token" in request.headers:
         token = request.headers["X-CSRF-Token"]
 
-    if not expected or not token or not secrets.compare_digest(expected, token):
+    if not expected or not token:
+        return False
+    if not secrets.compare_digest(expected, token):
         return False
     return True
