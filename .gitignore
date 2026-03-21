@@ -88,3 +88,4 @@ meshtopo_state.sqlite
 # AI Tools
 .gemini/
 
+meshtopo-azure.yaml

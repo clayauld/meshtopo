@@ -1,5 +1,6 @@
 """View handlers for the Web UI."""
 
+import logging
 import os
 from typing import Any, Dict
 
@@ -7,9 +8,8 @@ import aiohttp_jinja2
 import bcrypt
 from aiohttp import web
 from aiohttp_session import get_session
-import logging
 
-from .auth import login_required, verify_password, generate_csrf, validate_csrf
+from .auth import generate_csrf, login_required, validate_csrf, verify_password
 from .keys import GATEWAY_APP_KEY
 
 
@@ -36,8 +36,11 @@ async def login_post(request: web.Request) -> Dict[str, Any]:
     """Handle POST requests for the login page."""
     data = await request.post()
     if not await validate_csrf(request, data):
-        return {"error": "Invalid CSRF token.", "csrf_token": await generate_csrf(request)}
-        
+        return {
+            "error": "Invalid CSRF token.",
+            "csrf_token": await generate_csrf(request),
+        }
+
     password_val = data.get("password", "")
     # Handle case where value could be a string or a FileField. Expect string.
     password = str(password_val)

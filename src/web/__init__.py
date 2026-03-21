@@ -8,8 +8,8 @@ import jinja2
 from aiohttp import web
 
 from .auth import setup_auth
-from .routes import setup_routes
 from .keys import GATEWAY_APP_KEY
+from .routes import setup_routes
 
 if TYPE_CHECKING:
     from gateway_app import GatewayApp
