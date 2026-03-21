@@ -210,8 +210,8 @@ class GatewayApp:
                     }
                     # Merge or override nodes
                     self.config.nodes = nodes_dict
-            except Exception as e:
-                self.logger.error(f"Failed to apply Web UI configs: {e}")
+            except Exception:
+                self.logger.exception("Failed to apply Web UI configs")
             # --------------------------------------------
 
             # Check if we should use internal MQTT broker

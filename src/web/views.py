@@ -237,7 +237,7 @@ async def status_get(request: web.Request) -> Dict[str, Any]:
                 deque = collections.deque(f, 100)
                 log_lines = list(deque)
         except Exception:
-            pass  # nosec B110
+            logging.exception("Error reading logs for status page from %s", log_path)
 
     return {
         "stats": gateway_app.stats,

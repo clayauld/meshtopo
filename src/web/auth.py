@@ -33,7 +33,7 @@ def setup_auth(app: web.Application, gateway_app: Any = None) -> None:
                 fernet_key = base64.b64decode(encoded_key.encode("utf-8"))
                 if len(fernet_key) != 32:
                     raise ValueError("Key length invalid")
-            except Exception:
+            except (ValueError, binascii.Error):
                 fernet_key = os.urandom(32)
                 gateway_app.web_config["session_secret_key"] = base64.b64encode(
                     fernet_key
