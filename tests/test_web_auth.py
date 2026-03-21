@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from aiohttp import web
 
-from src.web.auth import login_required, setup_auth
+from src.web.auth import login_required, setup_auth, verify_password
 
 
 def test_setup_auth_with_env_key():

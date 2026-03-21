@@ -78,20 +78,6 @@ SSL_DOMAIN=yourdomain.com make docker-run-ssl
 
 Runs all services with SSL/TLS termination.
 
-## Litestream Replication (Optional)
-
-The Docker image includes [Litestream](https://litestream.io/) for SQLite database replication to Azure Blob Storage, enabling automatic continuous backups.
-
-To enable Litestream, provide the following environment variables in your deployment:
-
-- `AZURE_LITESTREAM=true`
-- `AZURE_STORAGE_ACCOUNT`
-- `AZURE_STORAGE_KEY`
-- `AZURE_STORAGE_CONTAINER`
-
-**Important Note on Configuration:**
-When Litestream is enabled, the container's entrypoint script specifically expects the database at `/app/data/meshtopo_state.sqlite`. Ensure your `config.yaml` has `storage.db_path` set to `data/meshtopo_state.sqlite` (the default) so Litestream can locate and back up the database properly.
-
 ## MQTT Broker Configuration
 
 The MQTT broker configuration is managed through the `generate_mosquitto_config.py` script, which creates proper Mosquitto 2.0 compatible configurations:

@@ -86,4 +86,4 @@ class TestConfig(TestCase):
         from config.config import Config
 
         config = Config.from_file(self.test_config_path)
-        assert config.storage.db_path == "data/meshtopo_state.sqlite"
+        assert config.storage.db_path == "meshtopo_state.sqlite"

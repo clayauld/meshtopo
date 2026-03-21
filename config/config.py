@@ -183,7 +183,7 @@ class WebConfig(BaseModel):
 class StorageConfig(BaseModel):
     """Configuration for local state storage."""
 
-    db_path: str = "data/meshtopo_state.sqlite"
+    db_path: str = "meshtopo_state.sqlite"
 
 
 class Config(BaseModel):

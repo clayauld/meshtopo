@@ -27,6 +27,7 @@ def setup_auth(app: web.Application, gateway_app: Any = None) -> None:
             and "session_secret_key" in gateway_app.web_config
         ):
             import base64
+            import binascii
 
             encoded_key = gateway_app.web_config["session_secret_key"]
             try:
@@ -78,16 +79,16 @@ async def generate_csrf(request: web.Request) -> str:
     session = await get_session(request)
     if "csrf_token" not in session:
         session["csrf_token"] = secrets.token_hex(16)
-    return str(session["csrf_token"])
+    return session["csrf_token"]
 
 
-async def validate_csrf(request: web.Request, form_data: dict | None = None) -> bool:
+async def validate_csrf(request: web.Request, form_data: dict = None) -> bool:
     """Validate a CSRF token from a form submission or header."""
     import secrets
 
     session = await get_session(request)
     expected = session.get("csrf_token")
-    token: str | None = None
+    token = ""
 
     if form_data and "csrf_token" in form_data:
         token = form_data["csrf_token"]
