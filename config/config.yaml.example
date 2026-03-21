@@ -93,4 +93,4 @@ logging:
 
 # Storage Configuration
 # storage:
-#     db_path: "meshtopo_state.sqlite"  # Path to SQLite database file
+#     db_path: "data/meshtopo_state.sqlite"  # Path to SQLite database file

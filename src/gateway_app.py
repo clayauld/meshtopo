@@ -13,7 +13,7 @@ import httpx
 from aiohttp import web
 
 from caltopo_reporter import CalTopoReporter
-from config.config import Config
+from config.config import Config, NodeMapping
 from mqtt_client import MqttClient
 from persistent_dict import PersistentDict
 from utils import sanitize_for_log
@@ -202,8 +202,6 @@ class GatewayApp:
                     ]
 
                 if "nodes" in self.web_config:
-                    from config.config import NodeMapping
-
                     web_nodes = self.web_config["nodes"]
                     nodes_dict = {
                         k: NodeMapping(**v)

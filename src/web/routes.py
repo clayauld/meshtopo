@@ -26,3 +26,10 @@ def setup_routes(app: web.Application) -> None:
     app.router.add_get("/api/logs", api_logs_get)
     app.router.add_get("/config", config_get, name="config")
     app.router.add_post("/config", config_post)
+
+    import os
+
+    # Serve static assets
+    static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+    if os.path.exists(static_dir):
+        app.router.add_static("/static/", path=static_dir, name="static")

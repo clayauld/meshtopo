@@ -1,5 +1,6 @@
 """View handlers for the Web UI."""
 
+import asyncio
 import logging
 import os
 from typing import Any, Dict
@@ -161,13 +162,10 @@ async def config_post(request: web.Request) -> web.Response:
     gateway_app.restart_requested = True
 
     async def delayed_config_restart() -> None:
-        import asyncio
 
         await asyncio.sleep(1.0)
         if gateway_app.stop_event:
             gateway_app.stop_event.set()
-
-    import asyncio
 
     asyncio.create_task(delayed_config_restart())
 
@@ -187,13 +185,10 @@ async def restart_post(request: web.Request) -> web.Response:
 
     # Give the web response time to finish before setting the stop event
     async def delayed_stop() -> None:
-        import asyncio
 
         await asyncio.sleep(1.0)
         if gateway_app.stop_event:
             gateway_app.stop_event.set()
-
-    import asyncio
 
     asyncio.create_task(delayed_stop())
 

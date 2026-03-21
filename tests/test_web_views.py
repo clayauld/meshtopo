@@ -1,12 +1,10 @@
 """Tests for web UI views."""
 
-import builtins
-import json
 import os
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
-from aiohttp import web
+import pytest_asyncio
 
 from src.web import create_app
 from src.web.keys import GATEWAY_APP_KEY
@@ -33,9 +31,6 @@ def mock_gateway_app():
     app.device_states = {}
     app.stop_event = MagicMock()
     return app
-
-
-import pytest_asyncio
 
 
 @pytest_asyncio.fixture
