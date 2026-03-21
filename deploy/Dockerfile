@@ -5,8 +5,14 @@ WORKDIR /app
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
+    gcc wget tar \
     && rm -rf /var/lib/apt/lists/*
+
+# Download and extract Litestream
+ARG LS_VERSION=0.5.7
+RUN wget https://github.com/benbjohnson/litestream/releases/download/v${LS_VERSION}/litestream-${LS_VERSION}-linux-x86_64.tar.gz \
+    && tar -xzf litestream-${LS_VERSION}-linux-x86_64.tar.gz -C /usr/local/bin \
+    && chmod +x /usr/local/bin/litestream
 
 COPY pyproject.toml .
 COPY README.md .
@@ -28,9 +34,13 @@ RUN useradd --create-home --shell /bin/bash meshtopo && \
 # Copy installed dependencies from builder
 COPY --from=builder /install /usr/local
 
+# Copy litestream from builder
+COPY --from=builder /usr/local/bin/litestream /usr/local/bin/litestream
+
 # Copy application code
 COPY src/ src/
 COPY config/ config/
+COPY scripts/ scripts/
 
 # Switch to non-root user
 USER meshtopo
@@ -47,5 +57,5 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONPATH=/app
 
-# Default command
-CMD ["python", "src/gateway.py"]
+# Default command uses the entrypoint script
+CMD ["/bin/bash", "/app/scripts/entrypoint.sh"]

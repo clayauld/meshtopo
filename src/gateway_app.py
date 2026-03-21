@@ -60,6 +60,12 @@ class GatewayApp:
         # In-memory caches for performance
         self._node_id_cache: Dict[str, str] = {}
         self._callsign_cache: Dict[str, str] = {}
+        
+        # Track latest status and metrics from devices
+        self.device_states: Dict[str, Any] = {}
+        
+        # Signal for internal app restarts
+        self.restart_requested: bool = False
 
         self.configured_devices: set = (
             set()
@@ -179,6 +185,25 @@ class GatewayApp:
                 # Load into memory cache (empty or after reset)
                 self._node_id_cache = dict(self.node_id_mapping)
                 self._callsign_cache = dict(self.callsign_mapping)
+
+            # --- Apply Web UI Configuration Overrides ---
+            try:
+                if "caltopo_connect_key" in self.web_config and self.web_config["caltopo_connect_key"]:
+                    self.config.caltopo.connect_key = self.web_config["caltopo_connect_key"]
+                if "caltopo_group" in self.web_config and self.web_config["caltopo_group"]:
+                    self.config.caltopo.group = self.web_config["caltopo_group"]
+                if "allow_unknown_devices" in self.web_config:
+                    self.config.devices.allow_unknown_devices = self.web_config["allow_unknown_devices"]
+                
+                if "nodes" in self.web_config:
+                    from config.config import NodeMapping
+                    web_nodes = self.web_config["nodes"]
+                    nodes_dict = {k: NodeMapping(**v) for k, v in web_nodes.items() if isinstance(v, dict)}
+                    # Merge or override nodes
+                    self.config.nodes = nodes_dict
+            except Exception as e:
+                self.logger.error(f"Failed to apply Web UI configs: {e}")
+            # --------------------------------------------
 
             # Check if we should use internal MQTT broker
             if self.config.mqtt.use_internal_broker:
@@ -557,6 +582,13 @@ class GatewayApp:
         hardware_id = self._resolve_hardware_id(str(numeric_node_id))
         is_new_mapping = str(numeric_node_id) not in self._node_id_cache
 
+        # Update device state (last seen)
+        if hardware_id not in self.device_states:
+            self.device_states[hardware_id] = {}
+        self.device_states[hardware_id]["last_seen"] = time.time()
+        self.device_states[hardware_id]["latitude"] = latitude
+        self.device_states[hardware_id]["longitude"] = longitude
+
         if is_new_mapping and self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(
                 f"Calculated ID for new node: "
@@ -623,6 +655,19 @@ class GatewayApp:
         # Build mapping from numeric node ID to hardware ID
         if node_id_from_payload:
             self._persist_node_id_mapping(str(numeric_node_id), node_id_from_payload)
+            
+            # Update device state
+            if node_id_from_payload not in self.device_states:
+                self.device_states[node_id_from_payload] = {}
+            self.device_states[node_id_from_payload]["last_seen"] = time.time()
+            if longname:
+                self.device_states[node_id_from_payload]["longname"] = longname
+            if shortname:
+                self.device_states[node_id_from_payload]["shortname"] = shortname
+            if hardware:
+                self.device_states[node_id_from_payload]["hardware"] = hardware
+            if role:
+                self.device_states[node_id_from_payload]["role"] = role
             self.logger.debug(
                 f"Mapped numeric node ID {sanitize_for_log(numeric_node_id)} "
                 f"to hardware ID {sanitize_for_log(node_id_from_payload)}"
@@ -696,6 +741,19 @@ class GatewayApp:
         uptime_seconds = payload.get("uptime_seconds")
         air_util_tx = payload.get("air_util_tx")
         channel_utilization = payload.get("channel_utilization")
+
+        hardware_id = self._resolve_hardware_id(str(numeric_node_id))
+        if hardware_id not in self.device_states:
+            self.device_states[hardware_id] = {}
+        self.device_states[hardware_id]["last_seen"] = time.time()
+        if battery_level is not None:
+            self.device_states[hardware_id]["battery_level"] = battery_level
+        if voltage is not None:
+            self.device_states[hardware_id]["voltage"] = voltage
+        if uptime_seconds is not None:
+            self.device_states[hardware_id]["uptime_seconds"] = uptime_seconds
+        if channel_utilization is not None:
+            self.device_states[hardware_id]["channel_utilization"] = channel_utilization
 
         self.logger.info(
             f"Telemetry from {sanitize_for_log(numeric_node_id)}: "
