@@ -16,7 +16,8 @@ def setup_auth(app: web.Application, gateway_app: Any = None) -> None:
     # Use a secure, random key for session storage if no environment key
     secret_key = os.getenv("WEB_SESSION_KEY")
     if secret_key:
-        fernet_key = secret_key.encode().ljust(32, b"0")[:32]
+        import hashlib
+        fernet_key = hashlib.sha256(secret_key.encode("utf-8")).digest()
     else:
         # Check persistent db for a saved key
         if (
@@ -67,3 +68,29 @@ def verify_password(password: str, hashed: bytes) -> bool:
         return bool(bcrypt.checkpw(password.encode("utf-8"), hashed))
     except Exception:
         return False
+
+
+async def generate_csrf(request: web.Request) -> str:
+    """Generate or retrieve a CSRF token for the current session."""
+    import secrets
+    session = await get_session(request)
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_hex(16)
+    return session["csrf_token"]
+
+
+async def validate_csrf(request: web.Request, form_data: dict = None) -> bool:
+    """Validate a CSRF token from a form submission or header."""
+    import secrets
+    session = await get_session(request)
+    expected = session.get("csrf_token")
+    token = ""
+    
+    if form_data and "csrf_token" in form_data:
+        token = form_data["csrf_token"]
+    elif "X-CSRF-Token" in request.headers:
+        token = request.headers["X-CSRF-Token"]
+        
+    if not expected or not token or not secrets.compare_digest(expected, token):
+        return False
+    return True

@@ -27,7 +27,7 @@ devices:
 web:
     enabled: true
     port: 8080
-    admin_password: "admin"
+    # admin_password: "" # It is highly recommended to set this via the WEB_ADMIN_PASSWORD environment variable.
 
 # Optional: Internal MQTT broker
 mqtt_broker:

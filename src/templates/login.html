@@ -22,6 +22,7 @@
     <div class="error">{{ error }}</div>
     {% endif %}
     <form action="/login" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <label for="password">Admin Password:</label>
         <input type="password" id="password" name="password" required>
         <button type="submit">Login</button>

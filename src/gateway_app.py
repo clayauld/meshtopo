@@ -71,6 +71,36 @@ class GatewayApp:
             set()
         )  # Track which devices are in the nodes config
 
+    def _init_persistent_dicts(self, db_path: str) -> None:
+        """
+        Initialize persistent dictionaries for state storage.
+
+        Args:
+            db_path: Path to the SQLite database file.
+        """
+        self.node_id_mapping = PersistentDict(
+            db_path,
+            tablename="node_id_mapping",
+            autocommit=True,
+        )
+        # Trigger a read to ensure the file format is valid
+        # This will raise an exception if the file contains legacy pickle data
+        _ = len(self.node_id_mapping)
+
+        self.callsign_mapping = PersistentDict(
+            db_path,
+            tablename="callsign_mapping",
+            autocommit=True,
+        )
+        _ = len(self.callsign_mapping)
+
+        self.web_config = PersistentDict(
+            db_path,
+            tablename="web_config",
+            autocommit=True,
+        )
+        _ = len(self.web_config)
+
     async def initialize(self) -> bool:
         """
         Perform a comprehensive startup sequence for all application components.
@@ -106,27 +136,7 @@ class GatewayApp:
                     # We continue, letting SqliteDict fail if it must, or maybe it works
 
             try:
-                self.node_id_mapping = PersistentDict(
-                    db_path,
-                    tablename="node_id_mapping",
-                    autocommit=True,
-                )
-                # Trigger a read to ensure the file format is valid
-                # This will raise an exception if the file contains legacy pickle data
-                _ = len(self.node_id_mapping)
-
-                self.callsign_mapping = PersistentDict(
-                    db_path,
-                    tablename="callsign_mapping",
-                    autocommit=True,
-                )
-                _ = len(self.callsign_mapping)
-
-                self.web_config = PersistentDict(
-                    db_path,
-                    tablename="web_config",
-                    autocommit=True,
-                )
+                self._init_persistent_dicts(db_path)
 
                 # Load into memory cache
                 self.logger.info("Loading state into memory cache...")
@@ -166,21 +176,7 @@ class GatewayApp:
                         )
 
                 # Re-initialize with new format
-                self.node_id_mapping = PersistentDict(
-                    db_path,
-                    tablename="node_id_mapping",
-                    autocommit=True,
-                )
-                self.callsign_mapping = PersistentDict(
-                    db_path,
-                    tablename="callsign_mapping",
-                    autocommit=True,
-                )
-                self.web_config = PersistentDict(
-                    db_path,
-                    tablename="web_config",
-                    autocommit=True,
-                )
+                self._init_persistent_dicts(db_path)
 
                 # Load into memory cache (empty or after reset)
                 self._node_id_cache = dict(self.node_id_mapping)

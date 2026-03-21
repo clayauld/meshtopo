@@ -114,3 +114,27 @@ def test_verify_password():
     assert verify_password(password, hashed) is True
     assert verify_password("wrong_password", hashed) is False
     assert verify_password(password, b"invalid_hash") is False
+
+
+@pytest.mark.asyncio
+async def test_generate_and_validate_csrf():
+    """Test generating and successfully validating a CSRF token."""
+    from src.web.auth import generate_csrf, validate_csrf
+    request = MagicMock()
+    request.headers = {}
+    
+    mock_session = {}
+    with patch("src.web.auth.get_session", return_value=mock_session):
+        token = await generate_csrf(request)
+        assert token is not None
+        assert "csrf_token" in mock_session
+        
+        # Valid form token
+        assert await validate_csrf(request, {"csrf_token": token}) is True
+        
+        # Invalid form token
+        assert await validate_csrf(request, {"csrf_token": "wrong"}) is False
+        
+        # Valid header token
+        request.headers = {"X-CSRF-Token": token}
+        assert await validate_csrf(request, {}) is True

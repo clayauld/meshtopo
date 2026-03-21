@@ -44,7 +44,7 @@ devices:
 web:
     enabled: true                       # Enable the Web UI (default: false)
     port: 8080                          # Port to run the Web UI on
-    admin_password: "admin"             # Default admin password. You can also use WEB_ADMIN_PASSWORD env var
+    # admin_password: ""                # It is highly recommended to set this via the WEB_ADMIN_PASSWORD env var
 
 # Internal MQTT Broker Configuration (optional)
 mqtt_broker:

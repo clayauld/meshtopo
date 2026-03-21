@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meshtopo Web UI - Dashboard</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <style>
         body { font-family: sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
         .container { max-width: 1000px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -149,7 +150,11 @@
     function restartService() {
         if (!confirm("Are you sure you want to restart the background service? This will disconnect momentarily.")) return;
 
-        fetch('/api/restart', { method: 'POST' })
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        fetch('/api/restart', { 
+            method: 'POST',
+            headers: { 'X-CSRF-Token': csrfToken }
+        })
             .then(response => response.json())
             .then(data => {
                 alert("Service is restarting. The page will reload in 5 seconds.");

@@ -12,6 +12,13 @@ from src.web import create_app
 from src.web.keys import GATEWAY_APP_KEY
 
 
+@pytest.fixture(autouse=True)
+def mock_csrf_validation():
+    """Mock CSRF validation to pass automatically in view tests."""
+    with patch("src.web.views.validate_csrf", return_value=True):
+        yield
+
+
 @pytest.fixture
 def mock_gateway_app():
     app = MagicMock()

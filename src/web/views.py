@@ -8,7 +8,7 @@ import bcrypt
 from aiohttp import web
 from aiohttp_session import get_session
 
-from .auth import login_required, verify_password
+from .auth import login_required, verify_password, generate_csrf, validate_csrf
 from .keys import GATEWAY_APP_KEY
 
 
@@ -27,13 +27,16 @@ async def login_get(request: web.Request) -> Dict[str, Any]:
     session = await get_session(request)
     if session.get("logged_in"):
         raise web.HTTPFound("/status")
-    return {"error": ""}
+    return {"error": "", "csrf_token": await generate_csrf(request)}
 
 
 @aiohttp_jinja2.template("login.html")  # type: ignore
 async def login_post(request: web.Request) -> Dict[str, Any]:
     """Handle POST requests for the login page."""
     data = await request.post()
+    if not await validate_csrf(request, data):
+        return {"error": "Invalid CSRF token.", "csrf_token": await generate_csrf(request)}
+        
     password_val = data.get("password", "")
     # Handle case where value could be a string or a FileField. Expect string.
     password = str(password_val)
@@ -65,7 +68,7 @@ async def login_post(request: web.Request) -> Dict[str, Any]:
         session["logged_in"] = True
         raise web.HTTPFound("/status")
 
-    return {"error": "Invalid password"}
+    return {"error": "Invalid password", "csrf_token": await generate_csrf(request)}
 
 
 async def logout(request: web.Request) -> web.Response:
@@ -96,6 +99,7 @@ async def config_get(request: web.Request) -> Dict[str, Any]:
         "nodes": db.get("nodes", gateway_app.config.nodes),
         "multiple_groups": db.get("multiple_groups", []),
         "success": request.query.get("success") == "1",
+        "csrf_token": await generate_csrf(request),
     }
 
     return config_data
@@ -108,6 +112,8 @@ async def config_post(request: web.Request) -> web.Response:
     db = gateway_app.web_config
 
     data = await request.post()
+    if not await validate_csrf(request, data):
+        raise web.HTTPForbidden(text="Invalid CSRF token")
 
     # Update single settings
     db["team_id"] = str(data.get("team_id", "")).strip()
@@ -169,6 +175,9 @@ async def config_post(request: web.Request) -> web.Response:
 @login_required
 async def restart_post(request: web.Request) -> web.Response:
     """Handle POST requests to trigger an internal application restart."""
+    if not await validate_csrf(request):
+        raise web.HTTPForbidden(text="Invalid CSRF token")
+
     gateway_app = request.app[GATEWAY_APP_KEY]
     gateway_app.restart_requested = True
 
@@ -234,4 +243,5 @@ async def status_get(request: web.Request) -> Dict[str, Any]:
         "stats": gateway_app.stats,
         "device_states": gateway_app.device_states,
         "logs": "".join(log_lines),
+        "csrf_token": await generate_csrf(request),
     }
