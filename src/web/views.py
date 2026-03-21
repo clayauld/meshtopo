@@ -7,6 +7,7 @@ import aiohttp_jinja2
 import bcrypt
 from aiohttp import web
 from aiohttp_session import get_session
+import logging
 
 from .auth import login_required, verify_password, generate_csrf, validate_csrf
 from .keys import GATEWAY_APP_KEY
@@ -213,8 +214,9 @@ async def api_logs_get(request: web.Request) -> web.Response:
                 with open(log_path, "r", encoding="utf-8") as f:
                     deque = collections.deque(f, 100)
                     log_content = "".join(deque)
-        except Exception as e:
-            log_content = f"Error reading logs: {e}"
+        except Exception:
+            logging.exception("Error reading logs from %s", log_path)
+            log_content = "Error reading logs."
 
     # Return as plain text
     return web.Response(text=log_content, content_type="text/plain")
