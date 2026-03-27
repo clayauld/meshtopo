@@ -24,7 +24,7 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Update Container App
-        uses: azure/cli@v2
+        uses: azure/cli@v3
         with:
           inlineScript: |
             az containerapp update \
