@@ -285,7 +285,10 @@ class TestGatewayApp:
         )
 
     def test_unknown_device_callsign_not_persisted(self, app):
-        """Verify that unknown devices do not have temporary callsign mapping persisted."""
+        """
+        Verify that unknown devices do not have temporary
+        callsign mapping persisted.
+        """
         app.config.devices.allow_unknown_devices = True
         app.configured_devices = set(["!known"])
         app.config.get_node_device_id.return_value = None
