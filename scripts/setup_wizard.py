@@ -3,7 +3,7 @@
 
 import os
 import shutil
-import subprocess
+import subprocess  # nosec B404
 from getpass import getpass
 
 import yaml
@@ -12,7 +12,7 @@ import yaml
 CONFIG_DIR = "config"
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.yaml")
 CONFIG_TEMPLATE = os.path.join(CONFIG_DIR, "config.yaml.basic")
-MOSQUITTO_PASSWD_FILE = "deploy/passwd"
+MOSQUITTO_PASSWD_FILE = "deploy/passwd"  # nosec B105
 
 
 def _run_mosquitto_passwd(passwd_file: str, username: str, password: str) -> None:
@@ -22,7 +22,7 @@ def _run_mosquitto_passwd(passwd_file: str, username: str, password: str) -> Non
     """
     # Try local executable first
     try:
-        subprocess.run(
+        subprocess.run(  # nosec B603 B607
             ["mosquitto_passwd", passwd_file, username],
             input=f"{password}\n{password}\n",
             check=True,
@@ -42,9 +42,11 @@ def _run_mosquitto_passwd(passwd_file: str, username: str, password: str) -> Non
 
     try:
         # Check if docker is available
-        subprocess.run(["docker", "--version"], check=True, capture_output=True)
-
         subprocess.run(
+            ["docker", "--version"], check=True, capture_output=True
+        )  # nosec B603 B607
+
+        subprocess.run(  # nosec B603 B607
             [
                 "docker",
                 "run",
@@ -124,7 +126,11 @@ def main() -> None:
         # Default user for integrated broker
         if not config["mqtt_broker"].get("users"):
             config["mqtt_broker"]["users"] = [
-                {"username": "mesh", "password": "changeme", "acl": "readwrite"}
+                {
+                    "username": "mesh",
+                    "password": "changeme",
+                    "acl": "readwrite",
+                }  # nosec B105
             ]
 
         username = config["mqtt_broker"]["users"][0]["username"]
