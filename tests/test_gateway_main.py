@@ -12,6 +12,7 @@ def test_main():
     ):
 
         mock_app_instance = MockApp.return_value
+        mock_app_instance.restart_requested = False
         # Use Mock instead of AsyncMock for start() because we mock asyncio.run
         # and thus won't actually await the coroutine.
         mock_app_instance.start = Mock()
@@ -34,6 +35,7 @@ def test_main_default_args(mock_exit):
     ):
         # start() should return a non-coroutine since we mock asyncio.run
         MockApp.return_value.start = Mock()
+        MockApp.return_value.restart_requested = False
 
         main()
 
@@ -45,12 +47,13 @@ def test_main_default_args(mock_exit):
 def test_main_keyboard_interrupt(mock_exit):
     """Test main handling KeyboardInterrupt."""
     with (
-        patch("gateway.GatewayApp"),
+        patch("gateway.GatewayApp") as MockApp,
         patch("asyncio.run", side_effect=KeyboardInterrupt),
         patch("gateway.Path.exists", return_value=True),
         patch("sys.argv", ["gateway.py", "test_config.yaml"]),
     ):
 
+        MockApp.return_value.restart_requested = False
         main()
 
         # Should catch interrupt and print message, not sys.exit(1)
@@ -69,6 +72,7 @@ def test_main_fatal_error(mock_exit):
         # Ensure start() returns a non-coroutine to avoid RuntimeWarning about
         # unawaited coroutine when asyncio.run raises exception immediately.
         MockApp.return_value.start.return_value = None
+        MockApp.return_value.restart_requested = False
 
         main()
 

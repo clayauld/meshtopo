@@ -161,8 +161,9 @@ up-ssl:
 # Stop Docker containers
 stop:
 	@echo "Stopping all Meshtopo services..."
-	cd deploy && docker compose down
-	cd deploy && docker compose -f docker-compose.simple.yml down
+# 	cd deploy && docker compose down
+# 	cd deploy && docker compose -f docker-compose.simple.yml down
+	cd deploy && docker compose --profile core --profile mqtt --profile ssl down
 	@echo "Services stopped!"
 
 # Show Docker container status

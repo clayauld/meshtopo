@@ -10,12 +10,15 @@ import time
 from typing import Any, Dict, Optional, Union
 
 import httpx
+import pydantic
+from aiohttp import web
 
 from caltopo_reporter import CalTopoReporter
 from config.config import Config
 from mqtt_client import MqttClient
 from persistent_dict import PersistentDict
 from utils import sanitize_for_log
+from web import create_app
 
 
 class GatewayApp:
@@ -54,13 +57,50 @@ class GatewayApp:
         # Persistent state using sqlitedict
         self.node_id_mapping: Any = None
         self.callsign_mapping: Any = None
+        self.web_config: Any = None
         # In-memory caches for performance
         self._node_id_cache: Dict[str, str] = {}
         self._callsign_cache: Dict[str, str] = {}
 
+        # Track latest status and metrics from devices
+        self.device_states: Dict[str, Any] = {}
+
+        # Signal for internal app restarts
+        self.restart_requested: bool = False
+
         self.configured_devices: set = (
             set()
         )  # Track which devices are in the nodes config
+
+    def _init_persistent_dicts(self, db_path: str) -> None:
+        """
+        Initialize persistent dictionaries for state storage.
+
+        Args:
+            db_path: Path to the SQLite database file.
+        """
+        self.node_id_mapping = PersistentDict(
+            db_path,
+            tablename="node_id_mapping",
+            autocommit=True,
+        )
+        # Trigger a read to ensure the file format is valid
+        # This will raise an exception if the file contains legacy pickle data
+        _ = len(self.node_id_mapping)
+
+        self.callsign_mapping = PersistentDict(
+            db_path,
+            tablename="callsign_mapping",
+            autocommit=True,
+        )
+        _ = len(self.callsign_mapping)
+
+        self.web_config = PersistentDict(
+            db_path,
+            tablename="web_config",
+            autocommit=True,
+        )
+        _ = len(self.web_config)
 
     async def initialize(self) -> bool:
         """
@@ -97,21 +137,7 @@ class GatewayApp:
                     # We continue, letting SqliteDict fail if it must, or maybe it works
 
             try:
-                self.node_id_mapping = PersistentDict(
-                    db_path,
-                    tablename="node_id_mapping",
-                    autocommit=True,
-                )
-                # Trigger a read to ensure the file format is valid
-                # This will raise an exception if the file contains legacy pickle data
-                _ = len(self.node_id_mapping)
-
-                self.callsign_mapping = PersistentDict(
-                    db_path,
-                    tablename="callsign_mapping",
-                    autocommit=True,
-                )
-                _ = len(self.callsign_mapping)
+                self._init_persistent_dicts(db_path)
 
                 # Load into memory cache
                 self.logger.info("Loading state into memory cache...")
@@ -134,6 +160,11 @@ class GatewayApp:
                         self.callsign_mapping.close()
                     except Exception:
                         pass  # nosec
+                if self.web_config:
+                    try:
+                        self.web_config.close()
+                    except Exception:
+                        pass  # nosec
 
                 # Delete the incompatible file
                 if os.path.exists(db_path):
@@ -146,20 +177,45 @@ class GatewayApp:
                         )
 
                 # Re-initialize with new format
-                self.node_id_mapping = PersistentDict(
-                    db_path,
-                    tablename="node_id_mapping",
-                    autocommit=True,
-                )
-                self.callsign_mapping = PersistentDict(
-                    db_path,
-                    tablename="callsign_mapping",
-                    autocommit=True,
-                )
+                self._init_persistent_dicts(db_path)
 
                 # Load into memory cache (empty or after reset)
                 self._node_id_cache = dict(self.node_id_mapping)
                 self._callsign_cache = dict(self.callsign_mapping)
+
+            # --- Apply Web UI Configuration Overrides ---
+            try:
+                if (
+                    "caltopo_connect_key" in self.web_config
+                    and self.web_config["caltopo_connect_key"]
+                ):
+                    self.config.caltopo.connect_key = self.web_config[
+                        "caltopo_connect_key"
+                    ]
+                if (
+                    "caltopo_group" in self.web_config
+                    and self.web_config["caltopo_group"]
+                ):
+                    self.config.caltopo.group = self.web_config["caltopo_group"]
+                if "allow_unknown_devices" in self.web_config:
+                    self.config.devices.allow_unknown_devices = self.web_config[
+                        "allow_unknown_devices"
+                    ]
+
+                if "nodes" in self.web_config:
+                    from config.config import NodeMapping
+
+                    web_nodes = self.web_config["nodes"]
+                    nodes_dict = {
+                        k: NodeMapping(**v)
+                        for k, v in web_nodes.items()
+                        if isinstance(v, dict)
+                    }
+                    # Merge or override nodes
+                    self.config.nodes = nodes_dict
+            except (KeyError, TypeError, pydantic.ValidationError) as e:
+                self.logger.error(f"Failed to apply Web UI configs: {e}")
+            # --------------------------------------------
 
             # Check if we should use internal MQTT broker
             if self.config.mqtt.use_internal_broker:
@@ -229,8 +285,22 @@ class GatewayApp:
                 sys.exit(1)
 
             # Create tasks
-            mqtt_task = asyncio.create_task(self.mqtt_client.run())
-            stats_task = asyncio.create_task(self._stats_loop())
+            tasks = [
+                asyncio.create_task(self.mqtt_client.run()),
+                asyncio.create_task(self._stats_loop()),
+            ]
+
+            web_runner = None
+            if self.config and self.config.web and self.config.web.enabled:
+                self.logger.info(f"Starting Web UI on port {self.config.web.port}...")
+                web_app = await create_app(self)
+                web_runner = web.AppRunner(web_app)
+                await web_runner.setup()
+                site = web.TCPSite(
+                    web_runner, "0.0.0.0", self.config.web.port  # nosec B104
+                )
+                await site.start()
+                self.logger.info("Web UI started successfully")
 
             self.logger.info("Gateway service started successfully")
 
@@ -240,11 +310,14 @@ class GatewayApp:
             await self.stop_event.wait()
 
             # Cancel tasks
-            mqtt_task.cancel()
-            stats_task.cancel()
+            for task in tasks:
+                task.cancel()
 
             # Wait for tasks to finish (suppress cancellation errors)
-            await asyncio.gather(mqtt_task, stats_task, return_exceptions=True)
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+            if web_runner:
+                await web_runner.cleanup()
 
         except asyncio.CancelledError:
             self.logger.info("Service cancelled")
@@ -521,6 +594,13 @@ class GatewayApp:
         hardware_id = self._resolve_hardware_id(str(numeric_node_id))
         is_new_mapping = str(numeric_node_id) not in self._node_id_cache
 
+        # Update device state (last seen)
+        if hardware_id not in self.device_states:
+            self.device_states[hardware_id] = {}
+        self.device_states[hardware_id]["last_seen"] = time.time()
+        self.device_states[hardware_id]["latitude"] = latitude
+        self.device_states[hardware_id]["longitude"] = longitude
+
         if is_new_mapping and self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(
                 f"Calculated ID for new node: "
@@ -587,6 +667,17 @@ class GatewayApp:
         # Build mapping from numeric node ID to hardware ID
         if node_id_from_payload:
             self._persist_node_id_mapping(str(numeric_node_id), node_id_from_payload)
+
+            # Update device state
+            state = self.device_states.setdefault(node_id_from_payload, {})
+            state["last_seen"] = time.time()
+            updates = {
+                "longname": longname,
+                "shortname": shortname,
+                "hardware": hardware,
+                "role": role,
+            }
+            state.update({k: v for k, v in updates.items() if v})
             self.logger.debug(
                 f"Mapped numeric node ID {sanitize_for_log(numeric_node_id)} "
                 f"to hardware ID {sanitize_for_log(node_id_from_payload)}"
@@ -656,6 +747,19 @@ class GatewayApp:
         uptime_seconds = payload.get("uptime_seconds")
         air_util_tx = payload.get("air_util_tx")
         channel_utilization = payload.get("channel_utilization")
+
+        hardware_id = self._resolve_hardware_id(str(numeric_node_id))
+        if hardware_id not in self.device_states:
+            self.device_states[hardware_id] = {}
+        self.device_states[hardware_id]["last_seen"] = time.time()
+        if battery_level is not None:
+            self.device_states[hardware_id]["battery_level"] = battery_level
+        if voltage is not None:
+            self.device_states[hardware_id]["voltage"] = voltage
+        if uptime_seconds is not None:
+            self.device_states[hardware_id]["uptime_seconds"] = uptime_seconds
+        if channel_utilization is not None:
+            self.device_states[hardware_id]["channel_utilization"] = channel_utilization
 
         self.logger.info(
             f"Telemetry from {sanitize_for_log(numeric_node_id)}: "

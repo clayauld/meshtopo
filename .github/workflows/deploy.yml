@@ -16,15 +16,15 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Azure Login
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Update Container App
-        uses: azure/cli@v2
+        uses: azure/cli@v3
         with:
           inlineScript: |
             az containerapp update \

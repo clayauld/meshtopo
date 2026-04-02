@@ -90,7 +90,7 @@ async def test_initialize_db_reset_on_failure(mock_config, tmp_path):
     with patch("gateway_app.Config.from_file", return_value=mock_config):
         with patch(
             "gateway_app.PersistentDict",
-            side_effect=[Exception("Corrupt"), MagicMock(), MagicMock()],
+            side_effect=[Exception("Corrupt"), MagicMock(), MagicMock(), MagicMock()],
         ):
             mock_reporter = MagicMock(spec=CalTopoReporter)
             mock_reporter.start = AsyncMock()

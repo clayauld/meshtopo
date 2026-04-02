@@ -17,6 +17,7 @@ Arguments:
 import asyncio
 import os
 import sys
+import time
 from pathlib import Path
 
 from gateway_app import GatewayApp  # noqa: E402
@@ -67,15 +68,24 @@ def main() -> None:
         sys.exit(1)
 
     # Create and start the gateway application
-    app = GatewayApp(config_path)
+    while True:
+        app = GatewayApp(config_path)
 
-    try:
-        asyncio.run(app.start())
-    except KeyboardInterrupt:
-        print("\nReceived keyboard interrupt, shutting down...")
-    except Exception as e:
-        print(f"Fatal error: {e}")
-        sys.exit(1)
+        try:
+            asyncio.run(app.start())
+        except KeyboardInterrupt:
+            print("\nReceived keyboard interrupt, shutting down...")
+            break
+        except Exception as e:
+            print(f"Fatal error: {e}")
+            sys.exit(1)
+
+        if getattr(app, "restart_requested", False):
+            print("\nRestart requested from Web UI. Restarting application...")
+            time.sleep(1.5)  # Allow sockets and tasks to cleanly close
+            continue
+        else:
+            break
 
 
 if __name__ == "__main__":

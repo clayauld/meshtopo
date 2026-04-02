@@ -37,20 +37,18 @@ repos:
 
   # Python formatting
   - repo: https://github.com/psf/black
-    rev: 26.1.0
+    rev: 26.3.1
     hooks:
       - id: black
         language_version: python3
-        args: [--line-length=88, --target-version=py39]
-        files: ^(src|tests)/.*\.py$
+        files: ^(src|tests|scripts|config)/.*\.py$
 
   # Python import sorting
   - repo: https://github.com/pycqa/isort
-    rev: 8.0.0
+    rev: 8.0.1
     hooks:
       - id: isort
-        args: [--profile=black, --line-length=88]
-        files: ^(src|tests)/.*\.py$
+        files: ^(src|tests|scripts|config)/.*\.py$
 
   # Python linting
   - repo: https://github.com/pycqa/flake8
@@ -67,9 +65,9 @@ repos:
     rev: v1.19.1
     hooks:
       - id: mypy
-        additional_dependencies: [pydantic, types-PyYAML, types-requests]
-        args: [--ignore-missing-imports, --strict-optional]
-        files: ^(src|config)/.*\.py$
+        additional_dependencies: [pydantic, types-PyYAML, types-requests, aiohttp, aiohttp-jinja2]
+        args: [--ignore-missing-imports, --strict-optional, src/, config/]
+        pass_filenames: false
   # Documentation coverage
   - repo: https://github.com/econchick/interrogate
     rev: 1.7.0
@@ -79,11 +77,11 @@ repos:
         exclude: ^tests/
   # Security scanning
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.9.3
+    rev: 1.9.4
     hooks:
       - id: bandit
         args: ["-f", "screen"]
-        files: ^src/.*\.py$
+        files: ^(src|scripts|config)/.*\.py$
         exclude: ^tests/
 
   # Dockerfile linting
@@ -109,14 +107,14 @@ repos:
 
   # Markdown linting
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.47.0
+    rev: v0.48.0
     hooks:
       - id: markdownlint
         args: [--fix, --config, .markdownlint.json]
 
   # Conventional Commits
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.13.8
+    rev: v4.13.9
     hooks:
       - id: commitizen
         stages: [commit-msg]

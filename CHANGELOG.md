@@ -2,6 +2,96 @@
 
 <!-- version list -->
 
+## v1.4.0 (2026-03-21)
+
+### Bug Fixes
+
+- Add missing cryptography dependency for Web UI
+  ([`3bd9919`](https://github.com/clayauld/meshtopo/commit/3bd99193e724adcae183b4186065b1f341356f88))
+
+- Generate valid fernet key for cookie storage
+  ([`b0e45a0`](https://github.com/clayauld/meshtopo/commit/b0e45a0e394fa7d789875b00952eb3803b0a37d2))
+
+- Import binascii for exception handling in setup_auth
+  ([`f970bc7`](https://github.com/clayauld/meshtopo/commit/f970bc7f15833683b7acd492a7eb5e20cb911f4c))
+
+- Pass unencoded bytes to EncryptedCookieStorage
+  ([`83051f9`](https://github.com/clayauld/meshtopo/commit/83051f9c9b27feae537bf0c7281c40512466d6aa))
+
+- Tests and token storage issue
+  ([`d4fb6a7`](https://github.com/clayauld/meshtopo/commit/d4fb6a73baf2ffd937a715da8dfb6e97226f5ec1))
+
+### Chores
+
+- Delete `changelog.md` and remove extraneous blank lines from `CHANGELOG.md`.
+  ([`3ac9bdf`](https://github.com/clayauld/meshtopo/commit/3ac9bdfe3e7f313ca3f3af3aa9570bf4be5c5861))
+
+- **deps**: Bump actions/checkout from 4 to 6
+  ([`1481e93`](https://github.com/clayauld/meshtopo/commit/1481e93f4bdfcdc31cb8328bf103c991992db918))
+
+- **deps**: Bump actions/upload-artifact from 6 to 7
+  ([`ee5c2e5`](https://github.com/clayauld/meshtopo/commit/ee5c2e5f3f05ab2b0448b9ab72427fcf301f3b79))
+
+- **deps**: Bump aiomqtt from 2.5.0 to 2.5.1
+  ([`c8da6fa`](https://github.com/clayauld/meshtopo/commit/c8da6fa483c39ada81d0ba1ace6a4711da7369a0))
+
+- **deps**: Bump azure/login from 2 to 3
+  ([`0ae1392`](https://github.com/clayauld/meshtopo/commit/0ae13922b847e34af07ab018ad40cba8ac37fed8))
+
+- **deps**: Bump black in the uv group across 1 directory
+  ([`32be3e2`](https://github.com/clayauld/meshtopo/commit/32be3e2cdc4cbd78a5cf235bf9299bca89f6a6a3))
+
+- **deps**: Bump docker/build-push-action from 6 to 7
+  ([`7883cb1`](https://github.com/clayauld/meshtopo/commit/7883cb187cb6429d71cd738a4de887c5074d8391))
+
+- **deps**: Bump docker/login-action from 3 to 4
+  ([`e6982df`](https://github.com/clayauld/meshtopo/commit/e6982dfabcce53092fc43402df5789cf393f13f4))
+
+- **deps**: Bump docker/setup-buildx-action from 3 to 4
+  ([`2b4fbe1`](https://github.com/clayauld/meshtopo/commit/2b4fbe1adc412f480bc516e61cfc4f54743a7884))
+
+- **deps**: Update pre-commit hooks
+  ([`8734f8f`](https://github.com/clayauld/meshtopo/commit/8734f8ffca68c4a38d875dc4d880cd309aa4223a))
+
+### Code Style
+
+- Apply pre-commit formatting and typing fixes
+  ([`a5afdb2`](https://github.com/clayauld/meshtopo/commit/a5afdb29afaa15497fcc98b2b599af4c8b66db73))
+
+### Features
+
+- Add Azure Container Apps deployment configuration, refactor web app key access, and introduce new
+  web tests.
+  ([`3c6ee3d`](https://github.com/clayauld/meshtopo/commit/3c6ee3df9f78ccdc20fbbc9cc596de45bac8a62e))
+
+- Add web UI for configuration management
+  ([`e8de31a`](https://github.com/clayauld/meshtopo/commit/e8de31aab32b692ffa0d98ad6e0e11cfb0cc1cf2))
+
+- Implement CSRF protection for web views and refactor persistent dictionary initialization.
+  ([`f6e3b40`](https://github.com/clayauld/meshtopo/commit/f6e3b40b6d1f3a89730291fdc616f343ca688fb8))
+
+- Implement Litestream for Azure Blob storage replication, add a web UI status dashboard, and
+  enhance configuration with node mapping and restart functionality.
+  ([`57f8b82`](https://github.com/clayauld/meshtopo/commit/57f8b8289f24547a04c6a6c7afb23b4e8d3a343f))
+
+- Implement web-based system log viewer with auto-refresh, persist session secret key, and add
+  Traefik integration.
+  ([`035fd38`](https://github.com/clayauld/meshtopo/commit/035fd38c83647ed8cfacd5eb1c800cfdd6fe49a4))
+
+### Performance Improvements
+
+- Pre-compile regex for identifier validation
+  ([`dd1d887`](https://github.com/clayauld/meshtopo/commit/dd1d887160b8b39d1e2821abb36fb53cf4ea7045))
+
+- Pre-compile regex for identifier validation
+  ([`e9a1ebb`](https://github.com/clayauld/meshtopo/commit/e9a1ebb13bf3e21a2e3d762757a19880f8dd41e7))
+
+### Refactoring
+
+- Move imports from local function scope to global module scope in `views.py` and `gateway.py`.
+  ([`cbefff8`](https://github.com/clayauld/meshtopo/commit/cbefff822002cdc1fe82e6eb78df3457324cb512))
+
+
 ## v1.3.0 (2026-02-23)
 
 ### Build System
