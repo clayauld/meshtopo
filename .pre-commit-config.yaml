@@ -41,16 +41,14 @@ repos:
     hooks:
       - id: black
         language_version: python3
-        args: [--line-length=88, --target-version=py39]
-        files: ^(src|tests)/.*\.py$
+        files: ^(src|tests|scripts|config)/.*\.py$
 
   # Python import sorting
   - repo: https://github.com/pycqa/isort
     rev: 8.0.1
     hooks:
       - id: isort
-        args: [--profile=black, --line-length=88]
-        files: ^(src|tests)/.*\.py$
+        files: ^(src|tests|scripts|config)/.*\.py$
 
   # Python linting
   - repo: https://github.com/pycqa/flake8
@@ -83,7 +81,7 @@ repos:
     hooks:
       - id: bandit
         args: ["-f", "screen"]
-        files: ^src/.*\.py$
+        files: ^(src|scripts|config)/.*\.py$
         exclude: ^tests/
 
   # Dockerfile linting
