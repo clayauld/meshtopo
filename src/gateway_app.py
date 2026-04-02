@@ -92,35 +92,22 @@ class GatewayApp:
         Args:
             db_path: Path to the SQLite database file.
         """
-        self.node_id_mapping = PersistentDict(
-            db_path,
-            tablename="node_id_mapping",
-            autocommit=True,
-        )
-        # Trigger a read to ensure the file format is valid
-        # This will raise an exception if the file contains legacy pickle data
-        _ = len(self.node_id_mapping)
+        tables = {
+            "node_id_mapping": "node_id_mapping",
+            "callsign_mapping": "callsign_mapping",
+            "web_config": "web_config",
+            "tenants": "tenants_db",
+        }
 
-        self.callsign_mapping = PersistentDict(
-            db_path,
-            tablename="callsign_mapping",
-            autocommit=True,
-        )
-        _ = len(self.callsign_mapping)
-
-        self.web_config = PersistentDict(
-            db_path,
-            tablename="web_config",
-            autocommit=True,
-        )
-        _ = len(self.web_config)
-
-        self.tenants_db = PersistentDict(
-            db_path,
-            tablename="tenants",
-            autocommit=True,
-        )
-        _ = len(self.tenants_db)
+        for table_name, attr_name in tables.items():
+            db = PersistentDict(
+                db_path,
+                tablename=table_name,
+                autocommit=True,
+            )
+            # Trigger a read to ensure the file format is valid
+            _ = len(db)
+            setattr(self, attr_name, db)
 
     async def initialize(self) -> bool:
         """
@@ -464,6 +451,12 @@ class GatewayApp:
                 return
 
             self.stats["messages_processed"] += 1
+            
+            # Per-device stats
+            hw_id = self._resolve_hardware_id(numeric_node_id)
+            if hw_id:
+                state = self.device_states.setdefault(hw_id, {})
+                state["messages_processed"] = state.get("messages_processed", 0) + 1
 
         except Exception as e:
             self.logger.error(f"Error processing message: {e}")
@@ -671,6 +664,8 @@ class GatewayApp:
                                 connect_key=connect_key,
                             )
                             if success:
+                                state = self.device_states.setdefault(hardware_id, {})
+                                state["position_updates_sent"] = state.get("position_updates_sent", 0) + 1
                                 self.stats["position_updates_sent"] += 1
                                 routed = True
                         else:
@@ -707,6 +702,8 @@ class GatewayApp:
                                 if success:
                                     sent_any = True
                     if sent_any:
+                        state = self.device_states.setdefault(hardware_id, {})
+                        state["position_updates_sent"] = state.get("position_updates_sent", 0) + 1
                         self.stats["position_updates_sent"] += 1
                     else:
                         self.stats["errors"] += 1
@@ -747,6 +744,8 @@ class GatewayApp:
         )
 
         if success:
+            state = self.device_states.setdefault(hardware_id, {})
+            state["position_updates_sent"] = state.get("position_updates_sent", 0) + 1
             self.stats["position_updates_sent"] += 1
         else:
             self.stats["errors"] += 1
