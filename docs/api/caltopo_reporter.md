@@ -74,7 +74,7 @@ Args:
 Returns:
     str: The redacted text
 
-### `def _send_to_connect_key(self, client: httpx.AsyncClient, callsign: str, latitude: float, longitude: float) -> bool`
+### `def _send_to_connect_key(self, client: httpx.AsyncClient, callsign: str, latitude: float, longitude: float, connect_key: str) -> bool`
 
 Internal method to send position data to a personal connect_key endpoint.
 
@@ -106,7 +106,7 @@ Returns:
 
 Close the reporter and the underlying HTTP client.
 
-### `def send_position_update(self, callsign: str, latitude: float, longitude: float, group: Optional[str] = None) -> bool`
+### `def send_position_update(self, callsign: str, latitude: float, longitude: float, group: Optional[str] = None, connect_key: Optional[str] = None) -> bool`
 
 Send a position update to CalTopo.
 

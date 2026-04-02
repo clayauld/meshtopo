@@ -29,6 +29,18 @@ class GatewayApp:
     node identification, and routes incoming position data to the CalTopo API.
     """
 
+    NODE_ROLE_MAP = {
+        0: "CLIENT",
+        1: "CLIENT_MUTE",
+        2: "ROUTER",
+        3: "ROUTER_MUTE",
+        4: "REPEATER",
+        5: "REPEAT_ONLY",
+        6: "TRACKER",
+        7: "SENSOR",
+        8: "TAK",
+    }
+
     def __init__(self, config_path: str = "config/config.yaml"):
         """
         Initialize the gateway application instance.
@@ -58,6 +70,7 @@ class GatewayApp:
         self.node_id_mapping: Any = None
         self.callsign_mapping: Any = None
         self.web_config: Any = None
+        self.tenants_db: Any = None
         # In-memory caches for performance
         self._node_id_cache: Dict[str, str] = {}
         self._callsign_cache: Dict[str, str] = {}
@@ -101,6 +114,13 @@ class GatewayApp:
             autocommit=True,
         )
         _ = len(self.web_config)
+
+        self.tenants_db = PersistentDict(
+            db_path,
+            tablename="tenants",
+            autocommit=True,
+        )
+        _ = len(self.tenants_db)
 
     async def initialize(self) -> bool:
         """
@@ -165,6 +185,11 @@ class GatewayApp:
                         self.web_config.close()
                     except Exception:
                         pass  # nosec
+                if self.tenants_db:
+                    try:
+                        self.tenants_db.close()
+                    except Exception:
+                        pass  # nosec
 
                 # Delete the incompatible file
                 if os.path.exists(db_path):
@@ -200,6 +225,10 @@ class GatewayApp:
                 if "allow_unknown_devices" in self.web_config:
                     self.config.devices.allow_unknown_devices = self.web_config[
                         "allow_unknown_devices"
+                    ]
+                if "unknown_devices_all_tenants" in self.web_config:
+                    self.config.devices.unknown_devices_all_tenants = self.web_config[
+                        "unknown_devices_all_tenants"
                     ]
 
                 if "nodes" in self.web_config:
@@ -362,6 +391,8 @@ class GatewayApp:
             self.node_id_mapping.close()
         if self.callsign_mapping and hasattr(self.callsign_mapping, "close"):
             self.callsign_mapping.close()
+        if self.tenants_db and hasattr(self.tenants_db, "close"):
+            self.tenants_db.close()
 
     def _resolve_hardware_id(self, numeric_node_id: str) -> str:
         """
@@ -598,6 +629,100 @@ class GatewayApp:
                 f"{sanitize_for_log(hardware_id)}"
             )
 
+        if self.config and getattr(self.config.web, "multi_tenant_enabled", False):
+            # Multi-Tenant routing
+            routed = False
+            is_mapped = False
+            if self.tenants_db is not None:
+                for username, tenant_data in self.tenants_db.items():
+                    if not isinstance(tenant_data, dict):
+                        continue
+                    tenant_nodes = tenant_data.get("nodes", {})
+
+                    # Check directly and with '!' prefix logic
+                    mapped_config = None
+                    if hardware_id in tenant_nodes:
+                        mapped_config = tenant_nodes[hardware_id]
+                    elif hardware_id.startswith("!") and hardware_id[1:] in tenant_nodes:
+                        mapped_config = tenant_nodes[hardware_id[1:]]
+                    elif (
+                        not hardware_id.startswith("!")
+                        and f"!{hardware_id}" in tenant_nodes
+                    ):
+                        mapped_config = tenant_nodes[f"!{hardware_id}"]
+
+                    if mapped_config:
+                        is_mapped = True
+                        if is_new_mapping:
+                            self._persist_node_id_mapping(str(numeric_node_id), hardware_id)
+
+                        callsign = mapped_config.get("device_id") or hardware_id
+                        group = mapped_config.get("group") or tenant_data.get(
+                            "caltopo_group"
+                        )
+                        connect_key = tenant_data.get("caltopo_connect_key")
+
+                        if connect_key or group:
+                            success = await self.caltopo_reporter.send_position_update(
+                                callsign,
+                                latitude,
+                                longitude,
+                                group=group,
+                                connect_key=connect_key,
+                            )
+                            if success:
+                                self.stats["position_updates_sent"] += 1
+                                routed = True
+                        else:
+                            self.logger.warning(
+                                f"Device {hardware_id} matched tenant '{username}', but tenant has NO CalTopo Connect Key or Group configured!"
+                            )
+
+            if not routed:
+                if self.web_config.get(
+                    "unknown_devices_all_tenants",
+                    self.config.devices.unknown_devices_all_tenants,
+                ):
+                    # Send to all tenants
+                    if is_new_mapping:
+                        self._persist_node_id_mapping(str(numeric_node_id), hardware_id)
+                    callsign = hardware_id
+                    sent_any = False
+                    if self.tenants_db is not None:
+                        for username, tenant_data in self.tenants_db.items():
+                            if not isinstance(tenant_data, dict):
+                                continue
+                            group = tenant_data.get("caltopo_group")
+                            connect_key = tenant_data.get("caltopo_connect_key")
+                            if connect_key or group:
+                                success = (
+                                    await self.caltopo_reporter.send_position_update(
+                                        callsign,
+                                        latitude,
+                                        longitude,
+                                        group=group,
+                                        connect_key=connect_key,
+                                    )
+                                )
+                                if success:
+                                    sent_any = True
+                    if sent_any:
+                        self.stats["position_updates_sent"] += 1
+                    else:
+                        self.stats["errors"] += 1
+                else:
+                    if is_mapped:
+                        self.logger.debug(
+                            f"Device {hardware_id} dropped: matched a tenant, but no position update was successful (check CalTopo Configuration)."
+                        )
+                    else:
+                        self.logger.debug(
+                            f"Device {hardware_id} dropped: multi-tenant mode active "
+                            f"and device not mapped by any tenant."
+                        )
+            return
+
+        # Single-Tenant (legacy) routing
         # Get callsign for this hardware ID.
         # This resolves config or learned aliases.
         callsign = self._get_or_create_callsign(hardware_id)
@@ -652,7 +777,10 @@ class GatewayApp:
         longname = payload.get("longname")
         shortname = payload.get("shortname")
         hardware = payload.get("hardware")
-        role = payload.get("role")
+        
+        # Map numeric role to string if possible
+        raw_role = payload.get("role")
+        role = self.NODE_ROLE_MAP.get(raw_role, "UNKNOWN") if raw_role is not None else None
 
         # Build mapping from numeric node ID to hardware ID
         if node_id_from_payload:
@@ -745,7 +873,7 @@ class GatewayApp:
         if battery_level is not None:
             self.device_states[hardware_id]["battery_level"] = battery_level
         if voltage is not None:
-            self.device_states[hardware_id]["voltage"] = voltage
+            self.device_states[hardware_id]["voltage"] = round(float(voltage), 2)
         if uptime_seconds is not None:
             self.device_states[hardware_id]["uptime_seconds"] = uptime_seconds
         if channel_utilization is not None:

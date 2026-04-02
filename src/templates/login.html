@@ -6,12 +6,14 @@
     <title>Meshtopo Web UI - Login</title>
     <style>
         body { font-family: sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-box { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 300px; }
-        h2 { text-align: center; color: #333; margin-top: 0; }
-        input[type="password"] { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        .login-box { background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; box-sizing: border-box; }
+        h2 { text-align: center; color: #333; margin-top: 0; margin-bottom: 1.5rem; font-size: 24px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; font-size: 14px; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; transition: border-color 0.2s; }
+        input:focus { outline: none; border-color: #007bff; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background-color 0.2s; }
         button:hover { background-color: #0056b3; }
-        .error { color: red; text-align: center; margin-bottom: 10px; }
+        .error { background: #fee2e2; color: #dc2626; padding: 10px; border-radius: 6px; border: 1px solid #fecaca; text-align: center; margin-bottom: 1.5rem; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -23,8 +25,21 @@
     {% endif %}
     <form action="/login" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <label for="password">Admin Password:</label>
-        <input type="password" id="password" name="password" required>
+        {% if multi_tenant %}
+        <div style="margin-bottom: 5px;">
+            <label for="username">Tenant Username (or 'admin'):</label>
+            <input type="text" id="username" name="username" placeholder="Enter username" required autofocus>
+        </div>
+        <div style="margin-bottom: 5px;">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" placeholder="Enter password" required>
+        </div>
+        {% else %}
+        <div style="margin-bottom: 5px;">
+            <label for="password">Admin Password:</label>
+            <input type="password" id="password" name="password" placeholder="Enter admin password" required autofocus>
+        </div>
+        {% endif %}
         <button type="submit">Login</button>
     </form>
 </div>

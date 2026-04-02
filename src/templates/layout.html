@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meshtopo Web UI - {% block title %}{% endblock %}</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #333; margin-top: 0; }
+        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; border-bottom: 2px solid #eee; padding-bottom: 1rem; margin-bottom: 2rem; }
+        .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .nav-links { display: flex; gap: 10px; align-items: center; }
+        .btn { height: 38px; padding: 0 16px; border-radius: 4px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; border: none; cursor: pointer; font-size: 14px; box-sizing: border-box; }
+        .user-badge { height: 38px; display: inline-flex; align-items: center; background: #e9ecef; padding: 0 12px; border-radius: 4px; font-weight: bold; font-size: 14px; color: #495057; }
+        .nav-link { height: 38px; display: inline-flex; align-items: center; text-decoration: none; color: #007bff; font-weight: bold; font-size: 14px; padding: 0 10px; }
+        .nav-link.active { color: #333; cursor: default; }
+        .btn-restart { background: #ffc107; color: #212529; }
+        .btn-restart:hover { background: #e0a800; }
+        .btn-logout { background: #dc3545; color: white; }
+        .btn-logout:hover { background: #c82333; }
+        .section { margin-bottom: 30px; padding: 20px; border: 1px solid #eee; border-radius: 5px; background: #fafafa; }
+        .help-text { display: block; color: #666; font-size: 0.9rem; margin-bottom: 10px; }
+        
+        /* Table and Row styles */
+        table { width: 100%; border-collapse: collapse; background: white; margin-bottom: 1rem; }
+        th, td { padding: 10px; border: 1px solid #eee; text-align: left; }
+        th { background: #f8f9fa; }
+        
+        .row-header { display: flex; padding: 10px; background: #f8f9fa; border: 1px solid #eee; border-bottom: none; font-weight: bold; font-size: 0.9rem; color: #666; }
+        .row-header span { flex: 1; padding: 0 10px; }
+        .row-header .id-col { flex: 0 0 110px; }
+        .row-header .action-col { flex: 0 0 100px; text-align: center; }
+        
+        .node-config-row { display: flex; gap: 10px; align-items: center; padding: 10px; border: 1px solid #eee; background: white; margin-bottom: -1px; }
+        .node-config-row input, .node-config-row select { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; min-width: 0; box-sizing: border-box; }
+        .node-config-row .static-id { flex: 0 0 110px; font-family: monospace; font-weight: bold; color: #333; overflow: hidden; text-overflow: ellipsis; }
+        .node-config-row .row-actions { flex: 0 0 100px; display: flex; gap: 5px; }
+
+        /* Alert/Status messages */
+        .success-msg { padding: 10px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #d4edda; background-color: #d4edda; color: #155724; }
+        .error-msg { padding: 10px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #f8d7da; background-color: #f8d7da; color: #721c24; }
+
+        {% block extra_style %}{% endblock %}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Meshtopo Dashboard</h1>
+        <div class="header-actions">
+            <div class="nav-links">
+                <span class="user-badge">User: {{ username }}</span>
+                <a href="/status" class="nav-link {% if request_path == '/status' %}active{% endif %}">Dashboard</a>
+                <a href="/config" class="nav-link {% if request_path == '/config' %}active{% endif %}">Configuration</a>
+            </div>
+            <button onclick="restartService()" class="btn btn-restart">Restart Service</button>
+            <a href="/logout" class="btn btn-logout">Logout</a>
+        </div>
+    </div>
+
+    {% if success %}
+    <div class="success-msg">Configuration saved successfully! The service is restarting to apply changes.</div>
+    {% endif %}
+
+    {% if error %}
+    <div class="error-msg"><strong>Error:</strong> {{ error }}</div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+</div>
+
+<script>
+    function restartService() {
+        if (!confirm("Are you sure you want to restart the background service? This will disconnect momentarily.")) return;
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        fetch('/api/restart', {
+            method: 'POST',
+            headers: { 'X-CSRF-Token': csrfToken }
+        })
+            .then(response => response.json())
+            .then(data => {
+                alert("Service is restarting. The page will reload in 5 seconds.");
+                setTimeout(() => window.location.reload(), 5000);
+            })
+            .catch(err => alert("Failed to trigger restart."));
+    }
+
+    {% block extra_script %}{% endblock %}
+</script>
+
+</body>
+</html>

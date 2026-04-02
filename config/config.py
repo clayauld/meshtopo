@@ -170,6 +170,7 @@ class DeviceConfig(BaseModel):
     """Settings for device discovery and management."""
 
     allow_unknown_devices: bool = True
+    unknown_devices_all_tenants: bool = False
 
 
 class WebConfig(BaseModel):
@@ -178,6 +179,7 @@ class WebConfig(BaseModel):
     enabled: bool = False
     port: int = 8080
     admin_password: Optional[str] = None
+    multi_tenant_enabled: bool = False
 
 
 class StorageConfig(BaseModel):
@@ -256,6 +258,26 @@ class Config(BaseModel):
         caltopo_group = os.getenv("CALTOPO_GROUP")
         if caltopo_group:
             config.caltopo.group = caltopo_group
+
+        multi_tenant = os.getenv("MULTI_TENANT_ENABLED")
+        if multi_tenant is not None:
+            config.web.multi_tenant_enabled = multi_tenant.lower() in (
+                "true",
+                "1",
+                "yes",
+            )
+
+        unknown_all = os.getenv("UNKNOWN_DEVICES_ALL_TENANTS")
+        if unknown_all is not None:
+            config.devices.unknown_devices_all_tenants = unknown_all.lower() in (
+                "true",
+                "1",
+                "yes",
+            )
+            
+        storage_db = os.getenv("STORAGE_DB_PATH")
+        if storage_db:
+            config.storage.db_path = storage_db
 
         return config
 

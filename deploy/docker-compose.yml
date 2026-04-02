@@ -11,6 +11,7 @@ networks:
 volumes:
     mosquitto_data:
     traefik_data:
+    meshtopo_data:
 
 services:
     # Traefik reverse proxy with SSL termination and TCP support
@@ -63,11 +64,14 @@ services:
             allow_anonymous false
             password_file /mosquitto/config/passwd
             EOF
+            touch /mosquitto/config/passwd
+            if [ -n "$$MQTT_USER" ] && [ -n "$$MQTT_PASSWORD" ]; then
+                mosquitto_passwd -b /mosquitto/config/passwd "$$MQTT_USER" "$$MQTT_PASSWORD"
+            fi
             exec mosquitto -c /mosquitto/config/mosquitto.conf
         volumes:
             - mosquitto_data:/mosquitto/data
             - mosquitto_data:/mosquitto/log
-            - ./passwd:/mosquitto/config/passwd:ro
         labels:
             - "traefik.enable=true"
             - "traefik.tcp.routers.mqtt.rule=HostSNI(`mqtt.${SSL_DOMAIN}`)"
@@ -106,6 +110,8 @@ services:
             - "traefik.http.services.meshtopo.loadbalancer.server.port=8080"
         volumes:
             - ../config/config.yaml:/app/config/config.yaml:ro
+            - ./logs:/app/logs
+            - meshtopo_data:/app/data
             - ./logs:/app/logs
         environment:
             - TZ=UTC

@@ -10,13 +10,16 @@
         .container { max-width: 1000px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         h1, h2 { color: #333; margin-top: 0; }
         .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; border-bottom: 2px solid #eee; padding-bottom: 1rem; margin-bottom: 2rem; }
-        .header-actions { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
-        .nav-links { display: flex; gap: 15px; flex-wrap: wrap; }
-        .nav-links a { text-decoration: none; color: #007bff; font-weight: bold; }
-        .nav-links a.active { color: #333; cursor: default; }
-        .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-        .logout-btn { text-decoration: none; color: white; background-color: #dc3545; padding: 8px 16px; border-radius: 4px; font-weight: bold; }
-        .logout-btn:hover { background-color: #c82333; }
+        .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .nav-links { display: flex; gap: 10px; align-items: center; }
+        .btn { height: 38px; padding: 0 16px; border-radius: 4px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; border: none; cursor: pointer; font-size: 14px; box-sizing: border-box; }
+        .user-badge { height: 38px; display: inline-flex; align-items: center; background: #e9ecef; padding: 0 12px; border-radius: 4px; font-weight: bold; font-size: 14px; color: #495057; }
+        .nav-link { height: 38px; display: inline-flex; align-items: center; text-decoration: none; color: #007bff; font-weight: bold; font-size: 14px; padding: 0 10px; }
+        .nav-link.active { color: #333; cursor: default; }
+        .btn-restart { background: #ffc107; color: #212529; }
+        .btn-restart:hover { background: #e0a800; }
+        .btn-logout { background: #dc3545; color: white; }
+        .btn-logout:hover { background: #c82333; }
 
         form { display: flex; flex-direction: column; }
         label { margin-top: 15px; font-weight: bold; color: #555; }
@@ -28,6 +31,15 @@
 
         .success-msg { background-color: #d4edda; color: #155724; padding: 15px; border-radius: 4px; border: 1px solid #c3e6cb; margin-bottom: 20px; text-align: center; font-weight: bold; }
         .section { margin-bottom: 30px; padding: 20px; border: 1px solid #eee; border-radius: 5px; background: #fafafa; }
+        .node-config-row { display: flex; gap: 12px; margin-bottom: 12px; align-items: center; background: white; padding: 12px; border-radius: 6px; border: 1px solid #e0e0e0; transition: all 0.2s; }
+        .node-config-row:hover { border-color: #007bff; box-shadow: 0 3px 8px rgba(0,0,0,0.08); background: #fff; }
+        .node-config-row input, .node-config-row select { margin: 0 !important; height: 38px; flex: 1; min-width: 100px; border: 1px solid #ccc; border-radius: 4px; padding: 0 10px; font-size: 14px; }
+        .node-config-row .static-id { font-family: monospace; font-weight: bold; background: #f8f9fa; padding: 0 10px; height: 38px; display: flex; align-items: center; border-radius: 4px; border: 1px solid #eee; color: #333; min-width: 110px; }
+        .row-header { display: flex; gap: 12px; padding: 0 12px; margin-bottom: 5px; font-weight: bold; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .row-header span { flex: 1; min-width: 100px; }
+        .row-header .id-col { min-width: 110px; }
+        .row-header .action-col { min-width: 160px; flex: 0 0 160px; text-align: right; }
+        .row-actions { display: flex; gap: 8px; flex: 0 0 160px; justify-content: flex-end; }
     </style>
 </head>
 <body>
@@ -37,13 +49,12 @@
         <h1>Meshtopo Configuration</h1>
         <div class="header-actions">
             <div class="nav-links">
-                <a href="/status">Dashboard</a>
-                <a href="/config" class="active">Configuration</a>
+                <span class="user-badge">User: {{ username }}</span>
+                <a href="/status" class="nav-link">Dashboard</a>
+                <a href="/config" class="nav-link active">Configuration</a>
             </div>
-            <div class="controls">
-                <button onclick="restartService()" style="background: #ffc107; color: #000; padding: 8px 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Restart Service</button>
-                <a href="/logout" class="logout-btn">Logout</a>
-            </div>
+            <button onclick="restartService()" class="btn btn-restart">Restart Service</button>
+            <a href="/logout" class="btn btn-logout">Logout</a>
         </div>
     </div>
 
@@ -56,9 +67,148 @@
     </script>
     {% endif %}
 
+    {% if error == "invalid_admin_password" %}
+    <div style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 4px; border: 1px solid #f5c6cb; margin-bottom: 20px; text-align: center; font-weight: bold;">Invalid Admin Password. Tenant deletion failed.</div>
+    {% endif %}
+
     <form action="/config" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
+        {% if super_user and multi_tenant %}
+        <div class="section">
+            <h2>Multi-Tenant Management</h2>
+            <div class="success-msg" style="background-color: #cce5ff; color: #004085; border-color: #b8daff;">Multi-Tenant mode is active. As Super User, you manage global settings and tenant accounts here.</div>
+
+            <h3>Global Settings</h3>
+            <label style="display: flex; align-items: center; font-weight: normal; margin-top: 10px;">
+                <input type="checkbox" name="unknown_devices_all_tenants" style="width: auto; margin-right: 10px;" {% if unknown_devices_all_tenants %}checked{% endif %}>
+                <strong>Map Unknown Devices Globally</strong> - If enabled, unknown devices are routed to ALL tenants (best-effort).
+            </label>
+            <button type="submit" name="action" value="save_global" style="margin-top: 10px; padding: 8px 15px;">Save Global Settings</button>
+            <br>
+            <h3>Active Tenants</h3>
+            <ul style="list-style-type: none; padding: 0;">
+            {% for t_user, t_data in tenants.items() %}
+                <li style="padding: 10px; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 4px; display: flex; flex-direction: column; gap: 10px; background: white;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span><strong>{{ t_user }}</strong> | Default Group: {{ t_data.caltopo_group or 'None' }}</span>
+                        <button type="button" onclick="toggleDeletePrompt('{{ t_user }}')" class="btn btn-logout" style="height: 30px; font-size: 12px; padding: 0 10px;">Delete</button>
+                    </div>
+                    <div id="delete-prompt-{{ t_user }}" style="display: none; background: #fff3f3; padding: 10px; border-radius: 4px; border: 1px solid #f5c6cb;">
+                        <form method="POST" action="/config" style="display: flex; align-items: center; gap: 10px; margin: 0;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="action" value="delete_tenant">
+                            <input type="hidden" name="target_tenant" value="{{ t_user }}">
+                            <label style="margin: 0; font-size: 13px; font-weight: bold; color: #721c24;">Verify Admin Password:</label>
+                            <input type="password" name="admin_password" placeholder="Password" style="padding: 5px; margin: 0; flex-grow: 1; border: 1px solid #f5c6cb;" required>
+                            <button type="submit" class="btn btn-logout" style="height: 30px; font-size: 12px; padding: 0 15px;">Confirm Delete</button>
+                            <button type="button" onclick="toggleDeletePrompt('{{ t_user }}')" class="btn" style="height: 30px; font-size: 12px; background: #6c757d; color: white; padding: 0 10px;">Cancel</button>
+                        </form>
+                    </div>
+                </li>
+            {% else %}
+                <p>No tenants configured yet.</p>
+            {% endfor %}
+            </ul>
+        </div>
+        <div class="section">
+            <h2>Create New Tenant</h2>
+            <p class="help-text">Tenants can manage their own nodes and CalTopo integration. Set their initial credentials here.</p>
+            <label for="new_tenant_username">Tenant Username:</label>
+            <input type="text" id="new_tenant_username" name="new_tenant_username" placeholder="Username">
+            <label for="new_tenant_password">Initial Password:</label>
+            <input type="password" id="new_tenant_password" name="new_tenant_password" placeholder="Password">
+            <button type="submit" name="action" value="create_tenant" style="margin-top: 10px; padding: 8px 15px;">Create Tenant</button>
+        </div>
+
+        <div class="section">
+            <h2>Global Node Management</h2>
+            <p class="help-text">Manage and re-assign device assignments across all tenants.</p>
+
+            <h3>Mapped Nodes</h3>
+            <div class="row-header">
+                <span class="id-col">Node ID</span>
+                <span>Tenant Assignment</span>
+                <span>CalTopo Device ID</span>
+                <span>Caltopo Group</span>
+                <span class="action-col">Actions</span>
+            </div>
+            <div id="mapped-nodes-container">
+                {% for node in mapped_nodes %}
+                <div class="node-config-row">
+                    <form method="POST" action="/config" style="display: contents;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="hardware_id" value="{{ node.hardware_id }}">
+                        <input type="hidden" name="old_tenant" value="{{ node.tenant }}">
+
+                        <div class="static-id">{{ node.hardware_id }}</div>
+
+                        <select name="new_tenant">
+                            {% for t_name in tenants.keys() %}
+                            <option value="{{ t_name }}" {% if t_name == node.tenant %}selected{% endif %}>{{ t_name }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <input type="text" name="device_id" value="{{ node.device_id }}" placeholder="Device ID">
+                        <input type="text" name="group" value="{{ node.group or '' }}" placeholder="Group (Optional)">
+
+                        <div class="row-actions">
+                            <button type="submit" name="action" value="remap_node" class="btn btn-restart" style="height: 32px; padding: 0 10px;">Update</button>
+                            <button type="submit" name="action" value="delete_node" onclick="return confirm('Unmap this node from {{ node.tenant }}?')" class="btn btn-logout" style="height: 32px; padding: 0 10px;">Delete</button>
+                        </div>
+                    </form>
+                </div>
+                {% else %}
+                <p style="text-align: center; padding: 20px; color: #666; background: white; border-radius: 4px; border: 1px solid #eee;">No nodes mapped yet.</p>
+                {% endfor %}
+            </div>
+            <div style="margin-top: 10px; text-align: right;">
+                <button type="button" onclick="addManualNodeRow()" class="btn btn-restart">+ Add Node</button>
+            </div>
+
+            <h3 style="margin-top: 30px;">Unmapped Discovered Devices</h3>
+            <p class="help-text">Devices seen on the mesh but not yet assigned to any tenant.</p>
+            <div class="row-header">
+                <span class="id-col">Node ID</span>
+                <span>Mesh Name</span>
+                <span>Assign to Tenant</span>
+                <span>Device ID</span>
+                <span>Group</span>
+                <span class="action-col">Action</span>
+            </div>
+            <div id="unmapped-nodes-container">
+                {% for device in unmapped_devices %}
+                <div class="node-config-row">
+                    <form method="POST" action="/config" style="display: contents;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="hardware_id" value="{{ device.hardware_id }}">
+
+                        <div class="static-id">{{ device.hardware_id }}</div>
+                        <input type="text" value="{{ device.name }}" disabled style="background: #f8f9fa;">
+
+                        <select name="target_tenant" required>
+                            <option value="">Select Tenant...</option>
+                            {% for t_name in tenants.keys() %}
+                            <option value="{{ t_name }}">{{ t_name }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <input type="text" name="device_id" placeholder="Device ID" required>
+                        <input type="text" name="group" placeholder="Optional">
+
+                        <div class="row-actions">
+                            <button type="submit" name="action" value="assign_unmapped" class="btn btn-restart" style="height: 32px; width: 100%;">Map Device</button>
+                        </div>
+                    </form>
+                </div>
+                {% else %}
+                <p style="text-align: center; padding: 20px; color: #666; background: white; border-radius: 4px; border: 1px solid #eee;">All seen devices are currently mapped.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+
+        {% if role == "super_user" %}
         <div class="section">
             <h2>General Settings</h2>
 
@@ -66,6 +216,7 @@
             <input type="text" id="team_id" name="team_id" value="{{ team_id }}" placeholder="e.g., SAR-TEAM-1">
             <span class="help-text">Used to identify the team or incident for shared locations.</span>
         </div>
+        {% endif %}
 
         <div class="section">
             <h2>CalTopo Settings</h2>
@@ -81,6 +232,7 @@
 
         <!-- Multiple groups can be added here in the future -->
 
+        {% if role == "super_user" %}
         <div class="section">
             <h2>Device Settings</h2>
 
@@ -89,23 +241,33 @@
                 <strong>Allow Unknown Devices</strong> - Track devices even if they are not explicitly configured below. Defaults to Hardware ID as callsign.
             </label>
         </div>
+        {% endif %}
 
         <div class="section">
             <h2>Nodes Mapping</h2>
             <p class="help-text">Map Meshtastic Node IDs to specific CalTopo Device IDs and Groups.</p>
+            <div class="row-header">
+                <span class="id-col">Node ID</span>
+                <span>CalTopo Device ID</span>
+                <span>CalTopo Group Tag</span>
+                <span class="action-col">Actions</span>
+            </div>
             <div id="nodes-container">
                 {% for node_id, node_data in nodes.items() %}
-                <div class="node-row" style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
-                    <input type="text" name="node_id[]" value="{{ node_id }}" placeholder="Node ID (e.g. !b03cdb50)" required>
-                    <input type="text" name="node_device_id[]" value="{{ node_data.device_id }}" placeholder="Device ID (e.g. ICP-Heltec)" required>
-                    <input type="text" name="node_group[]" value="{{ node_data.group or '' }}" placeholder="Specific Group (Optional)">
-                    <button type="button" onclick="this.parentElement.remove()" style="background: #dc3545; color: white; border: none; cursor: pointer; padding: 10px; border-radius: 4px;">Remove</button>
+                <div class="node-config-row">
+                    <input type="text" name="node_id[]" value="{{ node_id }}" placeholder="!hardwareid" required style="min-width: 110px; flex: 0 0 110px; font-family: monospace; font-weight: bold;">
+                    <input type="text" name="node_device_id[]" value="{{ node_data.device_id }}" placeholder="e.g. Alpha-1" required>
+                    <input type="text" name="node_group[]" value="{{ node_data.group or '' }}" placeholder="Optional Group">
+                    <div class="row-actions">
+                        <button type="button" onclick="this.parentElement.parentElement.remove()" class="btn btn-logout" style="height: 32px; width: 100%;">Remove</button>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
-            <button type="button" onclick="addNodeRow()" style="background: #007bff; color: white; padding: 8px 15px; font-size: 14px; margin-top: 10px; border: none; border-radius: 4px; cursor: pointer;">+ Add Node</button>
+            <button type="button" onclick="addNodeRow()" class="btn btn-restart" style="margin-top: 10px;">+ Add Node</button>
         </div>
 
+        {% if role == "super_user" %}
         <div class="section">
             <h2>Security</h2>
 
@@ -113,22 +275,60 @@
             <input type="password" id="admin_password" name="admin_password" placeholder="Leave blank to keep current password">
             <span class="help-text">Update the password used to access this configuration interface.</span>
         </div>
+        {% endif %}
 
-        <button type="submit">Save Configuration</button>
+        <button type="submit" name="action" value="save_config">Save Configuration</button>
+        {% endif %}
     </form>
 </div>
 
 <script>
+const tenantList = {{ tenants.keys() | list | tojson if tenants else [] }};
+
+function addManualNodeRow() {
+    const container = document.getElementById('mapped-nodes-container');
+    const row = document.createElement('div');
+    row.className = 'node-config-row';
+
+    // Remove the "No nodes mapped yet" message if it exists
+    const emptyMsg = container.querySelector('p');
+    if (emptyMsg && emptyMsg.innerText.includes("No nodes mapped")) {
+        emptyMsg.remove();
+    }
+
+    let tenantOptions = '<option value="">Select Tenant...</option>';
+    tenantList.forEach(t => {
+        tenantOptions += `<option value="${t}">${t}</option>`;
+    });
+
+    row.innerHTML = `
+        <form method="POST" action="/config" style="display: contents;">
+            <input type="hidden" name="csrf_token" value="${document.querySelector('meta[name="csrf-token"]').getAttribute('content')}">
+            <input type="text" name="hardware_id" placeholder="!hardwareid" required style="min-width: 110px; flex: 0 0 110px; font-family: monospace; font-weight: bold; background: #fffbe6;">
+            <select name="target_tenant" required>
+                ${tenantOptions}
+            </select>
+            <input type="text" name="device_id" placeholder="Device ID" required>
+            <input type="text" name="group" placeholder="Optional Group">
+            <div class="row-actions">
+                <button type="submit" name="action" value="assign_unmapped" class="btn btn-restart" style="height: 32px; width: 100%;">Map</button>
+            </div>
+        </form>
+    `;
+    container.appendChild(row);
+}
+
 function addNodeRow() {
     const container = document.getElementById('nodes-container');
     const row = document.createElement('div');
-    row.className = 'node-row';
-    row.style = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
+    row.className = 'node-config-row';
     row.innerHTML = `
-        <input type="text" name="node_id[]" placeholder="Node ID (e.g. !0123abcd)" required>
-        <input type="text" name="node_device_id[]" placeholder="Device ID (e.g. ICP-Heltec)" required>
-        <input type="text" name="node_group[]" placeholder="Specific Group (Optional)">
-        <button type="button" onclick="this.parentElement.remove()" style="background: #dc3545; color: white; border: none; cursor: pointer; padding: 10px; border-radius: 4px;">Remove</button>
+        <input type="text" name="node_id[]" placeholder="!hardwareid" required style="min-width: 110px; flex: 0 0 110px; font-family: monospace; font-weight: bold;">
+        <input type="text" name="node_device_id[]" placeholder="e.g. Alpha-1" required>
+        <input type="text" name="node_group[]" placeholder="Optional Group">
+        <div class="row-actions">
+            <button type="button" onclick="this.parentElement.parentElement.remove()" class="btn btn-logout" style="height: 32px; width: 100%;">Remove</button>
+        </div>
     `;
     container.appendChild(row);
 }
@@ -147,6 +347,11 @@ function restartService() {
             setTimeout(() => window.location.reload(), 5000);
         })
         .catch(err => alert("Failed to trigger restart."));
+}
+
+function toggleDeletePrompt(username) {
+    const prompt = document.getElementById(`delete-prompt-${username}`);
+    prompt.style.display = prompt.style.display === 'none' ? 'block' : 'none';
 }
 </script>
 </body>
