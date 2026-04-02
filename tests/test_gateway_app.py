@@ -18,6 +18,7 @@ def mock_config():
     config.caltopo.has_group = False
     config.caltopo.connect_key = "key"
     config.caltopo.has_connect_key = True
+    config.web.multi_tenant_enabled = False
     config.storage.db_path = "test_db.sqlite"
     return config
 

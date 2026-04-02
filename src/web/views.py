@@ -15,11 +15,11 @@ from .auth import generate_csrf, login_required, validate_csrf, verify_password
 from .keys import GATEWAY_APP_KEY
 
 
-async def get_common_context(request: web.Request, **kwargs) -> Dict[str, Any]:
+async def get_common_context(request: web.Request, **kwargs: Any) -> Dict[str, Any]:
     """Helper to build common template context for all pages."""
     session = await get_session(request)
     gateway_app = request.app[GATEWAY_APP_KEY]
-    
+
     context = {
         "username": session.get("username", "Guest"),
         "role": session.get("role", "guest"),
@@ -140,23 +140,26 @@ async def config_get(request: web.Request) -> Dict[str, Any]:
     if multi_tenant and role == "super_user":
         tenants = {
             k: {"caltopo_group": v.get("caltopo_group")}
-            for k, v in gateway_app.tenants_db.items()
+            for k, v in list(gateway_app.tenants_db.items())
             if isinstance(v, dict)
         }
-        
+
         # Aggregate all mapped nodes across all tenants
         mapped_nodes = []
         mapped_hw_ids = set()
-        for t_user, t_data in gateway_app.tenants_db.items():
-            if not isinstance(t_data, dict): continue
+        for t_user, t_data in list(gateway_app.tenants_db.items()):
+            if not isinstance(t_data, dict):
+                continue
             nodes = t_data.get("nodes", {})
             for hw_id, node_cfg in nodes.items():
-                mapped_nodes.append({
-                    "hardware_id": hw_id,
-                    "tenant": t_user,
-                    "device_id": node_cfg.get("device_id"),
-                    "group": node_cfg.get("group")
-                })
+                mapped_nodes.append(
+                    {
+                        "hardware_id": hw_id,
+                        "tenant": t_user,
+                        "device_id": node_cfg.get("device_id"),
+                        "group": node_cfg.get("group"),
+                    }
+                )
                 mapped_hw_ids.add(hw_id)
                 # handle ! prefix
                 if hw_id.startswith("!"):
@@ -168,10 +171,14 @@ async def config_get(request: web.Request) -> Dict[str, Any]:
         unmapped_devices = []
         for hw_id, state in gateway_app.device_states.items():
             if hw_id not in mapped_hw_ids:
-                unmapped_devices.append({
-                    "hardware_id": hw_id,
-                    "name": state.get("longname") or state.get("shortname") or "Unknown"
-                })
+                unmapped_devices.append(
+                    {
+                        "hardware_id": hw_id,
+                        "name": state.get("longname")
+                        or state.get("shortname")
+                        or "Unknown",
+                    }
+                )
 
         return await get_common_context(
             request,
@@ -181,8 +188,9 @@ async def config_get(request: web.Request) -> Dict[str, Any]:
             mapped_nodes=mapped_nodes,
             unmapped_devices=unmapped_devices,
             unknown_devices_all_tenants=gateway_app.web_config.get(
-                "unknown_devices_all_tenants", gateway_app.config.devices.unknown_devices_all_tenants
-            )
+                "unknown_devices_all_tenants",
+                gateway_app.config.devices.unknown_devices_all_tenants,
+            ),
         )
 
     # Fetch configuration for single tenant OR tenant-role
@@ -275,9 +283,11 @@ async def config_post(request: web.Request) -> web.Response:
                     }
                     return web.HTTPFound("/config?success=1")
             elif action == "delete_tenant":
-                admin_password = str(data.get("delete_tenant_admin_password", "")).strip()
+                admin_password = str(
+                    data.get("delete_tenant_admin_password", "")
+                ).strip()
                 target_tenant = str(data.get("target_tenant", "")).strip()
-                
+
                 # Security check: verify admin password
                 is_valid = False
                 admin_hash = gateway_app.web_config.get("admin_password_hash")
@@ -287,30 +297,36 @@ async def config_post(request: web.Request) -> web.Response:
                 if not is_valid:
                     if admin_password == gateway_app.config.web.admin_password:
                         is_valid = True
-                
-                if is_valid and target_tenant and target_tenant in gateway_app.tenants_db:
+
+                if (
+                    is_valid
+                    and target_tenant
+                    and target_tenant in gateway_app.tenants_db
+                ):
                     del gateway_app.tenants_db[target_tenant]
                     return web.HTTPFound("/config?success=1")
                 else:
                     return web.HTTPFound("/config?error=invalid_admin_password")
             elif action == "save_global":
-                gateway_app.web_config["unknown_devices_all_tenants"] = data.get("unknown_devices_all_tenants") == "on"
+                gateway_app.web_config["unknown_devices_all_tenants"] = (
+                    data.get("unknown_devices_all_tenants") == "on"
+                )
                 return web.HTTPFound("/config?success=1")
             elif action.startswith("assign_unmapped:"):
                 # Superuser assigning an unmapped device
                 idx = action.split(":")[1]
-                hw_id = data.get(f"unmapped_hw_id_{idx}")
-                target_tenant = data.get(f"unmapped_tenant_{idx}")
-                device_id = data.get(f"unmapped_device_id_{idx}")
-                group = data.get(f"unmapped_group_{idx}")
-                
+                hw_id = str(data.get(f"unmapped_hw_id_{idx}", ""))
+                target_tenant = str(data.get(f"unmapped_tenant_{idx}", ""))
+                device_id = str(data.get(f"unmapped_device_id_{idx}", ""))
+                group = str(data.get(f"unmapped_group_{idx}", ""))
+
                 if hw_id and target_tenant and target_tenant in gateway_app.tenants_db:
                     tenant_data = gateway_app.tenants_db[target_tenant]
                     if "nodes" not in tenant_data:
                         tenant_data["nodes"] = {}
                     tenant_data["nodes"][hw_id] = {
                         "device_id": device_id,
-                        "group": group if group else None
+                        "group": group if group else None,
                     }
                     gateway_app.tenants_db[target_tenant] = tenant_data
                     return web.HTTPFound("/config?success=1")
@@ -339,29 +355,39 @@ async def config_post(request: web.Request) -> web.Response:
             target_tenants = data.getall("mapped_tenant[]", [])
             device_ids = data.getall("mapped_device_id[]", [])
             node_groups = data.getall("mapped_group[]", [])
-            
+
             # Group by tenant
-            tenant_updates = {}
+            tenant_updates: Dict[str, Dict[str, Any]] = {}
             for i in range(len(hw_ids)):
                 hw_id = str(hw_ids[i]).strip()
-                t_name = str(target_tenants[i]).strip() if i < len(target_tenants) else ""
+                t_name = (
+                    str(target_tenants[i]).strip() if i < len(target_tenants) else ""
+                )
                 did = str(device_ids[i]).strip() if i < len(device_ids) else ""
                 ngrp = str(node_groups[i]).strip() if i < len(node_groups) else ""
-                
+
                 if hw_id and t_name and t_name in gateway_app.tenants_db:
                     if t_name not in tenant_updates:
                         tenant_updates[t_name] = {}
-                    tenant_updates[t_name][hw_id] = {"device_id": did, "group": ngrp if ngrp else None}
-            
+                    tenant_updates[t_name][hw_id] = {
+                        "device_id": did,
+                        "group": ngrp if ngrp else None,
+                    }
+
             # Apply updates: Clear and reload nodes for each affected tenant
             # (Note: This currently only updates tenants present in the form.
             # To be 100% thorough, we should clear nodes for ALL tenants
             # because some might have had all their nodes deleted.)
-            for t_name in gateway_app.tenants_db:
-                tenant_data = gateway_app.tenants_db[t_name]
-                if not isinstance(tenant_data, dict): continue
-                tenant_data["nodes"] = tenant_updates.get(t_name, {})
-                gateway_app.tenants_db[t_name] = tenant_data
+            # Apply updates only for tenants that were present in the form
+            managed_tenants = data.getall("managed_tenant_name[]", [])
+            for t_val in managed_tenants:
+                t_name = str(t_val)
+                if t_name in gateway_app.tenants_db:
+                    tenant_data = gateway_app.tenants_db[t_name]
+                    if not isinstance(tenant_data, dict):
+                        continue
+                    tenant_data["nodes"] = tenant_updates.get(t_name, {})
+                    gateway_app.tenants_db[t_name] = tenant_data
         else:
             # Standard single-tenant or legacy update
             node_ids = data.getall("node_id[]", [])
@@ -374,7 +400,10 @@ async def config_post(request: web.Request) -> web.Response:
                 did = str(device_ids[i]).strip() if i < len(device_ids) else ""
                 ngrp = str(node_groups[i]).strip() if i < len(node_groups) else ""
                 if nid and did:
-                    nodes_dict[nid] = {"device_id": did, "group": ngrp if ngrp else None}
+                    nodes_dict[nid] = {
+                        "device_id": did,
+                        "group": ngrp if ngrp else None,
+                    }
 
             db["nodes"] = nodes_dict
 
@@ -471,10 +500,10 @@ async def status_get(request: web.Request) -> Dict[str, Any]:
         display_state = dict(state)
         callsign = None
         tenant_name = None
-        
+
         # Check multi-tenant configured nodes first
         if gateway_app.config.web.multi_tenant_enabled and gateway_app.tenants_db:
-            for t_user, t_data in gateway_app.tenants_db.items():
+            for t_user, t_data in list(gateway_app.tenants_db.items()):
                 if isinstance(t_data, dict):
                     nodes = t_data.get("nodes", {})
                     if hw_id in nodes:
@@ -488,12 +517,12 @@ async def status_get(request: web.Request) -> Dict[str, Any]:
                         tenant_name = t_user
                     if callsign:
                         break
-        
+
         # Check single-tenant global config
         if not callsign and hasattr(gateway_app, "_get_or_create_callsign"):
             if not gateway_app.config.web.multi_tenant_enabled:
                 callsign = gateway_app._get_or_create_callsign(hw_id)
-                
+
         display_state["configured_name"] = callsign
         display_state["tenant_name"] = tenant_name
         display_states[hw_id] = display_state
@@ -520,8 +549,10 @@ async def status_get(request: web.Request) -> Dict[str, Any]:
                 final_display_states[hw_id] = state
                 # Aggregate per-device stats
                 tenant_stats["messages_processed"] += state.get("messages_processed", 0)
-                tenant_stats["position_updates_sent"] += state.get("position_updates_sent", 0)
-        
+                tenant_stats["position_updates_sent"] += state.get(
+                    "position_updates_sent", 0
+                )
+
         # Approximate messages_received as processed for the tenant view
         tenant_stats["messages_received"] = tenant_stats["messages_processed"]
         stats_to_display = tenant_stats

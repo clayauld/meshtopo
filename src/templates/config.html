@@ -37,7 +37,7 @@
                 <tbody>
                     {% for t_name, t_data in tenants.items() %}
                     <tr>
-                        <td>{{ t_name }}</td>
+                        <td>{{ t_name }}<input type="hidden" name="managed_tenant_name[]" value="{{ t_name }}"></td>
                         <td>{{ t_data.caltopo_group or 'Not set' }}</td>
                         <td>{{ t_data.nodes|length if t_data.nodes else 0 }}</td>
                         <td>

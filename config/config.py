@@ -274,7 +274,7 @@ class Config(BaseModel):
                 "1",
                 "yes",
             )
-            
+
         storage_db = os.getenv("STORAGE_DB_PATH")
         if storage_db:
             config.storage.db_path = storage_db

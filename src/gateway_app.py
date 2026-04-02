@@ -67,10 +67,10 @@ class GatewayApp:
         }
 
         # Persistent state using sqlitedict
-        self.node_id_mapping: Any = None
-        self.callsign_mapping: Any = None
-        self.web_config: Any = None
-        self.tenants_db: Any = None
+        self.node_id_mapping: Any = {}
+        self.callsign_mapping: Any = {}
+        self.web_config: Any = {}
+        self.tenants_db: Any = {}
         # In-memory caches for performance
         self._node_id_cache: Dict[str, str] = {}
         self._callsign_cache: Dict[str, str] = {}
@@ -451,7 +451,7 @@ class GatewayApp:
                 return
 
             self.stats["messages_processed"] += 1
-            
+
             # Per-device stats
             hw_id = self._resolve_hardware_id(numeric_node_id)
             if hw_id:
@@ -553,11 +553,6 @@ class GatewayApp:
             data: The complete JSON message payload.
             numeric_node_id: The 'from' ID (numeric string) of the sender.
         """
-        if self.node_id_mapping is None or self.callsign_mapping is None:
-            self.logger.error("State databases not initialized")
-            self.stats["errors"] += 1
-            return
-
         # Check for retained message
         if data.get("_mqtt_retain"):
             self.logger.info(
@@ -627,7 +622,7 @@ class GatewayApp:
             routed = False
             is_mapped = False
             if self.tenants_db is not None:
-                for username, tenant_data in self.tenants_db.items():
+                for username, tenant_data in list(self.tenants_db.items()):
                     if not isinstance(tenant_data, dict):
                         continue
                     tenant_nodes = tenant_data.get("nodes", {})
@@ -636,18 +631,18 @@ class GatewayApp:
                     mapped_config = None
                     if hardware_id in tenant_nodes:
                         mapped_config = tenant_nodes[hardware_id]
-                    elif hardware_id.startswith("!") and hardware_id[1:] in tenant_nodes:
-                        mapped_config = tenant_nodes[hardware_id[1:]]
                     elif (
-                        not hardware_id.startswith("!")
-                        and f"!{hardware_id}" in tenant_nodes
+                        hardware_id.startswith("!") and hardware_id[1:] in tenant_nodes
                     ):
-                        mapped_config = tenant_nodes[f"!{hardware_id}"]
+                        mapped_config = tenant_nodes[hardware_id[1:]]
 
                     if mapped_config:
                         is_mapped = True
+
                         if is_new_mapping:
-                            self._persist_node_id_mapping(str(numeric_node_id), hardware_id)
+                            self._persist_node_id_mapping(
+                                str(numeric_node_id), hardware_id
+                            )
 
                         callsign = mapped_config.get("device_id") or hardware_id
                         group = mapped_config.get("group") or tenant_data.get(
@@ -665,12 +660,16 @@ class GatewayApp:
                             )
                             if success:
                                 state = self.device_states.setdefault(hardware_id, {})
-                                state["position_updates_sent"] = state.get("position_updates_sent", 0) + 1
+                                state["position_updates_sent"] = (
+                                    state.get("position_updates_sent", 0) + 1
+                                )
                                 self.stats["position_updates_sent"] += 1
                                 routed = True
                         else:
                             self.logger.warning(
-                                f"Device {hardware_id} matched tenant '{username}', but tenant has NO CalTopo Connect Key or Group configured!"
+                                f"Device {hardware_id} matched tenant '{username}', "
+                                "but tenant has NO CalTopo Connect Key or Group "
+                                "configured!"
                             )
 
             if not routed:
@@ -684,7 +683,7 @@ class GatewayApp:
                     callsign = hardware_id
                     sent_any = False
                     if self.tenants_db is not None:
-                        for username, tenant_data in self.tenants_db.items():
+                        for username, tenant_data in list(self.tenants_db.items()):
                             if not isinstance(tenant_data, dict):
                                 continue
                             group = tenant_data.get("caltopo_group")
@@ -701,16 +700,22 @@ class GatewayApp:
                                 )
                                 if success:
                                     sent_any = True
+                                    state = self.device_states.setdefault(
+                                        hardware_id, {}
+                                    )
+                                    state["position_updates_sent"] = (
+                                        state.get("position_updates_sent", 0) + 1
+                                    )
+                                    self.stats["position_updates_sent"] += 1
                     if sent_any:
-                        state = self.device_states.setdefault(hardware_id, {})
-                        state["position_updates_sent"] = state.get("position_updates_sent", 0) + 1
-                        self.stats["position_updates_sent"] += 1
+                        pass
                     else:
                         self.stats["errors"] += 1
                 else:
                     if is_mapped:
                         self.logger.debug(
-                            f"Device {hardware_id} dropped: matched a tenant, but no position update was successful (check CalTopo Configuration)."
+                            f"Device {hardware_id} dropped: matched a tenant, but no "
+                            "position update was successful (check CalTopo config)."
                         )
                     else:
                         self.logger.debug(
@@ -760,10 +765,6 @@ class GatewayApp:
             data: JSON data from Meshtastic
             numeric_node_id: Numeric node ID from the message
         """
-        if self.node_id_mapping is None or self.callsign_mapping is None:
-            self.logger.error("State databases not initialized")
-            return
-
         payload = data.get("payload")
         if not payload:
             self.logger.warning(
@@ -776,10 +777,14 @@ class GatewayApp:
         longname = payload.get("longname")
         shortname = payload.get("shortname")
         hardware = payload.get("hardware")
-        
+
         # Map numeric role to string if possible
         raw_role = payload.get("role")
-        role = self.NODE_ROLE_MAP.get(raw_role, "UNKNOWN") if raw_role is not None else None
+        role = (
+            self.NODE_ROLE_MAP.get(raw_role, "UNKNOWN")
+            if raw_role is not None
+            else None
+        )
 
         # Build mapping from numeric node ID to hardware ID
         if node_id_from_payload:
