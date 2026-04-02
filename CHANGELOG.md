@@ -2,6 +2,34 @@
 
 <!-- version list -->
 
+## v1.5.0 (2026-04-02)
+
+### Chores
+
+- **deps**: Bump azure/cli from 2 to 3
+  ([`fbdf0f0`](https://github.com/clayauld/meshtopo/commit/fbdf0f038113055663de906503d6a2d136ef6e31))
+
+- **deps**: Bump codecov/codecov-action from 5 to 6
+  ([`e042669`](https://github.com/clayauld/meshtopo/commit/e042669f18789796868621ca2a50cd4da8459e6e))
+
+- **deps**: Bump dorny/test-reporter from 2 to 3
+  ([`54c2e1d`](https://github.com/clayauld/meshtopo/commit/54c2e1df4a1683a9a7dc1aafb2a4da7c006a7658))
+
+- **deps**: Bump requests from 2.32.5 to 2.33.0
+  ([`65d477e`](https://github.com/clayauld/meshtopo/commit/65d477eab72af32ffd1918d729c232e9bcfdd2f2))
+
+- **deps**: Bump requests in the uv group across 1 directory
+  ([`87f62bc`](https://github.com/clayauld/meshtopo/commit/87f62bca661503475ecfe6c1897a6c107400eca0))
+
+- **deps**: Update pre-commit hooks
+  ([`3a2c783`](https://github.com/clayauld/meshtopo/commit/3a2c783c4565796bd116603295bfaa2604fa6b0e))
+
+### Features
+
+- Simplify unknown device callsign handling in gateway app
+  ([`e484d2b`](https://github.com/clayauld/meshtopo/commit/e484d2b6b2e855e52752e48b0cdd2fbb3dd585f8))
+
+
 ## v1.4.0 (2026-03-21)
 
 ### Bug Fixes
