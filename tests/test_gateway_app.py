@@ -178,8 +178,11 @@ class TestGatewayApp:
         app._process_nodeinfo_message(msg, "123")
 
         assert app.node_id_mapping["123"] == "!123a4edc"
-        # Should use configured name
-        assert app.callsign_mapping["!123a4edc"] == "TEAM-LEAD"
+        # Should NOT persist configured callsign to database anymore
+        assert "!123a4edc" not in app.callsign_mapping
+
+        # But _get_or_create_callsign should still resolve it correctly from config
+        assert app._get_or_create_callsign("!123a4edc") == "TEAM-LEAD"
 
     def test_process_nodeinfo_fallback_names(self, app):
         # Case 1: Longname fallback
@@ -280,6 +283,31 @@ class TestGatewayApp:
         app.caltopo_reporter.send_position_update.assert_called_with(
             "!unknown", 0.00001, 0.00002, None
         )
+
+    def test_unknown_device_callsign_not_persisted(self, app):
+        """
+        Verify that unknown devices do not have temporary
+        callsign mapping persisted.
+        """
+        app.config.devices.allow_unknown_devices = True
+        app.configured_devices = set(["!known"])
+        app.config.get_node_device_id.return_value = None
+
+        hardware_id = "!unknown"
+
+        # Clear caches and mappings to be sure
+        app._callsign_cache.clear()
+        app.callsign_mapping.clear()
+
+        # Call the method
+        callsign = app._get_or_create_callsign(hardware_id)
+
+        # Should return hardware_id
+        assert callsign == hardware_id
+
+        # Should NOT be in cache or persistence
+        assert hardware_id not in app._callsign_cache
+        assert hardware_id not in app.callsign_mapping
 
     def test_telemetry_message(self, app):
         msg = {"type": "telemetry", "payload": {"battery_level": 100}}

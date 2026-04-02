@@ -471,35 +471,25 @@ class GatewayApp:
         if callsign:
             return callsign
 
-        # Handle unknown/unconfigured devices
-        is_unknown_device = hardware_id not in self.configured_devices
-
-        if is_unknown_device:
-            if self.config.devices.allow_unknown_devices:
-                # Allow unknown device but use hardware_id as callsign
-                # Fix: Do NOT persist this temporary mapping to avoid
-                # "Permanent Callsign" issue. If nodeinfo arrives later,
-                # it will be persisted then.
-                self.logger.info(
-                    f"Allowing unknown device {sanitize_for_log(hardware_id)} "
-                    f"(allow_unknown_devices=True). Using hardware_id as callsign."
-                )
-                return hardware_id
-            else:
-                self.logger.warning(
-                    f"Unknown device {sanitize_for_log(hardware_id)} "
-                    f"position update blocked (allow_unknown_devices=False). "
-                    f"Device is tracked but no position sent."
-                )
-                return None
-
-        # Known device but no callsign mapping
-        self.logger.warning(
-            f"No callsign mapping found for known hardware ID "
-            f"{sanitize_for_log(hardware_id)}. Position update will be "
-            f"skipped until nodeinfo message is received."
-        )
-        return None
+        # If we reach here, the device is unconfigured (since configured devices
+        # are guaranteed to have a device_id and return early).
+        if self.config.devices.allow_unknown_devices:
+            # Allow unknown device but use hardware_id as callsign
+            # Fix: Do NOT persist this temporary mapping to avoid
+            # "Permanent Callsign" issue. If nodeinfo arrives later,
+            # it will be persisted then.
+            self.logger.info(
+                f"Allowing unknown device {sanitize_for_log(hardware_id)} "
+                f"(allow_unknown_devices=True). Using hardware_id as callsign."
+            )
+            return hardware_id
+        else:
+            self.logger.warning(
+                f"Unknown device {sanitize_for_log(hardware_id)} "
+                f"position update blocked (allow_unknown_devices=False). "
+                f"Device is tracked but no position sent."
+            )
+            return None
 
     def _convert_numeric_to_id(self, numeric_id: Union[int, str]) -> str:
         """
@@ -690,15 +680,11 @@ class GatewayApp:
                 return
             configured_device_id = self.config.get_node_device_id(node_id_from_payload)
             if configured_device_id:
-                # Use configured device_id as callsign
-                self._persist_callsign_mapping(
-                    node_id_from_payload, configured_device_id
-                )
+                # We do NOT write this to the database anymore.
+                # Configuration is the source of truth.
                 self.logger.debug(
-                    f"Mapped hardware ID "
-                    f"{sanitize_for_log(node_id_from_payload)} "
-                    f"to configured callsign "
-                    f"{sanitize_for_log(configured_device_id)}"
+                    f"Hardware ID {sanitize_for_log(node_id_from_payload)} "
+                    f"is in configuration, skipping persistent callsign mapping."
                 )
             elif longname:
                 # Fallback to Meshtastic longname if no configured device_id
