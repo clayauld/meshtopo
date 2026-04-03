@@ -3,6 +3,8 @@
 from aiohttp import web
 
 from .views import (
+    admin_panel_get,
+    admin_panel_post,
     api_logs_get,
     config_get,
     config_post,
@@ -12,8 +14,6 @@ from .views import (
     logout,
     restart_post,
     status_get,
-    admin_panel_get,
-    admin_panel_post,
 )
 
 

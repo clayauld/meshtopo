@@ -580,9 +580,7 @@ async def admin_panel_get(request: web.Request) -> Dict[str, Any]:
 
     gateway_app = request.app[GATEWAY_APP_KEY]
     return await get_common_context(
-        request, 
-        title="User Management",
-        tenants=gateway_app.tenants_db
+        request, title="User Management", tenants=gateway_app.tenants_db
     )
 
 
@@ -599,7 +597,7 @@ async def admin_panel_post(request: web.Request) -> web.Response:
         raise web.HTTPForbidden(text="Invalid CSRF token")
 
     gateway_app = request.app[GATEWAY_APP_KEY]
-    
+
     # 1. New Tenant Creation
     new_username = str(data.get("new_username", "")).strip()
     new_password = str(data.get("new_password", "")).strip()
@@ -610,7 +608,7 @@ async def admin_panel_post(request: web.Request) -> web.Response:
             "password_hash": hashed_bytes.decode("utf-8"),
             "caltopo_connect_key": str(data.get("new_caltopo_key", "")).strip(),
             "caltopo_group": str(data.get("new_caltopo_group", "")).strip(),
-            "nodes": {}
+            "nodes": {},
         }
         raise web.HTTPFound("/admin?success=1")
 

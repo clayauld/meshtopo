@@ -158,12 +158,15 @@ async def test_gateway_app_initialization_directory_creation_failure(mock_config
                 await app.initialize()
                 assert app.logger.error.called
 
+
 @pytest.mark.asyncio
 async def test_process_message_with_exception(app_fixture):
     """Test exception handling in _process_message."""
     app_fixture.logger = MagicMock()
     # Malformed data that causes a crash during type lookup or processing
-    await app_fixture._process_message({"from": "123", "type": "position", "payload": None})
+    await app_fixture._process_message(
+        {"from": "123", "type": "position", "payload": None}
+    )
     # Should catch warning (returning early without payload)
     found = False
     for call in app_fixture.logger.warning.call_args_list:
@@ -172,6 +175,7 @@ async def test_process_message_with_exception(app_fixture):
             break
     assert found
 
+
 @pytest.mark.asyncio
 async def test_close_with_errors():
     """Test close method when dictionaries fail to close."""
@@ -179,11 +183,12 @@ async def test_close_with_errors():
     app.node_id_mapping = MagicMock()
     app.node_id_mapping.close.side_effect = Exception("Close error")
     app.callsign_mapping = MagicMock()
-    
+
     # Should not raise exception
     app.close()
     assert app.node_id_mapping.close.called
     assert app.callsign_mapping.close.called
+
 
 @pytest.fixture
 def app_fixture():
