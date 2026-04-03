@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v1.7.1 (2026-04-03)
+
+### Bug Fixes
+
+- Update gh actions to generate docker image when semantic release is generated automatically or
+  manually.
+  ([`2633985`](https://github.com/clayauld/meshtopo/commit/2633985592b8a52f747ca7cc1f144e5cb2f6324a))
+
+
 ## v1.7.0 (2026-04-03)
 
 ### Bug Fixes
