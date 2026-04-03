@@ -2,6 +2,29 @@
 
 <!-- version list -->
 
+## v1.6.0 (2026-04-03)
+
+### Features
+
+- Implement admin tenant management UI and add CSRF validation to multi-tenant tests
+  ([`13ef8fe`](https://github.com/clayauld/meshtopo/commit/13ef8fe147109499ef5bd036bfd0b34c58ddcc77))
+
+- Implement multi-tenancy support with role-based authentication and tenant-specific configuration
+  management
+  ([`74e9b4a`](https://github.com/clayauld/meshtopo/commit/74e9b4a0b265dc31194e662874d2ae72df3cb5db))
+
+- Implement multi-tenant tests
+  ([`2cf6313`](https://github.com/clayauld/meshtopo/commit/2cf6313f9659f23181a0c54b92d50b98ecbced67))
+
+- Update tenant UI, and standardize login credentials in tests
+  ([`9f5d2ec`](https://github.com/clayauld/meshtopo/commit/9f5d2ec853a5eb8f2286ada337b3d739cad17934))
+
+### Refactoring
+
+- Update configuration UI layout and processing
+  ([`4820982`](https://github.com/clayauld/meshtopo/commit/48209827c8838fdb951a34c2e6d63be322cdb5e5))
+
+
 ## v1.5.0 (2026-04-02)
 
 ### Chores
