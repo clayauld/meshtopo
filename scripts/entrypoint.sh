@@ -15,7 +15,7 @@ if [ "$(id -u)" = "0" ]; then
 
     # Ensure app data and logs are owned by the user
     mkdir -p /app/data /app/logs
-    chown -R meshtopo:meshtopo /app/data /app/logs /app/config
+    chown -R meshtopo:meshtopo /app/data /app/logs /app/config/ || true
 
     # Re-execute the script as the meshtopo user
     exec gosu meshtopo /bin/bash "$0" "$@"
