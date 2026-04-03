@@ -2,6 +2,13 @@
 
 <!-- version list -->
 
+## v1.6.1 (2026-04-03)
+
+### Bug Fixes
+
+- Resolved permission errors on Unraid by implementing support for PUID/PGID and fixing entrypoint execution issues inside the container.
+- Refactored gateway logic to properly handle Meshtastic Hardware ID prefixes and unified superuser authentication.
+
 ## v1.6.0 (2026-04-03)
 
 ### Features
