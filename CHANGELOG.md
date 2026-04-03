@@ -9,7 +9,6 @@
 - Allow permissions changes to error out and still proceed the entrypoint script.
   ([`a073b83`](https://github.com/clayauld/meshtopo/commit/a073b83d35554e2be01913850d98150cbedd6949))
 
-
 ## v1.6.1 (2026-04-03)
 
 ### Bug Fixes

@@ -17,7 +17,7 @@ services:
     # Do NOT use this configuration in production.
     command: mosquitto -c /mosquitto-no-auth.conf
     volumes:
-       - ./mosquitto-no-auth.conf:/mosquitto-no-auth.conf
+      - ./mosquitto-no-auth.conf:/mosquitto-no-auth.conf
     ports:
       - "1883:1883"
 

@@ -96,7 +96,6 @@ repos:
     rev: v1.38.0
     hooks:
       - id: yamllint
-        args: [-d, relaxed]
 
   # Shell script linting
   - repo: https://github.com/shellcheck-py/shellcheck-py
