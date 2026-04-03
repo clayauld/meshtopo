@@ -4,6 +4,7 @@ FROM python:3.10-slim AS builder
 WORKDIR /app
 
 # Install build dependencies
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc wget tar \
     && rm -rf /var/lib/apt/lists/*
@@ -29,6 +30,7 @@ FROM python:3.10-slim AS production
 WORKDIR /app
 
 # Install runtime dependencies for Unraid/PUID/PGID support
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gosu \
     && rm -rf /var/lib/apt/lists/*

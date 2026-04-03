@@ -89,3 +89,5 @@ meshtopo_state.sqlite
 .gemini/
 
 meshtopo-azure.yaml
+migrate_to_litestream.md
+

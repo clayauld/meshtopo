@@ -133,10 +133,11 @@ jobs:
       id: hadolint
       run: |
         # Use docker container for hadolint if not installed
+        # Aligning with .pre-commit-config.yaml ignores (DL3008, DL3009)
         if ! command -v hadolint &> /dev/null; then
-          docker run --rm -i hadolint/hadolint < deploy/Dockerfile > hadolint-results.txt 2>&1 || echo "HADOLINT_FAILED=true" >> $GITHUB_ENV
+          docker run --rm -i hadolint/hadolint hadolint --ignore DL3008 --ignore DL3009 - < deploy/Dockerfile > hadolint-results.txt 2>&1 || echo "HADOLINT_FAILED=true" >> $GITHUB_ENV
         else
-          hadolint deploy/Dockerfile > hadolint-results.txt 2>&1 || echo "HADOLINT_FAILED=true" >> $GITHUB_ENV
+          hadolint --ignore DL3008 --ignore DL3009 deploy/Dockerfile > hadolint-results.txt 2>&1 || echo "HADOLINT_FAILED=true" >> $GITHUB_ENV
         fi
       continue-on-error: true
 
