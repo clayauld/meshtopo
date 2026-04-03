@@ -503,7 +503,7 @@ services:
     profiles:
       - mqtt
 
-  # Core Meshtopo gateway service
+  # Core MeshTopo gateway service
   meshtopo-gateway:
     build: .
     container_name: meshtopo-gateway

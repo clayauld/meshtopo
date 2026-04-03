@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Setup wizard for Meshtopo Gateway."""
+"""Setup wizard for MeshTopo Gateway."""
 
 import os
 import shutil
@@ -78,7 +78,7 @@ def _run_mosquitto_passwd(passwd_file: str, username: str, password: str) -> Non
 
 def main() -> None:
     """The main function for the setup wizard."""
-    print("--- Meshtopo Setup Wizard ---")
+    print("--- MeshTopo Setup Wizard ---")
 
     # Initialize configuration
     if not os.path.exists(CONFIG_FILE):

@@ -1,0 +1,27 @@
+# MeshTopo - Unraid Optimized Docker Compose
+# Use this template for Unraid appdata permission compatibility.
+# Requires PUID and PGID to match your 'nobody' user (typically 99 and 100).
+
+networks:
+  meshtopo_net:
+    driver: bridge
+
+services:
+  meshtopo-gateway:
+    image: ghcr.io/clayauld/meshtopo:latest
+    container_name: meshtopo-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - TZ=America/Anchorage
+      - PUID=99   # Unraid 'nobody' UID
+      - PGID=100  # Unraid 'users' GID
+      # Add other config as needed
+      #- WEB_ADMIN_PASSWORD=your_password
+    volumes:
+      - /mnt/user/appdata/meshtopo/config.yaml:/app/config/config.yaml:ro
+      - /mnt/user/appdata/meshtopo/logs:/app/logs
+      - /mnt/user/appdata/meshtopo/data:/app/data
+    networks:
+      - meshtopo_net

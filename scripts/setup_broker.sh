@@ -1,5 +1,5 @@
 #!/bin/bash
-# Meshtopo MQTT Broker Setup Script
+# MeshTopo MQTT Broker Setup Script
 # This script sets up the internal Mosquitto MQTT broker based on config.yaml
 
 set -e
@@ -39,7 +39,7 @@ show_usage() {
     cat << EOF
 Usage: $0 [OPTIONS]
 
-Setup Meshtopo internal MQTT broker based on config.yaml
+Setup MeshTopo internal MQTT broker based on config.yaml
 
 OPTIONS:
     -c, --config FILE     Configuration file (default: config/config.yaml)
@@ -99,7 +99,7 @@ if [[ ! -d "$DEPLOY_DIR" ]]; then
     exit 1
 fi
 
-print_status "Setting up Meshtopo MQTT broker..."
+print_status "Setting up MeshTopo MQTT broker..."
 print_status "Config file: $CONFIG_FILE"
 print_status "Deploy directory: $DEPLOY_DIR"
 

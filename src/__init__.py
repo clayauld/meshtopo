@@ -1,3 +1,3 @@
 """
-Meshtopo gateway source package.
+MeshTopo gateway source package.
 """

@@ -1,6 +1,6 @@
 # Module `gateway`
 
-Meshtopo Gateway Service
+MeshTopo Gateway Service
 
 A lightweight Python gateway service that bridges Meshtastic LoRa mesh networks
 with CalTopo mapping platforms, enabling real-time position tracking of field

@@ -1,5 +1,5 @@
 """
-Configuration management for the Meshtopo gateway service using Pydantic.
+Configuration management for the MeshTopo gateway service using Pydantic.
 """
 
 import logging
@@ -190,7 +190,7 @@ class StorageConfig(BaseModel):
 
 class Config(BaseModel):
     """
-    The root configuration object for the Meshtopo service.
+    The root configuration object for the MeshTopo service.
     Encapsulates all child configuration models.
     """
 

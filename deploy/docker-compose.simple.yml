@@ -1,4 +1,4 @@
-# Meshtopo - Simple Deployment (External Broker)
+# MeshTopo - Simple Deployment (External Broker)
 # Use this if you already have an MQTT broker (e.g., HiveMQ, AWS IoT, or a separate Mosquitto)
 
 networks:

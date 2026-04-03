@@ -15,7 +15,6 @@
   doesn't do anything
   ([`5e40b57`](https://github.com/clayauld/meshtopo/commit/5e40b572504f1a364f8a7092f322814bd65b54aa))
 
-
 ## v1.6.2 (2026-04-03)
 
 ### Bug Fixes

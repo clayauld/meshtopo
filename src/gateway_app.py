@@ -292,7 +292,7 @@ class GatewayApp:
             # We'll rely on the caller to cancel the tasks or set the stop event.
             # But let's keep the logging here if logical.
 
-            self.logger.info("Starting Meshtopo gateway service...")
+            self.logger.info("Starting MeshTopo gateway service...")
             self.stats["start_time"] = time.time()
 
             # Connect to MQTT broker

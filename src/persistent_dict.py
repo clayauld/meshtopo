@@ -1,5 +1,5 @@
 """
-Persistent dictionary implementation for the Meshtopo gateway.
+Persistent dictionary implementation for the MeshTopo gateway.
 Provides a simple key-value store backed by SQLite for state persistence.
 """
 

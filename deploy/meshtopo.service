@@ -1,5 +1,5 @@
 [Unit]
-Description=Meshtopo Gateway Service
+Description=MeshTopo Gateway Service
 Documentation=https://github.com/clayauld/meshtopo
 After=network.target
 Wants=network.target

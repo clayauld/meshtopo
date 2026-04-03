@@ -183,7 +183,7 @@ class TestGateway(unittest.TestCase):
 
         # Check that module has docstring
         self.assertIsNotNone(gateway.__doc__)
-        self.assertIn("Meshtopo Gateway Service", gateway.__doc__)
+        self.assertIn("MeshTopo Gateway Service", gateway.__doc__)
         self.assertIn("Usage:", gateway.__doc__)
         self.assertIn("python gateway.py [config_file]", gateway.__doc__)
 

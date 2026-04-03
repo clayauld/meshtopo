@@ -1,7 +1,7 @@
-# Meshtopo - Meshtastic to CalTopo Gateway
+# MeshTopo - Meshtastic to CalTopo Gateway
 
 <p align="center">
-  <img src="assets/images/Meshtopo-logo.png" alt="Meshtopo Logo" width="200">
+  <img src="assets/images/MeshTopo-logo.png" alt="MeshTopo Logo" width="200">
 </p>
 
 A lightweight Python gateway service that bridges Meshtastic LoRa mesh networks with CalTopo mapping platforms, enabling real-time position tracking of field assets on high-quality maps.
@@ -10,7 +10,7 @@ A lightweight Python gateway service that bridges Meshtastic LoRa mesh networks 
 
 ## What is `meshtopo`?
 
-**Meshtopo** solves the communication gap between off-grid LoRa mesh networks (Meshtastic) and online mapping platforms (CalTopo). It acts as a reliable bridge that forwards location data from Meshtastic nodes directly to CalTopo maps, providing real-time situational awareness for backcountry coordinators, event organizers, and response teams.
+**MeshTopo** solves the communication gap between off-grid LoRa mesh networks (Meshtastic) and online mapping platforms (CalTopo). It acts as a reliable bridge that forwards location data from Meshtastic nodes directly to CalTopo maps, providing real-time situational awareness for backcountry coordinators, event organizers, and response teams.
 
 Key features include:
 
@@ -120,8 +120,8 @@ By default, the integrated Mosquitto broker in the **Full Stack** deployment is 
 The system follows a simple linear data flow:
 
 1. **Meshtastic Network** → LoRa mesh nodes with an MQTT gateway feature enabled.
-2. **MQTT Broker** → A central message broker (e.g., Mosquitto) that receives data from the Meshtastic network. This can be an external broker or the one integrated with Meshtopo.
-3. **Meshtopo Gateway Service** → This Python service connects to the MQTT broker, filters and transforms the data, and forwards it to CalTopo.
+2. **MQTT Broker** → A central message broker (e.g., Mosquitto) that receives data from the Meshtastic network. This can be an external broker or the one integrated with MeshTopo.
+3. **MeshTopo Gateway Service** → This Python service connects to the MQTT broker, filters and transforms the data, and forwards it to CalTopo.
 4. **CalTopo Team Account** → The cloud mapping platform where your devices appear in real-time.
 
 For a detailed look at the system design, multi-tenant capabilities, and underlying data flow, please refer to the [System Architecture Document](docs/architecture.md).
@@ -182,7 +182,7 @@ For the complete list, see the [Meshtastic LoRa Region by Country documentation]
 
 ## Developer & Contributor Guide
 
-Interested in contributing to Meshtopo? Here's how to get your development environment set up.
+Interested in contributing to MeshTopo? Here's how to get your development environment set up.
 
 ### Prerequisites
 
