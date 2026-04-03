@@ -3,10 +3,23 @@
 # Determine repository name from GITHUB_REPOSITORY environment variable
 REPO := $(if $(GITHUB_REPOSITORY),$(GITHUB_REPOSITORY),clayauld/meshtopo)
 
-# Virtual environment detection
+# Virtual environment detection and activation
 VENV ?= .venv
-PYTHON := $(if $(VIRTUAL_ENV),python3,$(if $(wildcard $(VENV)/bin/python3),$(VENV)/bin/python3,python3))
-PIP := $(PYTHON) -m pip
+VENV_BIN := $(VENV)/bin
+
+# Detect if uv is installed for more robust execution
+UV := $(shell command -v uv 2> /dev/null)
+
+# Export environment variables only if not using uv
+# This 'activates' the virtual environment for non-uv setups
+ifeq ($(UV),)
+export VIRTUAL_ENV := $(abspath $(VENV))
+export PATH := $(abspath $(VENV_BIN)):$(PATH)
+endif
+
+PYTHON := $(if $(UV),uv run python,python3)
+PIP := $(if $(UV),uv pip,pip3)
+PYTEST := $(if $(UV),uv run pytest,pytest)
 
 .PHONY: help setup install test lint format clean docker-setup docker-build docker-pull docker-run docker-run-minimal docker-run-ssl docker-stop docker-status docker-logs docker-clean docker-login docker-push docker-push-default dev-setup setup-broker generate-broker-config doc-check
 
