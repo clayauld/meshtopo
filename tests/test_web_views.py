@@ -1,6 +1,5 @@
 """Tests for web UI views."""
 
-import os
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
@@ -133,21 +132,23 @@ async def test_login_post_valid_db_hash(mock_gateway_app):
 @pytest.mark.asyncio
 async def test_login_post_valid_env(mock_gateway_app):
     """Test login post with ENV password."""
+    # Note: In production, Config.from_file handles WEB_ADMIN_PASSWORD.
+    # For this unit test, we manually set it on the mock config.
     from aiohttp.test_utils import TestClient, TestServer
 
+    mock_gateway_app.config.web.admin_password = "env_admin"
     app = await create_app(mock_gateway_app)
     server = TestServer(app)
     cli = TestClient(server)
     await cli.start_server()
 
-    with patch.dict(os.environ, {"WEB_ADMIN_PASSWORD": "env_admin"}):
-        resp = await cli.post(
-            "/login",
-            data={"username": "admin", "password": "env_admin"},
-            allow_redirects=False,
-        )
-        assert resp.status == 302
-        assert resp.headers["Location"] == "/status"
+    resp = await cli.post(
+        "/login",
+        data={"username": "admin", "password": "env_admin"},
+        allow_redirects=False,
+    )
+    assert resp.status == 302
+    assert resp.headers["Location"] == "/status"
     await cli.close()
 
 

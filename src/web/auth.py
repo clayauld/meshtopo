@@ -69,19 +69,14 @@ def verify_password(password: str, hashed: bytes) -> bool:
 
 def is_valid_superuser_password(password: str, gateway_app: Any) -> bool:
     """Check if a password matches the superuser password from any source."""
-    # 0. Direct Environment Override (Highest priority, useful for quick setup/tests)
-    env_password = os.getenv("WEB_ADMIN_PASSWORD")
-    if env_password and password == env_password:
-        return True
-
-    # 1. Database hash check (Secondary: persisted changed password)
+    # 0. Database hash check (Primary: persisted changed password)
     db = gateway_app.web_config
     if "admin_password_hash" in db:
         hashed = db["admin_password_hash"].encode("utf-8")
         if verify_password(password, hashed):
             return True
 
-    # 2. Config/Environment check (Default/Initial password)
+    # 1. Config/Environment check (Secondary: Default/Initial password)
     # The config object already incorporates WEB_ADMIN_PASSWORD from the environment
     config_admin_pass = gateway_app.config.web.admin_password
     if config_admin_pass:
