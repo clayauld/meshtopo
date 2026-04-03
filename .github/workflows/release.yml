@@ -45,6 +45,10 @@ jobs:
     if: needs.version-check.outputs.needs_release == 'false'
     runs-on: ubuntu-latest
     concurrency: release
+    outputs:
+      released: ${{ steps.semantic.outputs.released }}
+      version: ${{ steps.semantic.outputs.version }}
+      tag: ${{ steps.semantic.outputs.tag }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -52,25 +56,47 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python Semantic Release
+        id: semantic
         uses: python-semantic-release/python-semantic-release@v10.5.3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-  perform-release:
-    needs: version-check
-    if: needs.version-check.outputs.needs_release == 'true'
+  publish-release:
+    needs: [version-check, semantic-bump]
+    # Run if manual bump OR if semantic-bump performed an automatic bump
+    if: |
+      always() &&
+      (
+        (needs.version-check.result == 'success' && needs.version-check.outputs.needs_release == 'true') ||
+        (needs.semantic-bump.result == 'success' && needs.semantic-bump.outputs.released == 'true')
+      )
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Create GitHub Release
+      - name: Resolve version
+        id: resolve
+        shell: bash
+        run: |
+          if [ "${{ needs.version-check.outputs.needs_release }}" == "true" ]; then
+            echo "version=${{ needs.version-check.outputs.version }}" >> $GITHUB_OUTPUT
+            echo "raw_version=${{ needs.version-check.outputs.raw_version }}" >> $GITHUB_OUTPUT
+            echo "source=manual" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ needs.semantic-bump.outputs.tag }}" >> $GITHUB_OUTPUT
+            echo "raw_version=${{ needs.semantic-bump.outputs.version }}" >> $GITHUB_OUTPUT
+            echo "source=semantic" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release (Manual Only)
+        if: steps.resolve.outputs.source == 'manual'
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.version-check.outputs.version }}
-          name: ${{ needs.version-check.outputs.version }}
+          tag_name: ${{ steps.resolve.outputs.version }}
+          name: ${{ steps.resolve.outputs.version }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -96,9 +122,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ needs.version-check.outputs.raw_version }}
+            ghcr.io/${{ github.repository }}:${{ steps.resolve.outputs.raw_version }}
             ghcr.io/${{ github.repository }}:latest
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.version=${{ needs.version-check.outputs.raw_version }}
+            org.opencontainers.image.version=${{ steps.resolve.outputs.raw_version }}
             org.opencontainers.image.revision=${{ github.sha }}
