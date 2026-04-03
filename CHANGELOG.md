@@ -2,6 +2,20 @@
 
 <!-- version list -->
 
+## v1.7.0 (2026-04-03)
+
+### Bug Fixes
+
+- Yamllint issues and sync with gh actions to precommit
+  ([`f652da5`](https://github.com/clayauld/meshtopo/commit/f652da527c00066925b5578979b9364bdb3b97ba))
+
+### Features
+
+- Allow tenants to change password, disable unknown device connections option in tenant since it
+  doesn't do anything
+  ([`5e40b57`](https://github.com/clayauld/meshtopo/commit/5e40b572504f1a364f8a7092f322814bd65b54aa))
+
+
 ## v1.6.2 (2026-04-03)
 
 ### Bug Fixes
