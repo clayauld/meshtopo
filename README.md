@@ -16,7 +16,10 @@ Key features include:
 
 - **Real-time Position Forwarding**: Automatically forwards Meshtastic position packets to CalTopo.
 - **Automatic Device Registration**: Devices automatically appear in CalTopo using their callsigns.
-- **Docker Deployment**: Easy deployment with Docker and Docker Compose.
+- **Web Administration UI**: Built-in, authenticated web UI for live monitoring, log viewing, and remote configuration of devices without modifying files.
+- **Multi-Tenant Support**: Manage multiple discrete groups or organizations from a single gateway, allowing you to route specific Meshtastic nodes to different CalTopo accounts.
+- **Persistent SQLite Storage**: Stateful configurations and sessions are securely stored in a persistent SQLite database (with optional Litestream Azure blob replication for High Availability).
+- **Docker Deployment**: Easy deployment with Docker and Docker Compose, supporting Azure Container Apps.
 - **Lightweight Design**: Minimal resource footprint for edge deployment.
 
 ---
@@ -120,6 +123,10 @@ The system follows a simple linear data flow:
 2. **MQTT Broker** → A central message broker (e.g., Mosquitto) that receives data from the Meshtastic network. This can be an external broker or the one integrated with Meshtopo.
 3. **Meshtopo Gateway Service** → This Python service connects to the MQTT broker, filters and transforms the data, and forwards it to CalTopo.
 4. **CalTopo Team Account** → The cloud mapping platform where your devices appear in real-time.
+
+For a detailed look at the system design, multi-tenant capabilities, and underlying data flow, please refer to the [System Architecture Document](docs/architecture.md).
+
+For step-by-step instructions on configuring the LoRa field components and the MQTT bridge hardware, please read the [Meshtastic Node Configuration Guide](docs/meshtastic_node_configuration.md).
 
 ---
 
