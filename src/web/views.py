@@ -11,7 +11,13 @@ import bcrypt
 from aiohttp import web
 from aiohttp_session import get_session
 
-from .auth import generate_csrf, login_required, validate_csrf, verify_password
+from .auth import (
+    generate_csrf,
+    is_valid_superuser_password,
+    login_required,
+    validate_csrf,
+    verify_password,
+)
 from .keys import GATEWAY_APP_KEY
 
 
@@ -71,22 +77,8 @@ async def login_post(request: web.Request) -> Dict[str, Any]:
     gateway_app = request.app[GATEWAY_APP_KEY]
     multi_tenant = gateway_app.config.web.multi_tenant_enabled
 
-    # 1. Environment variable check
-    env_password = os.getenv("WEB_ADMIN_PASSWORD")
-    db = gateway_app.web_config
-
-    is_super_user = False
-
-    if env_password and password == env_password:
-        is_super_user = True
-    if not is_super_user and "admin_password_hash" in db:
-        hashed = db["admin_password_hash"].encode("utf-8")
-        if verify_password(password, hashed):
-            is_super_user = True
-    if not is_super_user:
-        config_password = gateway_app.config.web.admin_password
-        if config_password and password == config_password:
-            is_super_user = True
+    # 1. Check if the password corresponds to a superuser
+    is_super_user = is_valid_superuser_password(password, gateway_app)
 
     if multi_tenant:
         if username == "admin" and is_super_user:
@@ -289,14 +281,7 @@ async def config_post(request: web.Request) -> web.Response:
                 target_tenant = str(data.get("target_tenant", "")).strip()
 
                 # Security check: verify admin password
-                is_valid = False
-                admin_hash = gateway_app.web_config.get("admin_password_hash")
-                if admin_hash:
-                    if verify_password(admin_password, admin_hash.encode("utf-8")):
-                        is_valid = True
-                if not is_valid:
-                    if admin_password == gateway_app.config.web.admin_password:
-                        is_valid = True
+                is_valid = is_valid_superuser_password(admin_password, gateway_app)
 
                 if (
                     is_valid
@@ -502,21 +487,13 @@ async def status_get(request: web.Request) -> Dict[str, Any]:
         tenant_name = None
 
         # Check multi-tenant configured nodes first
-        if gateway_app.config.web.multi_tenant_enabled and gateway_app.tenants_db:
-            for t_user, t_data in list(gateway_app.tenants_db.items()):
-                if isinstance(t_data, dict):
-                    nodes = t_data.get("nodes", {})
-                    if hw_id in nodes:
-                        callsign = nodes[hw_id].get("device_id")
-                        tenant_name = t_user
-                    elif hw_id.startswith("!") and hw_id[1:] in nodes:
-                        callsign = nodes[hw_id[1:]].get("device_id")
-                        tenant_name = t_user
-                    elif not hw_id.startswith("!") and f"!{hw_id}" in nodes:
-                        callsign = nodes[f"!{hw_id}"].get("device_id")
-                        tenant_name = t_user
-                    if callsign:
-                        break
+        if gateway_app.config.web.multi_tenant_enabled:
+            matches = gateway_app._get_tenant_node_configs(hw_id)
+            if matches:
+                # Use the first match for display purposes
+                match = matches[0]
+                callsign = match["node_config"].get("device_id")
+                tenant_name = match["tenant_name"]
 
         # Check single-tenant global config
         if not callsign and hasattr(gateway_app, "_get_or_create_callsign"):

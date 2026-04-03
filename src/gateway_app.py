@@ -374,21 +374,50 @@ class GatewayApp:
     def close(self) -> None:
         """Close all resources."""
         self.logger.info("Closing database connections...")
-        if self.node_id_mapping and hasattr(self.node_id_mapping, "close"):
-            try:
-                self.node_id_mapping.close()
-            except Exception as e:
-                self.logger.error(f"Error closing node_id_mapping: {e}")
-        if self.callsign_mapping and hasattr(self.callsign_mapping, "close"):
-            try:
-                self.callsign_mapping.close()
-            except Exception as e:
-                self.logger.error(f"Error closing callsign_mapping: {e}")
-        if self.tenants_db and hasattr(self.tenants_db, "close"):
-            try:
-                self.tenants_db.close()
-            except Exception as e:
-                self.logger.error(f"Error closing tenants_db: {e}")
+        dbs = {
+            "node_id_mapping": self.node_id_mapping,
+            "callsign_mapping": self.callsign_mapping,
+            "web_config": self.web_config,
+            "tenants_db": self.tenants_db,
+        }
+        for name, db in dbs.items():
+            if db and hasattr(db, "close"):
+                try:
+                    db.close()
+                except Exception as e:
+                    self.logger.error(f"Error closing {name}: {e}")
+
+    def _get_tenant_node_configs(self, hardware_id: str) -> list[dict[str, Any]]:
+        """
+        Find all tenants mapping a specific hardware ID, handling '!' prefix logic.
+        Returns a list of dicts: {"tenant_name": str, "tenant_data": dict,
+        "node_config": dict}
+        """
+        results: list[dict[str, Any]] = []
+        if self.tenants_db is None:
+            return results
+
+        ids_to_check = {hardware_id}
+        if hardware_id.startswith("!"):
+            ids_to_check.add(hardware_id[1:])
+        else:
+            ids_to_check.add(f"!{hardware_id}")
+
+        for username, tenant_data in list(self.tenants_db.items()):
+            if not isinstance(tenant_data, dict):
+                continue
+            tenant_nodes = tenant_data.get("nodes", {})
+            for check_id in ids_to_check:
+                if check_id in tenant_nodes:
+                    results.append(
+                        {
+                            "tenant_name": username,
+                            "tenant_data": tenant_data,
+                            "node_config": tenant_nodes[check_id],
+                        }
+                    )
+                    break
+        return results
 
     def _resolve_hardware_id(self, numeric_node_id: str) -> str:
         """
@@ -630,56 +659,41 @@ class GatewayApp:
             # Multi-Tenant routing
             routed = False
             is_mapped = False
-            if self.tenants_db is not None:
-                for username, tenant_data in list(self.tenants_db.items()):
-                    if not isinstance(tenant_data, dict):
-                        continue
-                    tenant_nodes = tenant_data.get("nodes", {})
 
-                    # Check directly and with '!' prefix logic
-                    mapped_config = None
-                    if hardware_id in tenant_nodes:
-                        mapped_config = tenant_nodes[hardware_id]
-                    elif (
-                        hardware_id.startswith("!") and hardware_id[1:] in tenant_nodes
-                    ):
-                        mapped_config = tenant_nodes[hardware_id[1:]]
+            tenant_matches = self._get_tenant_node_configs(hardware_id)
+            for match in tenant_matches:
+                is_mapped = True
+                username = match["tenant_name"]
+                tenant_data = match["tenant_data"]
+                node_config = match["node_config"]
 
-                    if mapped_config:
-                        is_mapped = True
+                if is_new_mapping:
+                    self._persist_node_id_mapping(str(numeric_node_id), hardware_id)
 
-                        if is_new_mapping:
-                            self._persist_node_id_mapping(
-                                str(numeric_node_id), hardware_id
-                            )
+                callsign = node_config.get("device_id") or hardware_id
+                group = node_config.get("group") or tenant_data.get("caltopo_group")
+                connect_key = tenant_data.get("caltopo_connect_key")
 
-                        callsign = mapped_config.get("device_id") or hardware_id
-                        group = mapped_config.get("group") or tenant_data.get(
-                            "caltopo_group"
+                if connect_key or group:
+                    success = await self.caltopo_reporter.send_position_update(
+                        callsign,
+                        latitude,
+                        longitude,
+                        group=group,
+                        connect_key=connect_key,
+                    )
+                    if success:
+                        state = self.device_states.setdefault(hardware_id, {})
+                        state["position_updates_sent"] = (
+                            state.get("position_updates_sent", 0) + 1
                         )
-                        connect_key = tenant_data.get("caltopo_connect_key")
-
-                        if connect_key or group:
-                            success = await self.caltopo_reporter.send_position_update(
-                                callsign,
-                                latitude,
-                                longitude,
-                                group=group,
-                                connect_key=connect_key,
-                            )
-                            if success:
-                                state = self.device_states.setdefault(hardware_id, {})
-                                state["position_updates_sent"] = (
-                                    state.get("position_updates_sent", 0) + 1
-                                )
-                                self.stats["position_updates_sent"] += 1
-                                routed = True
-                        else:
-                            self.logger.warning(
-                                f"Device {hardware_id} matched tenant '{username}', "
-                                "but tenant has NO CalTopo Connect Key or Group "
-                                "configured!"
-                            )
+                        self.stats["position_updates_sent"] += 1
+                        routed = True
+                else:
+                    self.logger.warning(
+                        f"Device {hardware_id} matched tenant '{username}', but tenant "
+                        "has NO CalTopo Connect Key or Group configured!"
+                    )
 
             if not routed:
                 if self.web_config.get(
@@ -716,10 +730,11 @@ class GatewayApp:
                                         state.get("position_updates_sent", 0) + 1
                                     )
                                     self.stats["position_updates_sent"] += 1
-                    if sent_any:
-                        pass
-                    else:
-                        self.stats["errors"] += 1
+                    if not sent_any:
+                        self.logger.debug(
+                            f"Device {hardware_id} is unmapped and no tenants "
+                            "are configured to receive broadcasted positions."
+                        )
                 else:
                     if is_mapped:
                         self.logger.debug(

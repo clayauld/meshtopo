@@ -67,6 +67,28 @@ def verify_password(password: str, hashed: bytes) -> bool:
         return False
 
 
+def is_valid_superuser_password(password: str, gateway_app: Any) -> bool:
+    """Check if a password matches the superuser password from any source."""
+    # 1. Environment variable check
+    env_password = os.getenv("WEB_ADMIN_PASSWORD")
+    if env_password and password == env_password:
+        return True
+
+    # 2. Database hash check
+    db = gateway_app.web_config
+    if "admin_password_hash" in db:
+        hashed = db["admin_password_hash"].encode("utf-8")
+        if verify_password(password, hashed):
+            return True
+
+    # 3. Config file check
+    config_password = gateway_app.config.web.admin_password
+    if config_password and password == config_password:
+        return True
+
+    return False
+
+
 async def generate_csrf(request: web.Request) -> str:
     """Generate or retrieve a CSRF token for the current session."""
     session = await get_session(request)

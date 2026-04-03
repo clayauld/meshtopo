@@ -237,6 +237,13 @@ class Config(BaseModel):
         # Initial validation from file data
         config = cls.model_validate(data)
 
+        def _parse_bool_env(var_name: str) -> Optional[bool]:
+            """Helper to parse boolean environment variables."""
+            val = os.getenv(var_name)
+            if val is None:
+                return None
+            return val.lower() in ("true", "1", "yes", "on")
+
         # Apply environment variable overrides (useful for Docker/CI)
         mqtt_host = os.getenv("MQTT_BROKER_HOST")
         if mqtt_host:
@@ -259,21 +266,13 @@ class Config(BaseModel):
         if caltopo_group:
             config.caltopo.group = caltopo_group
 
-        multi_tenant = os.getenv("MULTI_TENANT_ENABLED")
+        multi_tenant = _parse_bool_env("MULTI_TENANT_ENABLED")
         if multi_tenant is not None:
-            config.web.multi_tenant_enabled = multi_tenant.lower() in (
-                "true",
-                "1",
-                "yes",
-            )
+            config.web.multi_tenant_enabled = multi_tenant
 
-        unknown_all = os.getenv("UNKNOWN_DEVICES_ALL_TENANTS")
+        unknown_all = _parse_bool_env("UNKNOWN_DEVICES_ALL_TENANTS")
         if unknown_all is not None:
-            config.devices.unknown_devices_all_tenants = unknown_all.lower() in (
-                "true",
-                "1",
-                "yes",
-            )
+            config.devices.unknown_devices_all_tenants = unknown_all
 
         storage_db = os.getenv("STORAGE_DB_PATH")
         if storage_db:

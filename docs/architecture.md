@@ -56,24 +56,32 @@ graph LR
 ## 3. Core Capabilities and Subsystems
 
 ### 3.1 Gateway Core (Asynchronous Processing)
-The Gateway Core is written in Python (using `asyncio`, `aiohttp`, and `asyncio-mqtt`) to handle massive concurrent throughput without thread-blocking. 
+
+The Gateway Core is written in Python (using `asyncio`, `aiohttp`, and `asyncio-mqtt`) to handle massive concurrent throughput without thread-blocking.
+
 - **Message Ingestion & Parsing:** Extracts node metadata, position payloads, and timestamp constraints in real-time.
 - **Dynamic Node Resolution:** Performs a two-tier resolution to associate transient Node IDs with permanent Hardware IDs, establishing durable object identity.
 - **Reporting Engine:** Dispatches RESTful HTTP payloads to the CalTopo API using appropriate geographic transformations and coordinate math.
 
 ### 3.2 Multi-Tenant Organization Support
+
 Meshtopo supports massive scaling through **Multi-Tenancy**. A single hardware infrastructure and gateway service can service multiple distinct teams or organizations safely.
+
 - **Tenant Isolation:** Each tenant has an independent operational domain, separate login credentials, and isolated CalTopo connection keys.
 - **Routing Rules:** Radios belonging to "Team Alpha" are logically separated and sent exclusively to "Map Alpha", while "Team Bravo" nodes are routed conditionally to "Map Bravo".
 - **Global Administrator Privileges:** A super-user layer evaluates unassigned field radios and logically maps them to appropriate tenant configurations.
 
 ### 3.3 Data Persistence and High Availability
-State, user configurations, and node identity relationships are no longer constrained by ephemeral memory or static YAML files. 
+
+State, user configurations, and node identity relationships are no longer constrained by ephemeral memory or static YAML files.
+
 - **SQLite Engine:** Persistent, file-based structured storage using `sqlitedict` enables durable saving of tenant details, user session state, and mapping assignments without relying on an external database server.
 - **Cloud-Native Replication (Litestream):** For enterprise and continuous-availability deployments (e.g., Azure Container Apps), Meshtopo leverages **Litestream** to continuously stream write-ahead logs (WAL) to Azure Blob Storage (or Amazon S3). This permits zero-loss recovery and true horizontal scalability.
 
 ### 3.4 Web Administration UI
+
 System Administrators and Tenant Managers interact with systems through a secure, built-in application interface built with `aiohttp` web server methodologies.
+
 - **Live Monitoring Dashboard:** Real-time metrics across device states, log streaming, and message ingestion ratios.
 - **Identity & Security:** Session caching, CSRF projection, bcrypt password hashing, and role-based access control (Admin vs Tenant).
 - **Zero-Downtime Reconfiguration:** Mapping rules, tenant generation, and group allocations are performed remotely. The Gateway Core honors configuration diffs gracefully without requiring a hypervisor restart.

@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block content %}
-    <form method="POST" action="/config" onsubmit="return true;">
+    <form id="config-form" method="POST" action="/config" onsubmit="return true;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
         {% if multi_tenant and role == "super_user" %}
@@ -47,7 +47,7 @@
                                 <div id="delete-prompt-{{ t_name }}" style="display: none; position: absolute; background: white; border: 1px solid #ccc; padding: 10px; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 100; margin-top: 5px;">
                                     <p style="margin: 0 0 10px 0; font-size: 12px;">Confirm deletion of <strong>{{ t_name }}</strong>. Enter Admin password:</p>
                                     <input type="password" name="delete_tenant_admin_password" placeholder="Admin Password" style="margin-bottom: 10px; height: 30px;">
-                                    <button type="submit" name="action" value="delete_tenant" class="btn btn-logout" onclick="document.forms[0].elements['target_tenant'].value='{{ t_name }}'" style="height: 30px; padding: 0 10px; width: 100%;">Confirm Delete</button>
+                                    <button type="submit" name="action" value="delete_tenant" class="btn btn-logout" onclick="document.getElementById('config-form').elements['target_tenant'].value='{{ t_name }}'" style="height: 30px; padding: 0 10px; width: 100%;">Confirm Delete</button>
                                 </div>
                             </div>
                         </td>

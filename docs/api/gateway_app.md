@@ -42,6 +42,12 @@ Args:
 Returns:
     The resolved callsign, or None if it cannot be resolved.
 
+### `def _get_tenant_node_configs(self, hardware_id: str) -> list[dict[str, typing.Any]]`
+
+Find all tenants mapping a specific hardware ID, handling '!' prefix logic.
+Returns a list of dicts: {"tenant_name": str, "tenant_data": dict,
+"node_config": dict}
+
 ### `def _init_persistent_dicts(self, db_path: str) -> None`
 
 Initialize persistent dictionaries for state storage.
