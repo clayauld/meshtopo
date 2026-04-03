@@ -1,4 +1,4 @@
-# Meshtopo Gateway Service - Development Makefile
+# MeshTopo Gateway Service - Development Makefile
 
 # Determine repository name from GITHUB_REPOSITORY environment variable
 REPO := $(if $(GITHUB_REPOSITORY),$(GITHUB_REPOSITORY),clayauld/meshtopo)
@@ -6,7 +6,7 @@ REPO := $(if $(GITHUB_REPOSITORY),$(GITHUB_REPOSITORY),clayauld/meshtopo)
 .PHONY: help setup install test lint format clean docker-setup docker-build docker-pull docker-run docker-run-minimal docker-run-ssl docker-stop docker-status docker-logs docker-clean docker-login docker-push docker-push-default dev-setup setup-broker generate-broker-config doc-check
 
 help:
-	@echo "Meshtopo Gateway Service - Available Commands:"
+	@echo "MeshTopo Gateway Service - Available Commands:"
 	@echo ""
 	@echo "Onboarding:"
 	@echo "  setup                Run the interactive setup wizard"
@@ -141,26 +141,26 @@ docker-pull:
 
 # Run with Docker Compose (full stack)
 up-full:
-	@echo "Starting Meshtopo services (Full Stack) with Docker Compose..."
+	@echo "Starting MeshTopo services (Full Stack) with Docker Compose..."
 	cd deploy && docker compose --profile core --profile mqtt up -d
 	@echo "Full stack started! Check status with: make status"
 
 # Run with Docker Compose (gateway only)
 up-simple:
-	@echo "Starting Meshtopo gateway (Simple) with Docker Compose..."
+	@echo "Starting MeshTopo gateway (Simple) with Docker Compose..."
 	cd deploy && docker compose -f docker-compose.simple.yml up -d
 	@echo "Gateway started! Check status with: make status"
 
 # Run with Docker Compose (with SSL/Caddy) - still uses full stack file
 up-ssl:
-	@echo "Starting Meshtopo services with SSL/Caddy..."
+	@echo "Starting MeshTopo services with SSL/Caddy..."
 	@if [ -z "$(SSL_DOMAIN)" ]; then echo "Error: SSL_DOMAIN environment variable required"; exit 1; fi
 	cd deploy && docker compose --profile core --profile mqtt --profile ssl up -d
 	@echo "SSL services started! Check status with: make status"
 
 # Stop Docker containers
 stop:
-	@echo "Stopping all Meshtopo services..."
+	@echo "Stopping all MeshTopo services..."
 # 	cd deploy && docker compose down
 # 	cd deploy && docker compose -f docker-compose.simple.yml down
 	cd deploy && docker compose --profile core --profile mqtt --profile ssl down
@@ -176,7 +176,7 @@ status:
 
 # Show Docker logs
 logs:
-	@echo "Showing logs for Meshtopo gateway..."
+	@echo "Showing logs for MeshTopo gateway..."
 	docker logs meshtopo-gateway --tail=50 -f
 
 # Clean up Docker resources

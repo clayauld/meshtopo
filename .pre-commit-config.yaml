@@ -1,4 +1,4 @@
-# Pre-commit hooks for Meshtopo Gateway Service
+# Pre-commit hooks for MeshTopo Gateway Service
 # Install with: pip install pre-commit && pre-commit install
 
 repos:

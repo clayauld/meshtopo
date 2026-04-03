@@ -1,5 +1,5 @@
 """
-pytest configuration for Meshtopo Gateway Service tests.
+pytest configuration for MeshTopo Gateway Service tests.
 
 This file configures pytest to work with the project's test structure.
 """
