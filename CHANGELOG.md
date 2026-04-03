@@ -31,7 +31,6 @@
 - Update configuration UI layout and processing
   ([`4820982`](https://github.com/clayauld/meshtopo/commit/48209827c8838fdb951a34c2e6d63be322cdb5e5))
 
-
 ## v1.5.0 (2026-04-02)
 
 ### Chores

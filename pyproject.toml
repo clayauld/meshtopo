@@ -179,8 +179,8 @@ version_variables = ["pyproject.toml:version"]
 version_toml = ["pyproject.toml:project.version"]
 commit_version_number = true
 upload_to_pypi = false
-upload_to_release = true
-build_command = "pip install build && python -m build"
+upload_to_release = false
+build_command = ""
 
 [tool.semantic_release.changelog.default_templates]
 changelog_file = "CHANGELOG.md"
