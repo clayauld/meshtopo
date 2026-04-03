@@ -623,6 +623,16 @@ class GatewayApp:
         latitude = latitude_i / 1e7
         longitude = longitude_i / 1e7
 
+        # Validate range (Security: prevent rogue/invalid data from polluting CalTopo)
+        if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
+            self.logger.warning(
+                f"Received invalid coordinates from "
+                f"{sanitize_for_log(numeric_node_id)}: "
+                f"lat={latitude}, lon={longitude}. Skipping update."
+            )
+            self.stats["errors"] += 1
+            return
+
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(
                 f"Processing position from "
