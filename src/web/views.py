@@ -281,7 +281,7 @@ async def config_post(request: web.Request) -> web.Response:
                         "caltopo_group": "",
                         "caltopo_connect_key": "",
                     }
-                    return web.HTTPFound("/config?success=1")
+                    raise web.HTTPFound("/config?success=1")
             elif action == "delete_tenant":
                 admin_password = str(
                     data.get("delete_tenant_admin_password", "")
@@ -304,14 +304,14 @@ async def config_post(request: web.Request) -> web.Response:
                     and target_tenant in gateway_app.tenants_db
                 ):
                     del gateway_app.tenants_db[target_tenant]
-                    return web.HTTPFound("/config?success=1")
+                    raise web.HTTPFound("/config?success=1")
                 else:
-                    return web.HTTPFound("/config?error=invalid_admin_password")
+                    raise web.HTTPFound("/config?error=invalid_admin_password")
             elif action == "save_global":
                 gateway_app.web_config["unknown_devices_all_tenants"] = (
                     data.get("unknown_devices_all_tenants") == "on"
                 )
-                return web.HTTPFound("/config?success=1")
+                raise web.HTTPFound("/config?success=1")
             elif action.startswith("assign_unmapped:"):
                 # Superuser assigning an unmapped device
                 idx = action.split(":")[1]
@@ -329,7 +329,7 @@ async def config_post(request: web.Request) -> web.Response:
                         "group": group if group else None,
                     }
                     gateway_app.tenants_db[target_tenant] = tenant_data
-                    return web.HTTPFound("/config?success=1")
+                    raise web.HTTPFound("/config?success=1")
             # Individual remap/delete actions are now superseded by batch save.
             # We skip them here.
 
@@ -568,3 +568,56 @@ async def status_get(request: web.Request) -> Dict[str, Any]:
         "username": username,
         "csrf_token": await generate_csrf(request),
     }
+
+
+@login_required
+@aiohttp_jinja2.template("admin.html")
+async def admin_panel_get(request: web.Request) -> Dict[str, Any]:
+    """Handle GET requests for the admin panel (super-user only)."""
+    session = await get_session(request)
+    if session.get("role") != "super_user":
+        raise web.HTTPForbidden(text="Admin access required")
+
+    gateway_app = request.app[GATEWAY_APP_KEY]
+    return await get_common_context(
+        request, 
+        title="User Management",
+        tenants=gateway_app.tenants_db
+    )
+
+
+@login_required
+async def admin_panel_post(request: web.Request) -> web.Response:
+    """Handle POST requests for tenant management in the admin panel."""
+    # Ensure super-user
+    session = await get_session(request)
+    if session.get("role") != "super_user":
+        raise web.HTTPForbidden(text="Admin access required")
+
+    data = await request.post()
+    if not await validate_csrf(request, data):
+        raise web.HTTPForbidden(text="Invalid CSRF token")
+
+    gateway_app = request.app[GATEWAY_APP_KEY]
+    
+    # 1. New Tenant Creation
+    new_username = str(data.get("new_username", "")).strip()
+    new_password = str(data.get("new_password", "")).strip()
+    if new_username and new_password:
+        salt = bcrypt.gensalt()
+        hashed_bytes = bcrypt.hashpw(new_password.encode("utf-8"), salt)
+        gateway_app.tenants_db[new_username] = {
+            "password_hash": hashed_bytes.decode("utf-8"),
+            "caltopo_connect_key": str(data.get("new_caltopo_key", "")).strip(),
+            "caltopo_group": str(data.get("new_caltopo_group", "")).strip(),
+            "nodes": {}
+        }
+        raise web.HTTPFound("/admin?success=1")
+
+    # 2. Tenant Deletion
+    delete_username = str(data.get("delete_username", "")).strip()
+    if delete_username and delete_username in gateway_app.tenants_db:
+        del gateway_app.tenants_db[delete_username]
+        raise web.HTTPFound("/admin?success=1")
+
+    raise web.HTTPFound("/admin")

@@ -79,8 +79,15 @@ async def test_process_position_broadcast_routing(app_multi):
 async def test_process_position_no_connect_key(app_multi):
     """Test routing failure when tenant lacks connect key."""
     app_multi.stats["errors"] = 0
-    app_multi.tenants_db["tenant1"]["caltopo_connect_key"] = None
-    app_multi.tenants_db["tenant1"]["caltopo_group"] = None
+    app_multi.tenants_db = {
+        "tenant1": {
+            "caltopo_connect_key": None,
+            "caltopo_group": None,
+            "nodes": {
+                "!12345678": {"device_id": "T1-NODE", "group": None}
+            }
+        }
+    }
     
     msg = {
         "type": "position",
@@ -118,4 +125,4 @@ async def test_process_nodeinfo_multi_tenant(app_multi):
     # Should update node_id_mapping
     assert app_multi.node_id_mapping["305419896"] == "!12345678"
     # Should NOT update callsign_mapping (tenants manage their own aliases)
-    assert "!12345678" not in app.callsign_mapping
+    assert "!12345678" not in app_multi.callsign_mapping

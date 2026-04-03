@@ -46,20 +46,22 @@ async def cli_multi(mock_gateway_app_multi):
 @pytest.mark.asyncio
 async def test_login_tenant_success(cli_multi):
     """Test successful tenant login."""
-    resp = await cli_multi.post("/login", data={
-        "username": "tenant1",
-        "password": "tenant_pass"
-    }, allow_redirects=False)
+    with patch("src.web.views.validate_csrf", return_value=True):
+        resp = await cli_multi.post("/login", data={
+            "username": "tenant1",
+            "password": "tenant_pass"
+        }, allow_redirects=False)
     assert resp.status == 302
     assert resp.headers["Location"] == "/status"
 
 @pytest.mark.asyncio
 async def test_login_tenant_invalid(cli_multi):
     """Test tenant login with wrong password."""
-    resp = await cli_multi.post("/login", data={
-        "username": "tenant1",
-        "password": "wrong"
-    }, allow_redirects=False)
+    with patch("src.web.views.validate_csrf", return_value=True):
+        resp = await cli_multi.post("/login", data={
+            "username": "tenant1",
+            "password": "wrong"
+        }, allow_redirects=False)
     assert resp.status == 200
     text = await resp.text()
     assert "Invalid credentials" in text
@@ -67,10 +69,11 @@ async def test_login_tenant_invalid(cli_multi):
 @pytest.mark.asyncio
 async def test_config_get_superuser_multi(cli_multi):
     """Test config GET as superuser with multi-tenant enabled."""
-    await cli_multi.post("/login", data={
-        "username": "admin",
-        "password": "default_admin"
-    })
+    with patch("src.web.views.validate_csrf", return_value=True):
+        await cli_multi.post("/login", data={
+            "username": "admin",
+            "password": "default_admin"
+        })
     resp = await cli_multi.get("/config")
     assert resp.status == 200
     text = await resp.text()
@@ -81,10 +84,11 @@ async def test_config_get_superuser_multi(cli_multi):
 @pytest.mark.asyncio
 async def test_config_get_tenant_view(cli_multi):
     """Test config GET as a regular tenant."""
-    await cli_multi.post("/login", data={
-        "username": "tenant1",
-        "password": "tenant_pass"
-    })
+    with patch("src.web.views.validate_csrf", return_value=True):
+        await cli_multi.post("/login", data={
+            "username": "tenant1",
+            "password": "tenant_pass"
+        })
     resp = await cli_multi.get("/config")
     assert resp.status == 200
     text = await resp.text()
@@ -95,10 +99,11 @@ async def test_config_get_tenant_view(cli_multi):
 @pytest.mark.asyncio
 async def test_admin_panel_get(cli_multi):
     """Test admin panel GET access."""
-    await cli_multi.post("/login", data={
-        "username": "admin",
-        "password": "default_admin"
-    })
+    with patch("src.web.views.validate_csrf", return_value=True):
+        await cli_multi.post("/login", data={
+            "username": "admin",
+            "password": "default_admin"
+        })
     resp = await cli_multi.get("/admin")
     assert resp.status == 200
     text = await resp.text()
@@ -108,10 +113,11 @@ async def test_admin_panel_get(cli_multi):
 @pytest.mark.asyncio
 async def test_admin_panel_post_new_tenant(cli_multi, mock_gateway_app_multi):
     """Test creating a new tenant via admin panel."""
-    await cli_multi.post("/login", data={
-        "username": "admin",
-        "password": "default_admin"
-    })
+    with patch("src.web.views.validate_csrf", return_value=True):
+        await cli_multi.post("/login", data={
+            "username": "admin",
+            "password": "default_admin"
+        })
     # Mock validate_csrf for this test
     with patch("src.web.views.validate_csrf", return_value=True):
         resp = await cli_multi.post("/admin", data={
@@ -128,10 +134,11 @@ async def test_admin_panel_post_new_tenant(cli_multi, mock_gateway_app_multi):
 @pytest.mark.asyncio
 async def test_admin_panel_post_delete_tenant(cli_multi, mock_gateway_app_multi):
     """Test deleting a tenant via admin panel."""
-    await cli_multi.post("/login", data={
-        "username": "admin",
-        "password": "default_admin"
-    })
+    with patch("src.web.views.validate_csrf", return_value=True):
+        await cli_multi.post("/login", data={
+            "username": "admin",
+            "password": "default_admin"
+        })
     with patch("src.web.views.validate_csrf", return_value=True):
         resp = await cli_multi.post("/admin", data={
             "delete_username": "tenant1"
@@ -143,10 +150,11 @@ async def test_admin_panel_post_delete_tenant(cli_multi, mock_gateway_app_multi)
 @pytest.mark.asyncio
 async def test_tenant_config_post(cli_multi, mock_gateway_app_multi):
     """Test tenant updating their own configuration."""
-    await cli_multi.post("/login", data={
-        "username": "tenant1",
-        "password": "tenant_pass"
-    })
+    with patch("src.web.views.validate_csrf", return_value=True):
+        await cli_multi.post("/login", data={
+            "username": "tenant1",
+            "password": "tenant_pass"
+        })
     with patch("src.web.views.validate_csrf", return_value=True):
         data = {
             "caltopo_connect_key": "updated_key",

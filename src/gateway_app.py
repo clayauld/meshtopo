@@ -375,11 +375,20 @@ class GatewayApp:
         """Close all resources."""
         self.logger.info("Closing database connections...")
         if self.node_id_mapping and hasattr(self.node_id_mapping, "close"):
-            self.node_id_mapping.close()
+            try:
+                self.node_id_mapping.close()
+            except Exception as e:
+                self.logger.error(f"Error closing node_id_mapping: {e}")
         if self.callsign_mapping and hasattr(self.callsign_mapping, "close"):
-            self.callsign_mapping.close()
+            try:
+                self.callsign_mapping.close()
+            except Exception as e:
+                self.logger.error(f"Error closing callsign_mapping: {e}")
         if self.tenants_db and hasattr(self.tenants_db, "close"):
-            self.tenants_db.close()
+            try:
+                self.tenants_db.close()
+            except Exception as e:
+                self.logger.error(f"Error closing tenants_db: {e}")
 
     def _resolve_hardware_id(self, numeric_node_id: str) -> str:
         """
