@@ -3,6 +3,11 @@
 # Determine repository name from GITHUB_REPOSITORY environment variable
 REPO := $(if $(GITHUB_REPOSITORY),$(GITHUB_REPOSITORY),clayauld/meshtopo)
 
+# Virtual environment detection
+VENV ?= .venv
+PYTHON := $(if $(VIRTUAL_ENV),python3,$(if $(wildcard $(VENV)/bin/python3),$(VENV)/bin/python3,python3))
+PIP := $(PYTHON) -m pip
+
 .PHONY: help setup install test lint format clean docker-setup docker-build docker-pull docker-run docker-run-minimal docker-run-ssl docker-stop docker-status docker-logs docker-clean docker-login docker-push docker-push-default dev-setup setup-broker generate-broker-config doc-check
 
 help:
@@ -36,67 +41,69 @@ help:
 	@echo "Maintenance:"
 	@echo "  docker-build        Build Docker images locally"
 	@echo "  docker-pull         Pull Docker images from GHCR"
+	@echo ""
 
-# Run the interactive setup wizard
+# # Run the interactive setup wizard
 setup:
-	python3 scripts/setup_wizard.py
+	$(PYTHON) scripts/setup_wizard.py
 
 # Helper for virtual environment check
-VENV_CHECK := @if [ -z "$${VIRTUAL_ENV}" ]; then \
-	echo "Error: No Python virtual environment activated."; \
-	echo "Please create and activate a virtual environment (e.g., 'python3 -m venv .venv && source .venv/bin/activate')."; \
+VENV_CHECK := @if [ -z "$${VIRTUAL_ENV}" ] && [ ! -d "$(VENV)" ]; then \
+	echo "Error: No Python virtual environment detected or activated."; \
+	echo "Please create a virtual environment (e.g., 'python3 -m venv $(VENV)')"; \
 	exit 1; \
 fi
 
 # Install dependencies
 install:
 	$(VENV_CHECK)
-	pip3 install .
+	$(PIP) install .
 
 # Setup development environment
 dev-setup: install
 	$(VENV_CHECK)
-	pip3 install ".[dev]"
-	python3 -m pre_commit install
+	$(PIP) install ".[dev]"
+	$(PYTHON) -m pre_commit install
 	@echo "Development environment setup complete!"
 
 # Run tests (excludes slow integration tests)
 test:
 	$(VENV_CHECK)
-	python3 -m pytest -m "not integration" tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=html --cov-report=xml
+	$(PYTHON) -m pytest -m "not integration" tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=html --cov-report=xml
 
 # Run all tests including integration tests
 test-full:
 	$(VENV_CHECK)
-	python3 -m pytest tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=html --cov-report=xml
+	$(PYTHON) -m pytest tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=html --cov-report=xml
 
 # Run integration tests
 test-integration:
 	$(VENV_CHECK)
-	python3 -m pytest tests/integration/ -v --tb=short
+	$(PYTHON) -m pytest tests/integration/ -v --tb=short
+
 # Run specific test modules
 test-config:
 	$(VENV_CHECK)
-	python3 -m pytest tests/test_config.py -v
+	$(PYTHON) -m pytest tests/test_config.py -v
 
 test-gateway:
 	$(VENV_CHECK)
-	python3 -m pytest tests/test_gateway_app.py -v
+	$(PYTHON) -m pytest tests/test_gateway_app.py -v
 
 test-mqtt:
 	$(VENV_CHECK)
-	python3 -m pytest tests/test_mqtt_topic_format.py -v
+	$(PYTHON) -m pytest tests/test_mqtt_topic_format.py -v
 
 # Format and lint code using pre-commit
 format:
 	$(VENV_CHECK)
-	pre-commit run --all-files
+	$(PYTHON) -m pre_commit run --all-files
 	@echo "Code formatting and linting complete!"
 
 # Check documentation coverage
 doc-check:
 	$(VENV_CHECK)
-	interrogate -c pyproject.toml .
+	$(PYTHON) -m interrogate -c pyproject.toml .
 
 # Clean up temporary files
 clean:
@@ -222,7 +229,7 @@ docker-push-default:
 # Run the gateway service
 run:
 	$(VENV_CHECK)
-	python3 src/gateway.py
+	$(PYTHON) src/gateway.py
 
 # Show configuration help
 config:
