@@ -180,3 +180,43 @@ async def test_tenant_config_post(cli_multi, mock_gateway_app_multi):
         tenant_cfg = mock_gateway_app_multi.tenants_db["tenant1"]
         assert tenant_cfg["caltopo_connect_key"] == "updated_key"
         assert tenant_cfg["nodes"]["!newhw"]["device_id"] == "NEWALIAS"
+
+
+@pytest.mark.asyncio
+async def test_tenant_change_password(cli_multi, mock_gateway_app_multi):
+    """Test that a tenant can change their own password and then log in."""
+    # 1. Log in with old password
+    with patch("src.web.views.validate_csrf", return_value=True):
+        await cli_multi.post(
+            "/login", data={"username": "tenant1", "password": "tenant_pass"}
+        )
+
+    # 2. Change password to 'new_pass'
+    with patch("src.web.views.validate_csrf", return_value=True):
+        await cli_multi.post("/config", data={"new_password": "new_pass"})
+
+    # Check that it's updated in the mock DB
+    new_hash = mock_gateway_app_multi.tenants_db["tenant1"]["password_hash"]
+    assert bcrypt.checkpw(b"new_pass", new_hash.encode("utf-8"))
+
+    # 3. Log out
+    await cli_multi.get("/logout")
+
+    # 4. Try logging in with the old password (should fail)
+    with patch("src.web.views.validate_csrf", return_value=True):
+        resp = await cli_multi.post(
+            "/login",
+            data={"username": "tenant1", "password": "tenant_pass"},
+            allow_redirects=False,
+        )
+    assert resp.status == 200  # Login page with error
+
+    # 5. Log in with the new password (should succeed)
+    with patch("src.web.views.validate_csrf", return_value=True):
+        resp = await cli_multi.post(
+            "/login",
+            data={"username": "tenant1", "password": "new_pass"},
+            allow_redirects=False,
+        )
+    assert resp.status == 302
+    assert resp.headers["Location"] == "/status"

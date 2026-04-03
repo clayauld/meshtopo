@@ -232,9 +232,14 @@ async def config_post(request: web.Request) -> web.Response:
 
     if role == "tenant":
         # Save tenant config
-        if username not in gateway_app.tenants_db:
-            gateway_app.tenants_db[username] = {}
-        tenant_db = gateway_app.tenants_db[username]
+        tenant_db = dict(gateway_app.tenants_db.get(username, {}))
+
+        # Handle password change
+        new_password = str(data.get("new_password", "")).strip()
+        if new_password:
+            salt = bcrypt.gensalt()
+            hashed_bytes = bcrypt.hashpw(new_password.encode("utf-8"), salt)
+            tenant_db["password_hash"] = hashed_bytes.decode("utf-8")
 
         connect_key = str(data.get("caltopo_connect_key", "")).strip()
         if connect_key:
@@ -331,7 +336,8 @@ async def config_post(request: web.Request) -> web.Response:
         db["caltopo_group"] = str(data.get("caltopo_group", "")).strip()
 
         # Checkbox logic
-        db["allow_unknown_devices"] = data.get("allow_unknown_devices") == "on"
+        if not gateway_app.config.web.multi_tenant_enabled:
+            db["allow_unknown_devices"] = data.get("allow_unknown_devices") == "on"
 
         # Node mappings array
         if role == "super_user" and gateway_app.config.web.multi_tenant_enabled:
@@ -393,7 +399,9 @@ async def config_post(request: web.Request) -> web.Response:
             db["nodes"] = nodes_dict
 
         # If an admin password is provided, hash and save it
-        new_password = str(data.get("admin_password", "")).strip()
+        new_password = str(
+            data.get("new_password", data.get("admin_password", ""))
+        ).strip()
         if new_password:
             salt = bcrypt.gensalt()
             hashed_bytes = bcrypt.hashpw(new_password.encode("utf-8"), salt)
