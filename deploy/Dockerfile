@@ -28,6 +28,11 @@ FROM python:3.10-slim AS production
 
 WORKDIR /app
 
+# Install runtime dependencies for Unraid/PUID/PGID support
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gosu \
+    && rm -rf /var/lib/apt/lists/*
+
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash meshtopo && \
     mkdir -p /app/data /app/logs && \
@@ -44,8 +49,11 @@ COPY src/ src/
 COPY config/ config/
 COPY scripts/ scripts/
 
-# Switch to non-root user
-USER meshtopo
+# Ensure scripts are executable
+RUN chmod +x scripts/*.sh
+
+# Switch to non-root user (removed for entrypoint handling)
+# USER meshtopo
 
 # Expose port
 EXPOSE 8080
