@@ -1,6 +1,6 @@
-# Meshtopo - Full Stack Deployment (Integrated Broker)
+# MeshTopo - Full Stack Deployment (Integrated Broker)
 # This includes:
-# 1. Meshtopo Gateway
+# 1. MeshTopo Gateway
 # 2. Mosquitto MQTT Broker
 # 3. Traefik Reverse Proxy (for SSL - optional)
 
@@ -94,7 +94,7 @@ services:
             retries: 3
             start_period: 10s
 
-    # Core Meshtopo gateway service
+    # Core MeshTopo gateway service
     meshtopo-gateway:
         image: ghcr.io/${GITHUB_REPOSITORY:-clayauld/meshtopo}:latest
         container_name: meshtopo-gateway

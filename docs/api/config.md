@@ -1,6 +1,6 @@
 # Module `config.config`
 
-Configuration management for the Meshtopo gateway service using Pydantic.
+Configuration management for the MeshTopo gateway service using Pydantic.
 
 ## Classes
 
@@ -39,7 +39,7 @@ Auto-strip whitespace from string inputs and convert empty strings to None.
 
 ## `class Config`
 
-The root configuration object for the Meshtopo service.
+The root configuration object for the MeshTopo service.
 Encapsulates all child configuration models.
 
 ### `def __init__(self, /, **data: 'Any') -> 'None'`

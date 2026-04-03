@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meshtopo Web UI - {% block title %}{% endblock %}</title>
+    <title>MeshTopo Web UI - {% block title %}{% endblock %}</title>
     <meta name="csrf-token" content="{{ csrf_token }}">
     <style>
         body { font-family: sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
@@ -22,17 +22,17 @@
         .btn-logout:hover { background: #c82333; }
         .section { margin-bottom: 30px; padding: 20px; border: 1px solid #eee; border-radius: 5px; background: #fafafa; }
         .help-text { display: block; color: #666; font-size: 0.9rem; margin-bottom: 10px; }
-        
+
         /* Table and Row styles */
         table { width: 100%; border-collapse: collapse; background: white; margin-bottom: 1rem; }
         th, td { padding: 10px; border: 1px solid #eee; text-align: left; }
         th { background: #f8f9fa; }
-        
+
         .row-header { display: flex; padding: 10px; background: #f8f9fa; border: 1px solid #eee; border-bottom: none; font-weight: bold; font-size: 0.9rem; color: #666; }
         .row-header span { flex: 1; padding: 0 10px; }
         .row-header .id-col { flex: 0 0 110px; }
         .row-header .action-col { flex: 0 0 100px; text-align: center; }
-        
+
         .node-config-row { display: flex; gap: 10px; align-items: center; padding: 10px; border: 1px solid #eee; background: white; margin-bottom: -1px; }
         .node-config-row input, .node-config-row select { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; min-width: 0; box-sizing: border-box; }
         .node-config-row .static-id { flex: 0 0 110px; font-family: monospace; font-weight: bold; color: #333; overflow: hidden; text-overflow: ellipsis; }
@@ -49,7 +49,7 @@
 
 <div class="container">
     <div class="header">
-        <h1>Meshtopo Dashboard</h1>
+        <h1>MeshTopo Dashboard</h1>
         <div class="header-actions">
             <div class="nav-links">
                 <span class="user-badge">User: {{ username }}</span>

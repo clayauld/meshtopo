@@ -25,7 +25,7 @@ The application follows a simple, linear data flow:
 
 1. **Meshtastic Network:** LoRa mesh nodes with the MQTT gateway feature enabled send data to an MQTT broker.
 2. **MQTT Broker:** A central message broker (e.g., Mosquitto) receives data from the Meshtastic network.
-3. **Meshtopo Gateway Service:** This Python service connects to the MQTT broker, filters and transforms the data, and forwards it to CalTopo.
+3. **MeshTopo Gateway Service:** This Python service connects to the MQTT broker, filters and transforms the data, and forwards it to CalTopo.
 4. **CalTopo Team Account:** The cloud mapping platform where devices appear in real-time.
 
 The core logic is encapsulated in the `GatewayApp` class (`src/gateway_app.py`), which orchestrates the MQTT client and the CalTopo reporter. The application is highly configurable via a `config.yaml` file.

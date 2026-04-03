@@ -1,12 +1,30 @@
-# Meshtopo Gateway Service - Development Makefile
+# MeshTopo Gateway Service - Development Makefile
 
 # Determine repository name from GITHUB_REPOSITORY environment variable
 REPO := $(if $(GITHUB_REPOSITORY),$(GITHUB_REPOSITORY),clayauld/meshtopo)
 
+# Virtual environment detection and activation
+VENV ?= .venv
+VENV_BIN := $(VENV)/bin
+
+# Detect if uv is installed for more robust execution
+UV := $(shell command -v uv 2> /dev/null)
+
+# Export environment variables only if not using uv
+# This 'activates' the virtual environment for non-uv setups
+ifeq ($(UV),)
+export VIRTUAL_ENV := $(abspath $(VENV))
+export PATH := $(abspath $(VENV_BIN)):$(PATH)
+endif
+
+PYTHON := $(if $(UV),uv run python,python3)
+PIP := $(if $(UV),uv pip,pip3)
+PYTEST := $(if $(UV),uv run pytest,pytest)
+
 .PHONY: help setup install test lint format clean docker-setup docker-build docker-pull docker-run docker-run-minimal docker-run-ssl docker-stop docker-status docker-logs docker-clean docker-login docker-push docker-push-default dev-setup setup-broker generate-broker-config doc-check
 
 help:
-	@echo "Meshtopo Gateway Service - Available Commands:"
+	@echo "MeshTopo Gateway Service - Available Commands:"
 	@echo ""
 	@echo "Onboarding:"
 	@echo "  setup                Run the interactive setup wizard"
@@ -36,67 +54,69 @@ help:
 	@echo "Maintenance:"
 	@echo "  docker-build        Build Docker images locally"
 	@echo "  docker-pull         Pull Docker images from GHCR"
+	@echo ""
 
-# Run the interactive setup wizard
+# # Run the interactive setup wizard
 setup:
-	python3 scripts/setup_wizard.py
+	$(PYTHON) scripts/setup_wizard.py
 
 # Helper for virtual environment check
-VENV_CHECK := @if [ -z "$${VIRTUAL_ENV}" ]; then \
-	echo "Error: No Python virtual environment activated."; \
-	echo "Please create and activate a virtual environment (e.g., 'python3 -m venv .venv && source .venv/bin/activate')."; \
+VENV_CHECK := @if [ -z "$${VIRTUAL_ENV}" ] && [ ! -d "$(VENV)" ]; then \
+	echo "Error: No Python virtual environment detected or activated."; \
+	echo "Please create a virtual environment (e.g., 'python3 -m venv $(VENV)')"; \
 	exit 1; \
 fi
 
 # Install dependencies
 install:
 	$(VENV_CHECK)
-	pip3 install .
+	$(PIP) install .
 
 # Setup development environment
 dev-setup: install
 	$(VENV_CHECK)
-	pip3 install ".[dev]"
-	python3 -m pre_commit install
+	$(PIP) install ".[dev]"
+	$(PYTHON) -m pre_commit install
 	@echo "Development environment setup complete!"
 
 # Run tests (excludes slow integration tests)
 test:
 	$(VENV_CHECK)
-	python3 -m pytest -m "not integration" tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=html --cov-report=xml
+	$(PYTHON) -m pytest -m "not integration" tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=html --cov-report=xml
 
 # Run all tests including integration tests
 test-full:
 	$(VENV_CHECK)
-	python3 -m pytest tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=html --cov-report=xml
+	$(PYTHON) -m pytest tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=html --cov-report=xml
 
 # Run integration tests
 test-integration:
 	$(VENV_CHECK)
-	python3 -m pytest tests/integration/ -v --tb=short
+	$(PYTHON) -m pytest tests/integration/ -v --tb=short
+
 # Run specific test modules
 test-config:
 	$(VENV_CHECK)
-	python3 -m pytest tests/test_config.py -v
+	$(PYTHON) -m pytest tests/test_config.py -v
 
 test-gateway:
 	$(VENV_CHECK)
-	python3 -m pytest tests/test_gateway_app.py -v
+	$(PYTHON) -m pytest tests/test_gateway_app.py -v
 
 test-mqtt:
 	$(VENV_CHECK)
-	python3 -m pytest tests/test_mqtt_topic_format.py -v
+	$(PYTHON) -m pytest tests/test_mqtt_topic_format.py -v
 
 # Format and lint code using pre-commit
 format:
 	$(VENV_CHECK)
-	pre-commit run --all-files
+	$(PYTHON) -m pre_commit run --all-files
 	@echo "Code formatting and linting complete!"
 
 # Check documentation coverage
 doc-check:
 	$(VENV_CHECK)
-	interrogate -c pyproject.toml .
+	$(PYTHON) -m interrogate -c pyproject.toml .
 
 # Clean up temporary files
 clean:
@@ -141,26 +161,26 @@ docker-pull:
 
 # Run with Docker Compose (full stack)
 up-full:
-	@echo "Starting Meshtopo services (Full Stack) with Docker Compose..."
+	@echo "Starting MeshTopo services (Full Stack) with Docker Compose..."
 	cd deploy && docker compose --profile core --profile mqtt up -d
 	@echo "Full stack started! Check status with: make status"
 
 # Run with Docker Compose (gateway only)
 up-simple:
-	@echo "Starting Meshtopo gateway (Simple) with Docker Compose..."
+	@echo "Starting MeshTopo gateway (Simple) with Docker Compose..."
 	cd deploy && docker compose -f docker-compose.simple.yml up -d
 	@echo "Gateway started! Check status with: make status"
 
 # Run with Docker Compose (with SSL/Caddy) - still uses full stack file
 up-ssl:
-	@echo "Starting Meshtopo services with SSL/Caddy..."
+	@echo "Starting MeshTopo services with SSL/Caddy..."
 	@if [ -z "$(SSL_DOMAIN)" ]; then echo "Error: SSL_DOMAIN environment variable required"; exit 1; fi
 	cd deploy && docker compose --profile core --profile mqtt --profile ssl up -d
 	@echo "SSL services started! Check status with: make status"
 
 # Stop Docker containers
 stop:
-	@echo "Stopping all Meshtopo services..."
+	@echo "Stopping all MeshTopo services..."
 # 	cd deploy && docker compose down
 # 	cd deploy && docker compose -f docker-compose.simple.yml down
 	cd deploy && docker compose --profile core --profile mqtt --profile ssl down
@@ -176,7 +196,7 @@ status:
 
 # Show Docker logs
 logs:
-	@echo "Showing logs for Meshtopo gateway..."
+	@echo "Showing logs for MeshTopo gateway..."
 	docker logs meshtopo-gateway --tail=50 -f
 
 # Clean up Docker resources
@@ -222,7 +242,7 @@ docker-push-default:
 # Run the gateway service
 run:
 	$(VENV_CHECK)
-	python3 src/gateway.py
+	$(PYTHON) src/gateway.py
 
 # Show configuration help
 config:

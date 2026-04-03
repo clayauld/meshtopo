@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test runner for Meshtopo Gateway Service.
+Test runner for MeshTopo Gateway Service.
 
 This script runs all tests in the tests directory.
 """

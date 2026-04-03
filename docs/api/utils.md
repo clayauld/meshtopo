@@ -1,6 +1,6 @@
 # Module `utils`
 
-Utility functions for the Meshtopo gateway service.
+Utility functions for the MeshTopo gateway service.
 
 ## Functions
 

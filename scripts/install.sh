@@ -1,5 +1,5 @@
 #!/bin/bash
-# Meshtopo Gateway Service Installation Script
+# MeshTopo Gateway Service Installation Script
 
 set -e
 
@@ -27,7 +27,7 @@ print_info() {
     echo -e "${BLUE}ℹ${NC} $1"
 }
 
-echo -e "${BLUE}Meshtopo Gateway Service - Installation Script${NC}"
+echo -e "${BLUE}MeshTopo Gateway Service - Installation Script${NC}"
 echo "=============================================="
 
 # Check if Python 3 is installed

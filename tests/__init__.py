@@ -1,3 +1,3 @@
 """
-Test package for Meshtopo Gateway Service.
+Test package for MeshTopo Gateway Service.
 """

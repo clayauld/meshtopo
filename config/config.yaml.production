@@ -1,4 +1,4 @@
-# Production Meshtopo Configuration
+# Production MeshTopo Configuration
 # Production-ready configuration with enhanced logging and monitoring
 
 mqtt:

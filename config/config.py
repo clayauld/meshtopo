@@ -1,5 +1,5 @@
 """
-Configuration management for the Meshtopo gateway service using Pydantic.
+Configuration management for the MeshTopo gateway service using Pydantic.
 """
 
 import logging
@@ -178,7 +178,7 @@ class WebConfig(BaseModel):
 
     enabled: bool = False
     port: int = 8080
-    admin_password: Optional[str] = None
+    admin_password: Optional[SecretStr] = None
     multi_tenant_enabled: bool = False
 
 
@@ -190,7 +190,7 @@ class StorageConfig(BaseModel):
 
 class Config(BaseModel):
     """
-    The root configuration object for the Meshtopo service.
+    The root configuration object for the MeshTopo service.
     Encapsulates all child configuration models.
     """
 
@@ -257,6 +257,28 @@ class Config(BaseModel):
                 # Silently ignore invalid port environment variables
                 pass
 
+        # MQTT Client Auth overrides
+        mqtt_user = os.getenv("MQTT_USERNAME")
+        if mqtt_user:
+            config.mqtt.username = mqtt_user
+
+        mqtt_pass = os.getenv("MQTT_PASSWORD")
+        if mqtt_pass:
+            config.mqtt.password = SecretStr(mqtt_pass)
+
+        # Internal MQTT Broker Auth overrides (for the first user)
+        broker_user = os.getenv("MQTT_BROKER_USERNAME")
+        broker_pass = os.getenv("MQTT_BROKER_PASSWORD")
+        if broker_user and broker_pass:
+            # If we already have users, override the first one; otherwise create it
+            if config.mqtt_broker.users:
+                config.mqtt_broker.users[0].username = broker_user
+                config.mqtt_broker.users[0].password = SecretStr(broker_pass)
+            else:
+                config.mqtt_broker.users.append(
+                    MqttUser(username=broker_user, password=SecretStr(broker_pass))
+                )
+
         # CalTopo specific overrides
         caltopo_key = os.getenv("CALTOPO_CONNECT_KEY")
         if caltopo_key:
@@ -265,6 +287,11 @@ class Config(BaseModel):
         caltopo_group = os.getenv("CALTOPO_GROUP")
         if caltopo_group:
             config.caltopo.group = caltopo_group
+
+        # Web UI UI overrides
+        web_admin_pass = os.getenv("WEB_ADMIN_PASSWORD")
+        if web_admin_pass:
+            config.web.admin_password = SecretStr(web_admin_pass)
 
         multi_tenant = _parse_bool_env("MULTI_TENANT_ENABLED")
         if multi_tenant is not None:

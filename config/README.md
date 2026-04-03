@@ -1,10 +1,10 @@
-# Meshtopo Configuration
+# MeshTopo Configuration
 
 <p align="center">
-  <img src="../assets/images/Meshtopo-logo.png" alt="Meshtopo Logo" width="150">
+  <img src="../assets/images/MeshTopo-logo.png" alt="MeshTopo Logo" width="150">
 </p>
 
-This directory contains configuration files and examples for the Meshtopo gateway service.
+This directory contains configuration files and examples for the MeshTopo gateway service.
 
 ## Configuration Files
 

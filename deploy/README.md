@@ -1,26 +1,26 @@
 # Docker Deployment Guide
 
-This directory contains Docker Compose configurations for deploying the Meshtopo Gateway Service.
+This directory contains Docker Compose configurations for deploying the MeshTopo Gateway Service.
 
 ## Quick Start
 
 1. **Set up environment:**
 
-    ```bash
-    make docker-setup
-    ```
+   ```bash
+   make docker-setup
+   ```
 
 2. **Edit configuration:**
 
-    ```bash
-    nano deploy/.env
-    ```
+   ```bash
+   nano deploy/.env
+   ```
 
 3. **Start services:**
 
-    ```bash
-    make docker-run
-    ```
+   ```bash
+   make docker-run
+   ```
 
 ## Configuration
 
@@ -48,7 +48,7 @@ cp deploy/.env.example deploy/.env
 
 Docker Compose uses profiles to control which services start:
 
-- `core`: Meshtopo gateway service
+- `core`: MeshTopo gateway service
 - `mqtt`: MQTT broker service
 - `ssl`: Caddy reverse proxy with SSL
 
@@ -84,43 +84,42 @@ The MQTT broker configuration is managed through the `generate_mosquitto_config.
 
 1. **Configure in config.yaml:**
 
-    ```yaml
-    mqtt_broker:
-        enabled: true
-        port: 1883
-        websocket_port: 9001
-        persistence: true
-        max_connections: 1000
-        allow_anonymous: false
-        users:
-            - username: "meshtopo"
-              password: "secure_password"
-              acl: "readwrite"
-            - username: "readonly"
-              password: "readonly_pass"
-              acl: "read"
-        acl_enabled: false
-    ```
+   ```yaml
+   mqtt_broker:
+     enabled: true
+     port: 1883
+     websocket_port: 9001
+     persistence: true
+     max_connections: 1000
+     allow_anonymous: false
+     users:
+       - username: "meshtopo"
+         password: "secure_password"
+         acl: "readwrite"
+       - username: "readonly"
+         password: "readonly_pass"
+         acl: "read"
+     acl_enabled: false
+   ```
 
 2. **Generate configuration:**
 
-    ```bash
-    make setup-broker
-    # or manually:
-    python3 scripts/generate_mosquitto_config.py config/config.yaml
-    ```
+   ```bash
+   make setup-broker
+   # or manually:
+   python3 scripts/generate_mosquitto_config.py config/config.yaml
+   ```
 
-    This generates:
-
-    - `mosquitto.conf` - Mosquitto configuration with single global `password_file` directive
-    - `passwd` - Password file with PBKDF2-SHA512 hashes (Mosquitto 2.0 compatible)
-    - `.env` - Docker environment variables
+   This generates:
+   - `mosquitto.conf` - Mosquitto configuration with single global `password_file` directive
+   - `passwd` - Password file with PBKDF2-SHA512 hashes (Mosquitto 2.0 compatible)
+   - `.env` - Docker environment variables
 
 3. **Start with MQTT:**
 
-    ```bash
-    docker compose --profile mqtt --profile core up -d
-    ```
+   ```bash
+   docker compose --profile mqtt --profile core up -d
+   ```
 
 **Important Notes:**
 
