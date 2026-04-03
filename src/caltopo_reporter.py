@@ -179,6 +179,7 @@ class CalTopoReporter:
         latitude: float,
         longitude: float,
         group: Optional[str] = None,
+        connect_key: Optional[str] = None,
     ) -> bool:
         """
         Send a position update to CalTopo.
@@ -207,14 +208,17 @@ class CalTopoReporter:
         tasks = []
 
         # Send to connect_key endpoint if configured
-        if self.config.caltopo.has_connect_key:
+        key_to_use = connect_key or self.config.caltopo.connect_key
+        if key_to_use:
             tasks.append(
-                self._send_to_connect_key(client, callsign, latitude, longitude)
+                self._send_to_connect_key(
+                    client, callsign, latitude, longitude, key_to_use
+                )
             )
 
         # Send to group endpoint if configured
-        if self.config.caltopo.has_group:
-            group_to_use = group or self.config.caltopo.group
+        group_to_use = group or self.config.caltopo.group
+        if group_to_use:
             tasks.append(
                 self._send_to_group(client, callsign, latitude, longitude, group_to_use)
             )
@@ -236,11 +240,11 @@ class CalTopoReporter:
         callsign: str,
         latitude: float,
         longitude: float,
+        connect_key: str,
     ) -> bool:
         """
         Internal method to send position data to a personal connect_key endpoint.
         """
-        connect_key = self.config.caltopo.connect_key
         # Safety check: ensure the key doesn't contain malicious characters
         # for URL construction.
         if not self._validate_and_log_identifier(connect_key, "connect_key"):

@@ -29,7 +29,6 @@
 - Simplify unknown device callsign handling in gateway app
   ([`e484d2b`](https://github.com/clayauld/meshtopo/commit/e484d2b6b2e855e52752e48b0cdd2fbb3dd585f8))
 
-
 ## v1.4.0 (2026-03-21)
 
 ### Bug Fixes
@@ -118,7 +117,6 @@
 
 - Move imports from local function scope to global module scope in `views.py` and `gateway.py`.
   ([`cbefff8`](https://github.com/clayauld/meshtopo/commit/cbefff822002cdc1fe82e6eb78df3457324cb512))
-
 
 ## v1.3.0 (2026-02-23)
 

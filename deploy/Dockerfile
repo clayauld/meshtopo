@@ -30,6 +30,7 @@ WORKDIR /app
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash meshtopo && \
+    mkdir -p /app/data /app/logs && \
     chown -R meshtopo:meshtopo /app
 
 # Copy installed dependencies from builder
@@ -57,6 +58,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONPATH=/app
+ENV STORAGE_DB_PATH=/app/data/meshtopo_state.sqlite
 
 # Default command uses the entrypoint script
 CMD ["/bin/bash", "/app/scripts/entrypoint.sh"]

@@ -90,7 +90,15 @@ async def test_initialize_db_reset_on_failure(mock_config, tmp_path):
     with patch("gateway_app.Config.from_file", return_value=mock_config):
         with patch(
             "gateway_app.PersistentDict",
-            side_effect=[Exception("Corrupt"), MagicMock(), MagicMock(), MagicMock()],
+            side_effect=[
+                Exception("Corrupt"),
+                MagicMock(),
+                MagicMock(),
+                MagicMock(),
+                MagicMock(),
+                MagicMock(),
+                MagicMock(),
+            ],
         ):
             mock_reporter = MagicMock(spec=CalTopoReporter)
             mock_reporter.start = AsyncMock()
@@ -149,3 +157,41 @@ async def test_gateway_app_initialization_directory_creation_failure(mock_config
             ):
                 await app.initialize()
                 assert app.logger.error.called
+
+
+@pytest.mark.asyncio
+async def test_process_message_with_exception(app_fixture):
+    """Test exception handling in _process_message."""
+    app_fixture.logger = MagicMock()
+    # Malformed data that causes a crash during type lookup or processing
+    await app_fixture._process_message(
+        {"from": "123", "type": "position", "payload": None}
+    )
+    # Should catch warning (returning early without payload)
+    found = False
+    for call in app_fixture.logger.warning.call_args_list:
+        if "without payload" in str(call):
+            found = True
+            break
+    assert found
+
+
+@pytest.mark.asyncio
+async def test_close_with_errors():
+    """Test close method when dictionaries fail to close."""
+    app = GatewayApp()
+    app.node_id_mapping = MagicMock()
+    app.node_id_mapping.close.side_effect = Exception("Close error")
+    app.callsign_mapping = MagicMock()
+
+    # Should not raise exception
+    app.close()
+    assert app.node_id_mapping.close.called
+    assert app.callsign_mapping.close.called
+
+
+@pytest.fixture
+def app_fixture():
+    app = GatewayApp()
+    app.stats = {"messages_received": 0, "messages_processed": 0, "errors": 0}
+    return app

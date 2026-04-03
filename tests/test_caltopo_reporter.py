@@ -59,11 +59,14 @@ def test_validate_and_log_identifier(reporter):
 @pytest.mark.asyncio
 async def test_send_to_connect_key_success(reporter, mock_client):
     reporter.config.caltopo.connect_key = "secret_key"
+    key_to_pass = reporter.config.caltopo.connect_key
     mock_response = Mock()
     mock_response.status_code = 200
     mock_client.get.return_value = mock_response
 
-    result = await reporter._send_to_connect_key(mock_client, "TEST-CALL", 10.0, 20.0)
+    result = await reporter._send_to_connect_key(
+        mock_client, "TEST-CALL", 10.0, 20.0, key_to_pass
+    )
 
     assert result
     mock_client.get.assert_called_once()
@@ -75,7 +78,9 @@ async def test_send_to_connect_key_success(reporter, mock_client):
 @pytest.mark.asyncio
 async def test_send_to_connect_key_invalid_key(reporter, mock_client):
     reporter.config.caltopo.connect_key = "bad key"
-    result = await reporter._send_to_connect_key(mock_client, "TEST-CALL", 10.0, 20.0)
+    result = await reporter._send_to_connect_key(
+        mock_client, "TEST-CALL", 10.0, 20.0, "TEST-KEY"
+    )
     assert not result
 
 

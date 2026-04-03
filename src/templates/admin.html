@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container">
+    <h2>User Management</h2>
+    
+    <div class="card mb-4">
+        <div class="card-header">Existing Tenants</div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>CalTopo Group</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t_name, t_data in tenants.items() %}
+                    <tr>
+                        <td>{{ t_name }}</td>
+                        <td>{{ t_data.caltopo_group or "None" }}</td>
+                        <td>
+                            <form action="/admin" method="post" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <input type="hidden" name="delete_username" value="{{ t_name }}">
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete tenant {{ t_name }}?')">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Create New Tenant</div>
+        <div class="card-body">
+            <form action="/admin" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input type="text" name="new_username" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <input type="password" name="new_password" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">CalTopo Connect Key (Optional)</label>
+                    <input type="text" name="new_caltopo_key" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">CalTopo Group (Optional)</label>
+                    <input type="text" name="new_caltopo_group" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-primary">Create Tenant</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

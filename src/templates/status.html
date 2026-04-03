@@ -1,52 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meshtopo Web UI - Dashboard</title>
-    <meta name="csrf-token" content="{{ csrf_token }}">
-    <style>
-        body { font-family: sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1, h2 { color: #333; margin-top: 0; }
-        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; border-bottom: 2px solid #eee; padding-bottom: 1rem; margin-bottom: 2rem; }
-        .header-actions { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
-        .nav-links { display: flex; gap: 15px; flex-wrap: wrap; }
-        .nav-links a { text-decoration: none; color: #007bff; font-weight: bold; }
-        .nav-links a.active { color: #333; cursor: default; }
-        .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-        .logout-btn { text-decoration: none; color: white; background-color: #dc3545; padding: 8px 16px; border-radius: 4px; font-weight: bold; }
-        .logout-btn:hover { background-color: #c82333; }
-        .section { margin-bottom: 30px; padding: 20px; border: 1px solid #eee; border-radius: 5px; background: #fafafa; }
+{% extends "layout.html" %}
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
-        .stat-card { background: white; padding: 15px; border-radius: 5px; border: 1px solid #eee; text-align: center; }
-        .stat-card .value { font-size: 24px; font-weight: bold; color: #28a745; display: block; margin-top: 5px; }
+{% block title %}Dashboard{% endblock %}
 
-        table { width: 100%; border-collapse: collapse; background: white; }
-        th, td { padding: 10px; border: 1px solid #eee; text-align: left; }
-        th { background: #f8f9fa; }
+{% block extra_style %}
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+    .stat-card { background: white; padding: 15px; border-radius: 5px; border: 1px solid #eee; text-align: center; }
+    .stat-card .value { font-size: 24px; font-weight: bold; color: #28a745; display: block; margin-top: 5px; }
+    .logs-container { background: #333; color: #0f0; padding: 15px; border-radius: 5px; height: 300px; overflow-y: scroll; font-family: monospace; font-size: 13px; line-height: 1.4; white-space: pre-wrap;}
+{% endblock %}
 
-        .logs-container { background: #333; color: #0f0; padding: 15px; border-radius: 5px; height: 300px; overflow-y: scroll; font-family: monospace; font-size: 13px; line-height: 1.4; white-space: pre-wrap;}
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <div class="header">
-        <h1>Meshtopo Dashboard</h1>
-        <div class="header-actions">
-            <div class="nav-links">
-                <a href="/status" class="active">Dashboard</a>
-                <a href="/config">Configuration</a>
-            </div>
-            <div class="controls">
-                <button onclick="restartService()" style="background: #ffc107; color: #000; padding: 8px 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Restart Service</button>
-                <a href="/logout" class="logout-btn">Logout</a>
-            </div>
-        </div>
-    </div>
-
+{% block content %}
     <div class="section">
         <h2>Gateway Statistics</h2>
         <div class="stats-grid">
@@ -67,18 +30,24 @@
                     <th>Role</th>
                     <th>Battery</th>
                     <th>Voltage</th>
-                    <th>Last Seen (Unix)</th>
+                    <th>Last Seen</th>
+                    {% if multi_tenant and role == 'super_user' %}
+                    <th>Tenant</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
                 {% for hw_id, state in device_states.items() %}
                 <tr>
                     <td>{{ hw_id }}</td>
-                    <td>{{ state.longname or state.shortname or 'Unknown' }}</td>
+                    <td>{{ state.configured_name or state.longname or state.shortname or 'Unknown' }}</td>
                     <td>{{ state.role or '-' }}</td>
                     <td>{{ state.battery_level|default('-') }}{% if state.battery_level %}%{% endif %}</td>
                     <td>{{ state.voltage|default('-') }}{% if state.voltage %}V{% endif %}</td>
-                    <td>{{ state.last_seen | round(2) }}</td>
+                    <td class="last-seen-cell" data-timestamp="{{ state.last_seen }}">{{ state.last_seen | round(2) }}</td>
+                    {% if multi_tenant and role == 'super_user' %}
+                    <td>{{ state.tenant_name or '-' }}</td>
+                    {% endif %}
                 </tr>
                 {% else %}
                 <tr><td colspan="6" style="text-align: center;">No devices seen yet.</td></tr>
@@ -87,6 +56,7 @@
         </table>
     </div>
 
+    {% if role == 'super_user' %}
     <div class="section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <h2 style="margin: 0;">System Logs</h2>
@@ -103,9 +73,10 @@
         </div>
         <div class="logs-container" id="logsBox">{{ logs }}</div>
     </div>
-</div>
+    {% endif %}
+{% endblock %}
 
-<script>
+{% block extra_script %}
     // Scroll logs to bottom
     const logsBox = document.getElementById('logsBox');
     if (logsBox) {
@@ -120,20 +91,26 @@
             refreshIntervalId = null;
         }
 
-        const interval = parseInt(document.getElementById('autoRefresh').value);
+        const autoRefreshEl = document.getElementById('autoRefresh');
+        if (!autoRefreshEl) return;
+
+        const interval = parseInt(autoRefreshEl.value);
         if (interval > 0) {
             refreshIntervalId = setInterval(fetchLogs, interval);
         }
     }
 
-    // Start with 5 seconds by default
-    updateRefreshInterval();
+    // Start auto-refresh if as admin
+    if (document.getElementById('autoRefresh')) {
+        updateRefreshInterval();
+    }
 
     function fetchLogs() {
         fetch('/api/logs')
             .then(response => response.text())
             .then(data => {
                 const logsBoxEl = document.getElementById('logsBox');
+                if (!logsBoxEl) return;
 
                 // Only autoscroll if user was already at the bottom (or very close)
                 const isAtBottom = logsBoxEl.scrollHeight - logsBoxEl.scrollTop <= logsBoxEl.clientHeight + 20;
@@ -147,22 +124,17 @@
             .catch(err => console.error("Failed to fetch logs.", err));
     }
 
-    function restartService() {
-        if (!confirm("Are you sure you want to restart the background service? This will disconnect momentarily.")) return;
-
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        fetch('/api/restart', {
-            method: 'POST',
-            headers: { 'X-CSRF-Token': csrfToken }
-        })
-            .then(response => response.json())
-            .then(data => {
-                alert("Service is restarting. The page will reload in 5 seconds.");
-                setTimeout(() => window.location.reload(), 5000);
-            })
-            .catch(err => alert("Failed to trigger restart."));
-    }
-</script>
-
-</body>
-</html>
+    // Format timestamps to local time
+    document.addEventListener("DOMContentLoaded", function() {
+        const timeCells = document.querySelectorAll('.last-seen-cell');
+        timeCells.forEach(cell => {
+            const unixTs = parseFloat(cell.getAttribute('data-timestamp'));
+            if (!isNaN(unixTs) && unixTs > 0) {
+                const date = new Date(unixTs * 1000);
+                cell.innerText = date.toLocaleString();
+            } else {
+                cell.innerText = "Never";
+            }
+        });
+    });
+{% endblock %}

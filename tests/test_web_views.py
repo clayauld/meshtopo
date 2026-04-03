@@ -22,6 +22,7 @@ def mock_gateway_app():
     app = MagicMock()
     app.web_config = {}
     app.config.web.admin_password = "default_admin"
+    app.config.web.multi_tenant_enabled = False
     app.config.devices.allow_unknown_devices = False
     app.config.nodes = {}
     app.config.caltopo.connect_key = "test_key"
@@ -57,7 +58,7 @@ async def test_index_unauthenticated(cli):
 @pytest.mark.asyncio
 async def test_index_authenticated(cli):
     """Test index redirects to status if authenticated."""
-    await cli.post("/login", data={"password": "default_admin"})
+    await cli.post("/login", data={"username": "admin", "password": "default_admin"})
     resp = await cli.get("/", allow_redirects=False)
     assert resp.status == 302
     assert resp.headers["Location"] == "/status"
@@ -77,7 +78,7 @@ async def test_login_get(cli):
 @pytest.mark.asyncio
 async def test_login_get_authenticated(cli):
     """Test login GET redirects to status if authenticated."""
-    await cli.post("/login", data={"password": "default_admin"})
+    await cli.post("/login", data={"username": "admin", "password": "default_admin"})
     resp = await cli.get("/login", allow_redirects=False)
     assert resp.status == 302
     assert resp.headers["Location"] == "/status"
@@ -96,7 +97,9 @@ async def test_login_post_invalid(cli):
 async def test_login_post_valid_config(cli):
     """Test login post with config default password."""
     resp = await cli.post(
-        "/login", data={"password": "default_admin"}, allow_redirects=False
+        "/login",
+        data={"username": "admin", "password": "default_admin"},
+        allow_redirects=False,
     )
     assert resp.status == 302
     assert resp.headers["Location"] == "/status"
@@ -118,7 +121,9 @@ async def test_login_post_valid_db_hash(mock_gateway_app):
     await cli.start_server()
 
     resp = await cli.post(
-        "/login", data={"password": "db_admin"}, allow_redirects=False
+        "/login",
+        data={"username": "admin", "password": "db_admin"},
+        allow_redirects=False,
     )
     assert resp.status == 302
     assert resp.headers["Location"] == "/status"
@@ -137,7 +142,9 @@ async def test_login_post_valid_env(mock_gateway_app):
 
     with patch.dict(os.environ, {"WEB_ADMIN_PASSWORD": "env_admin"}):
         resp = await cli.post(
-            "/login", data={"password": "env_admin"}, allow_redirects=False
+            "/login",
+            data={"username": "admin", "password": "env_admin"},
+            allow_redirects=False,
         )
         assert resp.status == 302
         assert resp.headers["Location"] == "/status"
@@ -147,7 +154,7 @@ async def test_login_post_valid_env(mock_gateway_app):
 @pytest.mark.asyncio
 async def test_logout(cli):
     """Test logout endpoint."""
-    await cli.post("/login", data={"password": "default_admin"})
+    await cli.post("/login", data={"username": "admin", "password": "default_admin"})
     resp = await cli.get("/status", allow_redirects=False)
     assert resp.status == 200
 
@@ -159,7 +166,7 @@ async def test_logout(cli):
 @pytest.mark.asyncio
 async def test_config_get(cli):
     """Test config GET."""
-    await cli.post("/login", data={"password": "default_admin"})
+    await cli.post("/login", data={"username": "admin", "password": "default_admin"})
     resp = await cli.get("/config")
     assert resp.status == 200
 
@@ -167,7 +174,7 @@ async def test_config_get(cli):
 @pytest.mark.asyncio
 async def test_config_post(cli):
     """Test config POST."""
-    await cli.post("/login", data={"password": "default_admin"})
+    await cli.post("/login", data={"username": "admin", "password": "default_admin"})
 
     data = {
         "team_id": "new_team",
@@ -195,7 +202,7 @@ async def test_config_post(cli):
 @pytest.mark.asyncio
 async def test_restart_post(cli):
     """Test restart POST."""
-    await cli.post("/login", data={"password": "default_admin"})
+    await cli.post("/login", data={"username": "admin", "password": "default_admin"})
 
     resp = await cli.post("/api/restart")
     assert resp.status == 200
@@ -209,7 +216,7 @@ async def test_restart_post(cli):
 @pytest.mark.asyncio
 async def test_api_logs_get(cli):
     """Test api_logs_get API."""
-    await cli.post("/login", data={"password": "default_admin"})
+    await cli.post("/login", data={"username": "admin", "password": "default_admin"})
 
     with (
         patch("src.web.views.os.path.exists", return_value=True),
@@ -225,7 +232,7 @@ async def test_api_logs_get(cli):
 @pytest.mark.asyncio
 async def test_api_logs_get_exception(cli):
     """Test api_logs_get API on file read error."""
-    await cli.post("/login", data={"password": "default_admin"})
+    await cli.post("/login", data={"username": "admin", "password": "default_admin"})
 
     with (
         patch("src.web.views.os.path.exists", return_value=True),
@@ -240,7 +247,7 @@ async def test_api_logs_get_exception(cli):
 @pytest.mark.asyncio
 async def test_status_get(cli):
     """Test status page GET."""
-    await cli.post("/login", data={"password": "default_admin"})
+    await cli.post("/login", data={"username": "admin", "password": "default_admin"})
 
     with (
         patch("src.web.views.os.path.exists", return_value=True),
@@ -255,7 +262,7 @@ async def test_status_get(cli):
 @pytest.mark.asyncio
 async def test_status_get_exception(cli):
     """Test status page GET on file read error."""
-    await cli.post("/login", data={"password": "default_admin"})
+    await cli.post("/login", data={"username": "admin", "password": "default_admin"})
 
     with (
         patch("src.web.views.os.path.exists", return_value=True),
