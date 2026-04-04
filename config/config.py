@@ -266,15 +266,18 @@ class Config(BaseModel):
         if mqtt_pass:
             config.mqtt.password = SecretStr(mqtt_pass)
 
-        # Internal MQTT Broker Auth overrides (for the first user)
+        # Internal MQTT Broker Auth overrides
         broker_user = os.getenv("MQTT_BROKER_USERNAME")
         broker_pass = os.getenv("MQTT_BROKER_PASSWORD")
         if broker_user and broker_pass:
-            # If we already have users, override the first one; otherwise create it
-            if config.mqtt_broker.users:
-                config.mqtt_broker.users[0].username = broker_user
-                config.mqtt_broker.users[0].password = SecretStr(broker_pass)
-            else:
+            # Find user by username to update password, or add as a new user
+            user_found = False
+            for user in config.mqtt_broker.users:
+                if user.username == broker_user:
+                    user.password = SecretStr(broker_pass)
+                    user_found = True
+                    break
+            if not user_found:
                 config.mqtt_broker.users.append(
                     MqttUser(username=broker_user, password=SecretStr(broker_pass))
                 )
