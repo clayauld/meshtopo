@@ -70,13 +70,14 @@ def verify_password(password: str, hashed: bytes) -> bool:
 def is_valid_superuser_password(password: str, gateway_app: Any) -> bool:
     """Check if a password matches the superuser password from any source."""
     # 0. Database hash check (Primary: persisted changed password)
+    # If a custom password hash exists, it becomes the EXCLUSIVE source of truth.
     db = gateway_app.web_config
     if "admin_password_hash" in db:
         hashed = db["admin_password_hash"].encode("utf-8")
-        if verify_password(password, hashed):
-            return True
+        return verify_password(password, hashed)
 
-    # 1. Config/Environment check (Secondary: Default/Initial password)
+    # 1. Config/Environment check (Secondary/Fallback: Default/Initial password)
+    # This check only runs if no custom password hash has been configured yet.
     # The config object already incorporates WEB_ADMIN_PASSWORD from the environment
     config_admin_pass = gateway_app.config.web.admin_password
     if config_admin_pass:
@@ -86,8 +87,7 @@ def is_valid_superuser_password(password: str, gateway_app: Any) -> bool:
             if hasattr(config_admin_pass, "get_secret_value")
             else str(config_admin_pass)
         )
-        if password == val:
-            return True
+        return password == val
 
     return False
 
