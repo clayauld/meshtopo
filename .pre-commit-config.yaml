@@ -62,7 +62,7 @@ repos:
 
   # Python type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.1
+    rev: v1.20.1
     hooks:
       - id: mypy
         additional_dependencies: [pydantic, types-PyYAML, types-requests, aiohttp, aiohttp-jinja2]
@@ -113,7 +113,7 @@ repos:
 
   # Conventional Commits
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.13.9
+    rev: v4.13.10
     hooks:
       - id: commitizen
         stages: [commit-msg]
