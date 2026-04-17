@@ -96,7 +96,7 @@ jobs:
       - name: Create GitHub Release (Manual Only)
         if: steps.resolve.outputs.source == 'manual'
         id: create_release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.resolve.outputs.version }}
           name: ${{ steps.resolve.outputs.version }}
