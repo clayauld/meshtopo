@@ -131,7 +131,10 @@ async def config_get(request: web.Request) -> Dict[str, Any]:
 
     if multi_tenant and role == "super_user":
         tenants = {
-            k: {"caltopo_group": v.get("caltopo_group")}
+            k: {
+                "caltopo_group": v.get("caltopo_group"),
+                "mqtt_channel": v.get("mqtt_channel"),
+            }
             for k, v in list(gateway_app.tenants_db.items())
             if isinstance(v, dict)
         }
@@ -193,6 +196,7 @@ async def config_get(request: web.Request) -> Dict[str, Any]:
             role="tenant",
             caltopo_connect_key_set=bool(db.get("caltopo_connect_key")),
             caltopo_group=db.get("caltopo_group", ""),
+            mqtt_channel=db.get("mqtt_channel", ""),
             nodes=db.get("nodes", {}),
         )
     else:
@@ -246,6 +250,7 @@ async def config_post(request: web.Request) -> web.Response:
             tenant_db["caltopo_connect_key"] = connect_key
 
         tenant_db["caltopo_group"] = str(data.get("caltopo_group", "")).strip()
+        tenant_db["mqtt_channel"] = str(data.get("mqtt_channel", "")).strip()
 
         # Update specific tenant's nodes
         node_ids = data.getall("node_id[]", [])
@@ -277,6 +282,7 @@ async def config_post(request: web.Request) -> web.Response:
                         "nodes": {},
                         "caltopo_group": "",
                         "caltopo_connect_key": "",
+                        "mqtt_channel": "",
                     }
                     raise web.HTTPFound("/config?success=1")
             elif action == "delete_tenant":
@@ -593,6 +599,7 @@ async def admin_panel_post(request: web.Request) -> web.Response:
             "password_hash": hashed_bytes.decode("utf-8"),
             "caltopo_connect_key": str(data.get("new_caltopo_key", "")).strip(),
             "caltopo_group": str(data.get("new_caltopo_group", "")).strip(),
+            "mqtt_channel": str(data.get("new_mqtt_channel", "")).strip(),
             "nodes": {},
         }
         raise web.HTTPFound("/admin?success=1")

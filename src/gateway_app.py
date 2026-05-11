@@ -387,9 +387,11 @@ class GatewayApp:
                 except Exception as e:
                     self.logger.error(f"Error closing {name}: {e}")
 
-    def _get_tenant_node_configs(self, hardware_id: str) -> list[dict[str, Any]]:
+    def _get_tenant_node_configs(
+        self, hardware_id: str, channel: Optional[str] = None
+    ) -> list[dict[str, Any]]:
         """
-        Find all tenants mapping a specific hardware ID, handling '!' prefix logic.
+        Find all tenants mapping a specific hardware ID or channel, handling '!' prefix logic.
         Returns a list of dicts: {"tenant_name": str, "tenant_data": dict,
         "node_config": dict}
         """
@@ -406,6 +408,34 @@ class GatewayApp:
         for username, tenant_data in list(self.tenants_db.items()):
             if not isinstance(tenant_data, dict):
                 continue
+
+            # 1. Check for Channel Match (High Priority)
+            # If the message arrived on this tenant's channel, they get it.
+            tenant_channel = tenant_data.get("mqtt_channel")
+            if (
+                channel
+                and tenant_channel
+                and channel.lower() == tenant_channel.lower()
+            ):
+                # If matched by channel, they get the message.
+                # We use their node-specific config if it exists, or a default.
+                tenant_nodes = tenant_data.get("nodes", {})
+                node_cfg = {}
+                for check_id in ids_to_check:
+                    if check_id in tenant_nodes:
+                        node_cfg = tenant_nodes[check_id]
+                        break
+
+                results.append(
+                    {
+                        "tenant_name": username,
+                        "tenant_data": tenant_data,
+                        "node_config": node_cfg,
+                    }
+                )
+                continue
+
+            # 2. Check for Hardware ID Match (Fallback)
             tenant_nodes = tenant_data.get("nodes", {})
             for check_id in ids_to_check:
                 if check_id in tenant_nodes:
@@ -418,6 +448,17 @@ class GatewayApp:
                     )
                     break
         return results
+
+    def _extract_channel_from_topic(self, topic: str) -> Optional[str]:
+        """
+        Extract the channel name from a Meshtastic MQTT topic.
+        Format: msh/<region>/2/json/<channel>/<node_id>
+        """
+        parts = topic.split("/")
+        # We expect at least 5 parts for msh/reg/2/json/chan/...
+        if len(parts) >= 5:
+            return parts[4]
+        return None
 
     def _resolve_hardware_id(self, numeric_node_id: str) -> str:
         """
@@ -447,15 +488,17 @@ class GatewayApp:
         if self.callsign_mapping is not None:
             self.callsign_mapping[hardware_id] = callsign
 
-    async def _process_message(self, data: Dict[str, Any]) -> None:
+    async def _process_message(self, data: Dict[str, Any], topic: str) -> None:
         """
         Core message dispatcher. Analyzes the 'type' field of incoming
         Meshtastic JSON payloads and routes them to specific handlers.
 
         Args:
             data: The parsed JSON payload from MQTT.
+            topic: The MQTT topic the message was received on.
         """
         self.stats["messages_received"] += 1
+        channel = self._extract_channel_from_topic(topic)
 
         try:
             # Extract numeric node ID
@@ -467,7 +510,7 @@ class GatewayApp:
             # Check message type and process accordingly
             message_type = data.get("type")
             if message_type == "position":
-                await self._process_position_message(data, numeric_node_id)
+                await self._process_position_message(data, numeric_node_id, channel)
             elif message_type == "nodeinfo":
                 self._process_nodeinfo_message(data, numeric_node_id)
             elif message_type == "telemetry":
@@ -580,7 +623,7 @@ class GatewayApp:
             return f"!{str(numeric_id)}"
 
     async def _process_position_message(
-        self, data: Dict[str, Any], numeric_node_id: str
+        self, data: Dict[str, Any], numeric_node_id: str, channel: Optional[str] = None
     ) -> None:
         """
         Specific handler for 'position' messages.
@@ -670,7 +713,7 @@ class GatewayApp:
             routed = False
             is_mapped = False
 
-            tenant_matches = self._get_tenant_node_configs(hardware_id)
+            tenant_matches = self._get_tenant_node_configs(hardware_id, channel)
             for match in tenant_matches:
                 is_mapped = True
                 username = match["tenant_name"]

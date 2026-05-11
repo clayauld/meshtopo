@@ -30,6 +30,7 @@
                     <tr>
                         <th>Username</th>
                         <th>CalTopo Group</th>
+                        <th>MQTT Channel</th>
                         <th>Device Mapping count</th>
                         <th style="width: 150px;">Actions</th>
                     </tr>
@@ -39,6 +40,7 @@
                     <tr>
                         <td>{{ t_name }}<input type="hidden" name="managed_tenant_name[]" value="{{ t_name }}"></td>
                         <td>{{ t_data.caltopo_group or 'Not set' }}</td>
+                        <td>{{ t_data.mqtt_channel or 'Not set' }}</td>
                         <td>{{ t_data.nodes|length if t_data.nodes else 0 }}</td>
                         <td>
                             <div style="margin: 0; display: inline-block;">
@@ -156,6 +158,12 @@
             <label for="caltopo_group">Default CalTopo Group (Team Mode):</label>
             <input type="text" id="caltopo_group" name="caltopo_group" value="{{ caltopo_group }}" placeholder="e.g., SARTEAM">
             <span class="help-text">Global group identifier for tracking. Required for Team Mode.</span>
+
+            {% if role == "tenant" %}
+            <label for="mqtt_channel">Meshtastic MQTT Channel Name (Optional):</label>
+            <input type="text" id="mqtt_channel" name="mqtt_channel" value="{{ mqtt_channel }}" placeholder="e.g., Team-Alpha">
+            <span class="help-text">Automatically route all traffic from this Meshtastic channel to your account.</span>
+            {% endif %}
         </div>
 
         {% if not multi_tenant %}

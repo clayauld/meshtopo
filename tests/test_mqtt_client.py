@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import aiomqtt
 import pytest
@@ -53,7 +53,8 @@ class TestMqttClient:
         mock_msg = Mock(spec=aiomqtt.Message)
         mock_msg.payload = b'{"test": 1}'
         # aiomqtt messages have a topic object with a value attribute
-        mock_msg.topic = Mock()
+        mock_msg.topic = MagicMock()
+        mock_msg.topic.__str__.return_value = "test/topic"
         mock_msg.topic.value = "test/topic"
 
         # Create an async iterable for messages
@@ -94,7 +95,7 @@ class TestMqttClient:
 
         # Verify interactions
         mock_client_instance.subscribe.assert_called_once_with("test/topic")
-        message_callback.assert_called_once_with({"test": 1})
+        message_callback.assert_called_once_with({"test": 1}, "test/topic")
 
     @pytest.mark.asyncio
     async def test_run_connection_failure_retry(self, client):
@@ -155,24 +156,28 @@ class TestMqttClient:
         message = Mock()
         message.payload = b'{"key": "value"}'
         # aiomqtt topic is an object with value attribute
+        message.topic = MagicMock()
         message.topic.value = "test/topic"
+        message.topic.__str__.return_value = "test/topic"
         del message.retain
 
         await client._process_message(message)
 
-        client.message_callback.assert_called_with({"key": "value"})
+        client.message_callback.assert_called_with({"key": "value"}, "test/topic")
 
     @pytest.mark.asyncio
     async def test_process_message_retained(self, client):
         message = Mock()
         message.payload = b'{"key": "value"}'
+        message.topic = MagicMock()
         message.topic.value = "test/topic"
+        message.topic.__str__.return_value = "test/topic"
         message.retain = True
 
         await client._process_message(message)
 
         client.message_callback.assert_called_with(
-            {"key": "value", "_mqtt_retain": True}
+            {"key": "value", "_mqtt_retain": True}, "test/topic"
         )
 
     @pytest.mark.asyncio
