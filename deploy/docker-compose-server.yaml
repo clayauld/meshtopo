@@ -27,10 +27,8 @@ services:
             listener 1883
             protocol mqtt
             listener 8883
-            certfile /mosquitto/certs/meshtopo.amrg.org.crt
-            keyfile /mosquitto/certs/meshtopo.amrg.org.key
-            #certfile /mosquitto/certs/wildcard_.clayauld.com.crt
-            #keyfile /mosquitto/certs/wildcard_.clayauld.com.key
+            certfile /mosquitto/certs/meshtopo.yourorg.org.crt
+            keyfile /mosquitto/certs/meshtopo.yourorg.org.key
             listener 9001
             protocol websockets
             allow_anonymous true
@@ -42,8 +40,7 @@ services:
             - /mnt/user/appdata/meshtopo/logs/mosquitto/:/mosquitto/log
             - /mnt/user/appdata/meshtopo/config.yaml:/mosquitto/config/config.yaml:ro
             - /mnt/user/appdata/meshtopo/passwd:/mosquitto/config/passwd
-            #- /mnt/user/appdata/caddy/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.clayauld.com:/mosquitto/certs/
-            - /mnt/user/appdata/caddy/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/meshtopo.amrg.org:/mosquitto/certs/
+            - /mnt/user/appdata/caddy/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/meshtopo.yourorg.org:/mosquitto/certs/
         networks:
             - meshtopo
         healthcheck:
