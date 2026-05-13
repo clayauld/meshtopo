@@ -33,12 +33,16 @@ class GatewayApp:
         0: "CLIENT",
         1: "CLIENT_MUTE",
         2: "ROUTER",
-        3: "ROUTER_MUTE",
-        4: "REPEATER",
-        5: "REPEAT_ONLY",
-        6: "TRACKER",
-        7: "SENSOR",
-        8: "TAK",
+        3: "ROUTER_CLIENT",  # DEPRECATED
+        4: "REPEATER",  # DEPRECATED``
+        5: "TRACKER",
+        6: "SENSOR",
+        7: "TAK",
+        8: "CLIENT_HIDDEN",
+        9: "LOST_AND_FOUND",
+        10: "TAK_TRACKER",
+        11: "ROUTER_LATE",
+        12: "CLIENT_BASE",
     }
 
     def __init__(self, config_path: str = "config/config.yaml"):

@@ -155,13 +155,15 @@ class TestGatewayApp:
     @pytest.mark.asyncio
     async def test_process_message_no_type(self, app):
         # Should just return/log warning
-        await app._process_message({"from": 123})
+        await app._process_message({"from": 123}, "msh/US/2/json/LongFast/!0000007b")
         assert app.stats["messages_received"] == 1
         assert app.stats["messages_processed"] == 0
 
     @pytest.mark.asyncio
     async def test_process_message_unknown_type(self, app):
-        await app._process_message({"from": 123, "type": "unknown"})
+        await app._process_message(
+            {"from": 123, "type": "unknown"}, "msh/US/2/json/LongFast/!0000007b"
+        )
         assert app.stats["messages_received"] == 1
         assert app.stats["messages_processed"] == 0
 
@@ -367,18 +369,24 @@ class TestGatewayApp:
         app.stats = {"messages_processed": 0, "errors": 0, "messages_received": 0}
 
         # 1. Empty message type
-        await app._process_message({"type": "", "from": 123})
+        await app._process_message(
+            {"type": "", "from": 123}, "msh/US/2/json/LongFast/!0000007b"
+        )
         assert app.stats["messages_processed"] == 0
 
         # 2. Unsupported message type
-        await app._process_message({"type": "unknown_type", "from": 123})
+        await app._process_message(
+            {"type": "unknown_type", "from": 123}, "msh/US/2/json/LongFast/!0000007b"
+        )
         assert app.stats["messages_processed"] == 0
 
         # 3. Exception during processing (simulated by malformed data causing error)
         with patch.object(
             app, "_process_position_message", side_effect=ValueError("Boom")
         ):
-            await app._process_message({"type": "position", "from": 123})
+            await app._process_message(
+                {"type": "position", "from": 123}, "msh/US/2/json/LongFast/!0000007b"
+            )
             assert app.stats["errors"] == 1
 
     @pytest.mark.asyncio
