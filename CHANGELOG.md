@@ -2,6 +2,55 @@
 
 <!-- version list -->
 
+## v1.8.0 (2026-05-13)
+
+### Chores
+
+- **deps**: Bump actions/github-script from 8 to 9
+  ([`48bef83`](https://github.com/clayauld/meshtopo/commit/48bef83ec13026a7dd91b040bd205734298dfc23))
+
+- **deps**: Bump cryptography in the uv group across 1 directory
+  ([`44f1b3d`](https://github.com/clayauld/meshtopo/commit/44f1b3da03dcd7525755a19f229edff08fad3269))
+
+- **deps**: Bump gitpython from 3.1.46 to 3.1.50
+  ([`5628c31`](https://github.com/clayauld/meshtopo/commit/5628c3122478baa03cbed1e9278af5269b8369a5))
+
+- **deps**: Bump pydantic from 2.12.5 to 2.13.4
+  ([`a027193`](https://github.com/clayauld/meshtopo/commit/a0271930a9d8ee2fe1c9e98190a08db8f363f0ea))
+
+- **deps**: Bump pytest in the uv group across 1 directory
+  ([`956b7ea`](https://github.com/clayauld/meshtopo/commit/956b7ea6e2253579a796b6c5d8a710bddb5f4a99))
+
+- **deps**: Bump requests from 2.33.0 to 2.33.1
+  ([`f67843e`](https://github.com/clayauld/meshtopo/commit/f67843e32c6003356c1d5b79916e57257da5e3ac))
+
+- **deps**: Bump softprops/action-gh-release from 2 to 3
+  ([`5c1de59`](https://github.com/clayauld/meshtopo/commit/5c1de593cc7d058d9a0e70f6577bbf92100f17b9))
+
+- **deps**: Bump urllib3 in the uv group across 1 directory
+  ([`17da9de`](https://github.com/clayauld/meshtopo/commit/17da9de77b9e61093f1896268f7dd8f249dd57ea))
+
+- **deps**: Update pre-commit hooks
+  ([`54dea4b`](https://github.com/clayauld/meshtopo/commit/54dea4ba22947012820c21537e3850dbeb0d891b))
+
+- **deps**: Update pre-commit hooks
+  ([`4261cb5`](https://github.com/clayauld/meshtopo/commit/4261cb5bb27659b579f25fdac7c3c51fab547130))
+
+- **deps**: Update pre-commit hooks
+  ([`1b9a8dc`](https://github.com/clayauld/meshtopo/commit/1b9a8dcb1815aabfde7c14e67a9cd0c00a5767a8))
+
+### Features
+
+- Implement multi-tenant topic-based routing by MQTT channel with administrative configuration
+  support.
+  ([`c7e2131`](https://github.com/clayauld/meshtopo/commit/c7e2131b2e0cbe2f109e0526f473df42c6fc22f7))
+
+### Refactoring
+
+- Implement tenant cache management and update methods in gateway application
+  ([`bb0c2e3`](https://github.com/clayauld/meshtopo/commit/bb0c2e3644cd9adedb44845c2772459c4e556045))
+
+
 ## v1.7.2 (2026-04-03)
 
 ### Chores
