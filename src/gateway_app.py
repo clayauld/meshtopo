@@ -34,7 +34,7 @@ class GatewayApp:
         1: "CLIENT_MUTE",
         2: "ROUTER",
         3: "ROUTER_CLIENT",  # DEPRECATED
-        4: "REPEATER",  # DEPRECATED``
+        4: "REPEATER",  # DEPRECATED
         5: "TRACKER",
         6: "SENSOR",
         7: "TAK",
