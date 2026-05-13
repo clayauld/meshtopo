@@ -134,6 +134,7 @@ async def config_get(request: web.Request) -> Dict[str, Any]:
             k: {
                 "caltopo_group": v.get("caltopo_group"),
                 "mqtt_channel": v.get("mqtt_channel"),
+                "nodes": v.get("nodes", {}),
             }
             for k, v in list(gateway_app.tenants_db.items())
             if isinstance(v, dict)
