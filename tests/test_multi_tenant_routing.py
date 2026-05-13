@@ -27,6 +27,7 @@ def app_multi():
             "nodes": {"!87654321": {"device_id": "T2-NODE"}},
         },
     }
+    app._tenants_cache = dict(app.tenants_db)
     app.node_id_mapping = {}
     app.callsign_mapping = {}
     app._node_id_cache = {}
@@ -88,6 +89,7 @@ async def test_process_position_no_connect_key(app_multi):
             "nodes": {"!12345678": {"device_id": "T1-NODE", "group": None}},
         }
     }
+    app_multi._tenants_cache = dict(app_multi.tenants_db)
 
     msg = {
         "type": "position",

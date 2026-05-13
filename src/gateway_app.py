@@ -78,6 +78,7 @@ class GatewayApp:
         # In-memory caches for performance
         self._node_id_cache: Dict[str, str] = {}
         self._callsign_cache: Dict[str, str] = {}
+        self._tenants_cache: Dict[str, Any] = {}
 
         # Track latest status and metrics from devices
         self.device_states: Dict[str, Any] = {}
@@ -154,6 +155,7 @@ class GatewayApp:
                 self.logger.info("Loading state into memory cache...")
                 self._node_id_cache = dict(self.node_id_mapping)
                 self._callsign_cache = dict(self.callsign_mapping)
+                self._tenants_cache = dict(self.tenants_db)
 
             except Exception as e:
                 self.logger.warning(
@@ -395,7 +397,8 @@ class GatewayApp:
         self, hardware_id: str, channel: Optional[str] = None
     ) -> list[dict[str, Any]]:
         """
-        Find all tenants mapping a specific hardware ID or channel, handling '!' prefix logic.
+        Find all tenants mapping a specific hardware ID or channel,
+        handling '!' prefix logic.
         Returns a list of dicts: {"tenant_name": str, "tenant_data": dict,
         "node_config": dict}
         """
@@ -409,18 +412,14 @@ class GatewayApp:
         else:
             ids_to_check.add(f"!{hardware_id}")
 
-        for username, tenant_data in list(self.tenants_db.items()):
+        for username, tenant_data in list(self._tenants_cache.items()):
             if not isinstance(tenant_data, dict):
                 continue
 
             # 1. Check for Channel Match (High Priority)
             # If the message arrived on this tenant's channel, they get it.
             tenant_channel = tenant_data.get("mqtt_channel")
-            if (
-                channel
-                and tenant_channel
-                and channel.lower() == tenant_channel.lower()
-            ):
+            if channel and tenant_channel and channel.lower() == tenant_channel.lower():
                 # If matched by channel, they get the message.
                 # We use their node-specific config if it exists, or a default.
                 tenant_nodes = tenant_data.get("nodes", {})
@@ -492,6 +491,19 @@ class GatewayApp:
         if self.callsign_mapping is not None:
             self.callsign_mapping[hardware_id] = callsign
 
+    def update_tenant(self, username: str, data: dict[str, Any]) -> None:
+        """Update a tenant's configuration in both database and memory cache."""
+        if self.tenants_db is not None:
+            self.tenants_db[username] = data
+        self._tenants_cache[username] = data
+
+    def delete_tenant(self, username: str) -> None:
+        """Delete a tenant's configuration from both database and memory cache."""
+        if self.tenants_db is not None and username in self.tenants_db:
+            del self.tenants_db[username]
+        if username in self._tenants_cache:
+            del self._tenants_cache[username]
+
     async def _process_message(self, data: Dict[str, Any], topic: str) -> None:
         """
         Core message dispatcher. Analyzes the 'type' field of incoming
@@ -542,6 +554,8 @@ class GatewayApp:
             if hw_id:
                 state = self.device_states.setdefault(hw_id, {})
                 state["messages_processed"] = state.get("messages_processed", 0) + 1
+                if channel:
+                    state["last_channel"] = channel
 
         except Exception as e:
             self.logger.error(f"Error processing message: {e}")
@@ -762,8 +776,8 @@ class GatewayApp:
                         self._persist_node_id_mapping(str(numeric_node_id), hardware_id)
                     callsign = hardware_id
                     sent_any = False
-                    if self.tenants_db is not None:
-                        for username, tenant_data in list(self.tenants_db.items()):
+                    if self._tenants_cache:
+                        for username, tenant_data in list(self._tenants_cache.items()):
                             if not isinstance(tenant_data, dict):
                                 continue
                             group = tenant_data.get("caltopo_group")

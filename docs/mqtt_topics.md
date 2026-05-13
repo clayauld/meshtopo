@@ -8,7 +8,7 @@ Meshtastic nodes configured with the MQTT module enabled and "JSON Output" turne
 
 `msh/<region>/2/json/<channel_name>/<node_id>`
 
-### Breakdown:
+### Breakdown
 
 - **`msh`**: The root topic (configurable in Meshtastic, but defaults to `msh`).
 - **`<region>`**: The LoRa region code (e.g., `US`, `EU_868`, `ANZ`).
@@ -21,10 +21,10 @@ Meshtastic nodes configured with the MQTT module enabled and "JSON Output" turne
 
 MeshTopo processes the following JSON message types:
 
-1.  **`position`**: GPS coordinates and altitude. Used to update markers in CalTopo.
-2.  **`nodeinfo`**: Device names (long/short), hardware details, and role. Used to automatically name devices in CalTopo.
-3.  **`telemetry`**: Battery level, voltage, and environment sensors.
-4.  **`traceroute`**: Mesh path information between nodes.
+1. **`position`**: GPS coordinates and altitude. Used to update markers in CalTopo.
+2. **`nodeinfo`**: Device names (long/short), hardware details, and role. Used to automatically name devices in CalTopo.
+3. **`telemetry`**: Battery level, voltage, and environment sensors.
+4. **`traceroute`**: Mesh path information between nodes.
 
 ## Multi-Tenant Routing
 
@@ -51,6 +51,7 @@ In your `config.yaml`, the `mqtt.topic` parameter defines what the gateway liste
 
 - **Single Topic**: `topic: "msh/US/2/json/+/+"` (listens to all channels in the US region).
 - **Multiple Topics**:
+
   ```yaml
   mqtt:
     topic:

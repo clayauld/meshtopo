@@ -31,6 +31,17 @@ def mock_gateway_app_multi():
             "nodes": {"!12345678": {"device_id": "T1-NODE", "group": "T1-GROUP"}},
         }
     }
+
+    def mock_update_tenant(username, data):
+        app.tenants_db[username] = data
+
+    def mock_delete_tenant(username):
+        if username in app.tenants_db:
+            del app.tenants_db[username]
+
+    app.update_tenant.side_effect = mock_update_tenant
+    app.delete_tenant.side_effect = mock_delete_tenant
+
     return app
 
 

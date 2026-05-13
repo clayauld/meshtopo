@@ -267,7 +267,7 @@ async def config_post(request: web.Request) -> web.Response:
         tenant_db["nodes"] = nodes_dict
 
         # Save changes explicitly if persistentdict requires it
-        gateway_app.tenants_db[username] = tenant_db
+        gateway_app.update_tenant(username, tenant_db)
     else:
         action = str(data.get("action", ""))
         if gateway_app.config.web.multi_tenant_enabled:
@@ -277,13 +277,16 @@ async def config_post(request: web.Request) -> web.Response:
                 if new_username and new_password:
                     salt = bcrypt.gensalt()
                     hashed_bytes = bcrypt.hashpw(new_password.encode("utf-8"), salt)
-                    gateway_app.tenants_db[new_username] = {
-                        "password_hash": hashed_bytes.decode("utf-8"),
-                        "nodes": {},
-                        "caltopo_group": "",
-                        "caltopo_connect_key": "",
-                        "mqtt_channel": "",
-                    }
+                    gateway_app.update_tenant(
+                        new_username,
+                        {
+                            "password_hash": hashed_bytes.decode("utf-8"),
+                            "nodes": {},
+                            "caltopo_group": "",
+                            "caltopo_connect_key": "",
+                            "mqtt_channel": "",
+                        },
+                    )
                     raise web.HTTPFound("/config?success=1")
             elif action == "delete_tenant":
                 admin_password = str(
@@ -299,7 +302,7 @@ async def config_post(request: web.Request) -> web.Response:
                     and target_tenant
                     and target_tenant in gateway_app.tenants_db
                 ):
-                    del gateway_app.tenants_db[target_tenant]
+                    gateway_app.delete_tenant(target_tenant)
                     raise web.HTTPFound("/config?success=1")
                 else:
                     raise web.HTTPFound("/config?error=invalid_admin_password")
@@ -324,7 +327,7 @@ async def config_post(request: web.Request) -> web.Response:
                         "device_id": device_id,
                         "group": group if group else None,
                     }
-                    gateway_app.tenants_db[target_tenant] = tenant_data
+                    gateway_app.update_tenant(target_tenant, tenant_data)
                     raise web.HTTPFound("/config?success=1")
             # Individual remap/delete actions are now superseded by batch save.
             # We skip them here.
@@ -384,7 +387,7 @@ async def config_post(request: web.Request) -> web.Response:
                     if not isinstance(tenant_data, dict):
                         continue
                     tenant_data["nodes"] = tenant_updates.get(t_name, {})
-                    gateway_app.tenants_db[t_name] = tenant_data
+                    gateway_app.update_tenant(t_name, tenant_data)
         else:
             # Standard single-tenant or legacy update
             node_ids = data.getall("node_id[]", [])
@@ -502,7 +505,9 @@ async def status_get(request: web.Request) -> Dict[str, Any]:
 
         # Check multi-tenant configured nodes first
         if gateway_app.config.web.multi_tenant_enabled:
-            matches = gateway_app._get_tenant_node_configs(hw_id)
+            matches = gateway_app._get_tenant_node_configs(
+                hw_id, state.get("last_channel")
+            )
             if matches:
                 # Use the first match for display purposes
                 match = matches[0]
@@ -595,19 +600,22 @@ async def admin_panel_post(request: web.Request) -> web.Response:
     if new_username and new_password:
         salt = bcrypt.gensalt()
         hashed_bytes = bcrypt.hashpw(new_password.encode("utf-8"), salt)
-        gateway_app.tenants_db[new_username] = {
-            "password_hash": hashed_bytes.decode("utf-8"),
-            "caltopo_connect_key": str(data.get("new_caltopo_key", "")).strip(),
-            "caltopo_group": str(data.get("new_caltopo_group", "")).strip(),
-            "mqtt_channel": str(data.get("new_mqtt_channel", "")).strip(),
-            "nodes": {},
-        }
+        gateway_app.update_tenant(
+            new_username,
+            {
+                "password_hash": hashed_bytes.decode("utf-8"),
+                "caltopo_connect_key": str(data.get("new_caltopo_key", "")).strip(),
+                "caltopo_group": str(data.get("new_caltopo_group", "")).strip(),
+                "mqtt_channel": str(data.get("new_mqtt_channel", "")).strip(),
+                "nodes": {},
+            },
+        )
         raise web.HTTPFound("/admin?success=1")
 
     # 2. Tenant Deletion
     delete_username = str(data.get("delete_username", "")).strip()
     if delete_username and delete_username in gateway_app.tenants_db:
-        del gateway_app.tenants_db[delete_username]
+        gateway_app.delete_tenant(delete_username)
         raise web.HTTPFound("/admin?success=1")
 
     raise web.HTTPFound("/admin")

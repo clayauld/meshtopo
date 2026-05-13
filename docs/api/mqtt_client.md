@@ -12,7 +12,7 @@ JSON messages to the application's processing logic.
 
 Handles automatic reconnection with exponential backoff.
 
-### `def __init__(self, config: Any, message_callback: Callable[[Dict[str, Any]], Awaitable[NoneType]]) -> None`
+### `def __init__(self, config: Any, message_callback: Callable[[Dict[str, Any], str], Awaitable[NoneType]]) -> None`
 
 Initialize the MQTT client instance.
 

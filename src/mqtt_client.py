@@ -24,7 +24,7 @@ class MqttClient:
     def __init__(
         self,
         config: Any,
-        message_callback: Callable[[Dict[str, Any]], Awaitable[None]],
+        message_callback: Callable[[Dict[str, Any], str], Awaitable[None]],
     ) -> None:
         """
         Initialize the MQTT client instance.
