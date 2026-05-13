@@ -32,6 +32,11 @@ Args:
 Returns:
     The formatted string ID (e.g., "!017bd508")
 
+### `def _extract_channel_from_topic(self, topic: str) -> Optional[str]`
+
+Extract the channel name from a Meshtastic MQTT topic.
+Format: msh/<region>/2/json/<channel>/<node_id>
+
 ### `def _get_or_create_callsign(self, hardware_id: str) -> Optional[str]`
 
 Resolve or create a callsign for a given hardware ID.
@@ -42,9 +47,10 @@ Args:
 Returns:
     The resolved callsign, or None if it cannot be resolved.
 
-### `def _get_tenant_node_configs(self, hardware_id: str) -> list[dict[str, typing.Any]]`
+### `def _get_tenant_node_configs(self, hardware_id: str, channel: Optional[str] = None) -> list[dict[str, typing.Any]]`
 
-Find all tenants mapping a specific hardware ID, handling '!' prefix logic.
+Find all tenants mapping a specific hardware ID or channel,
+handling '!' prefix logic.
 Returns a list of dicts: {"tenant_name": str, "tenant_data": dict,
 "node_config": dict}
 
@@ -67,13 +73,14 @@ Persist callsign mapping to cache and database.
 
 Persist node ID mapping to cache and database.
 
-### `def _process_message(self, data: Dict[str, Any]) -> None`
+### `def _process_message(self, data: Dict[str, Any], topic: str) -> None`
 
 Core message dispatcher. Analyzes the 'type' field of incoming
 Meshtastic JSON payloads and routes them to specific handlers.
 
 Args:
     data: The parsed JSON payload from MQTT.
+    topic: The MQTT topic the message was received on.
 
 ### `def _process_nodeinfo_message(self, data: Dict[str, Any], numeric_node_id: str) -> None`
 
@@ -83,7 +90,7 @@ Args:
     data: JSON data from Meshtastic
     numeric_node_id: Numeric node ID from the message
 
-### `def _process_position_message(self, data: Dict[str, Any], numeric_node_id: str) -> None`
+### `def _process_position_message(self, data: Dict[str, Any], numeric_node_id: str, channel: Optional[str] = None) -> None`
 
 Specific handler for 'position' messages.
 Extracts GPS coordinates, resolves device callsigns, and forwards
@@ -122,6 +129,10 @@ Log statistics periodically.
 
 Close all resources.
 
+### `def delete_tenant(self, username: str) -> None`
+
+Delete a tenant's configuration from both database and memory cache.
+
 ### `def initialize(self) -> bool`
 
 Perform a comprehensive startup sequence for all application components.
@@ -141,3 +152,7 @@ a stop signal or fatal error occurs.
 ### `def stop(self) -> None`
 
 Stop the gateway service gracefully.
+
+### `def update_tenant(self, username: str, data: dict[str, typing.Any]) -> None`
+
+Update a tenant's configuration in both database and memory cache.

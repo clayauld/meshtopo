@@ -24,7 +24,7 @@ class MqttClient:
     def __init__(
         self,
         config: Any,
-        message_callback: Callable[[Dict[str, Any]], Awaitable[None]],
+        message_callback: Callable[[Dict[str, Any], str], Awaitable[None]],
     ) -> None:
         """
         Initialize the MQTT client instance.
@@ -66,9 +66,12 @@ class MqttClient:
                     reconnect_interval = 1  # Reset backoff on successful connection
 
                     # subscriptions must be refreshed on every successful (re)connection
-                    topic = self.config.mqtt.topic
-                    await client.subscribe(topic)
-                    self.logger.info(f"Subscribed to topic: {topic}")
+                    topics = self.config.mqtt.topic
+                    if isinstance(topics, str):
+                        topics = [topics]
+                    for t in topics:
+                        await client.subscribe(t)
+                        self.logger.info(f"Subscribed to topic: {t}")
 
                     # The client.messages generator yields messages as they arrive
                     async for message in client.messages:
@@ -113,7 +116,7 @@ class MqttClient:
                 data["_mqtt_retain"] = message.retain
 
             # Await the async message callback
-            await self.message_callback(data)
+            await self.message_callback(data, str(message.topic))
 
         except json.JSONDecodeError as e:
             self.logger.warning(

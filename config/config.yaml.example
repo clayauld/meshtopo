@@ -7,7 +7,7 @@ mqtt:
     port: 1883                          # MQTT broker port (8883 for SSL, 1883 for non-SSL)
     username: "meshtopo_user"           # MQTT broker username
     password: "your_mqtt_password"      # MQTT broker password
-    topic: "msh/US/2/json/+/+"         # MQTT topic pattern for Meshtastic messages
+    topic: "msh/US/2/json/+/+"         # MQTT topic pattern (can be a list: ["msh/US/2/json/+/+", "msh/EU/2/json/+/+"])
     keepalive: 60                       # MQTT keepalive interval in seconds
 
 # CalTopo API Configuration

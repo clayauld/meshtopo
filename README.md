@@ -178,6 +178,8 @@ The region code in the MQTT topic must be replaced with the appropriate LoRa reg
 
 For the complete list, see the [Meshtastic LoRa Region by Country documentation](https://meshtastic.org/docs/configuration/region-by-country/).
 
+For detailed information on MQTT topic structure and multi-tenant routing, see the [MQTT Topics Guide](docs/mqtt_topics.md).
+
 ---
 
 ## Developer & Contributor Guide

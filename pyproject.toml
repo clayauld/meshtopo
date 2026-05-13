@@ -128,7 +128,6 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
-    "paho.*",
     "yaml.*",
 ]
 ignore_missing_imports = true

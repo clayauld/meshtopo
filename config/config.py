@@ -5,7 +5,7 @@ Configuration management for the MeshTopo gateway service using Pydantic.
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import yaml
 from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
@@ -49,7 +49,7 @@ class MqttConfig(BaseModel):
     port: int = 1883
     username: str = ""
     password: SecretStr = SecretStr("")
-    topic: str = "msh/US/2/json/+/+"
+    topic: Union[str, List[str]] = "msh/US/2/json/+/+"
     keepalive: int = 60
     use_internal_broker: bool = False
 

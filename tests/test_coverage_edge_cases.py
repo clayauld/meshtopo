@@ -40,7 +40,7 @@ async def test_process_message_missing_from_field():
     app = GatewayApp()
     app.logger = MagicMock()
     data = {"type": "position", "payload": {}}
-    await app._process_message(data)
+    await app._process_message(data, "msh/US/2/json/LongFast/!12345678")
     app.logger.warning.assert_called_with("Received message without from field")
 
 
@@ -165,7 +165,8 @@ async def test_process_message_with_exception(app_fixture):
     app_fixture.logger = MagicMock()
     # Malformed data that causes a crash during type lookup or processing
     await app_fixture._process_message(
-        {"from": "123", "type": "position", "payload": None}
+        {"from": "123", "type": "position", "payload": None},
+        "msh/US/2/json/LongFast/!0000007b",
     )
     # Should catch warning (returning early without payload)
     found = False
