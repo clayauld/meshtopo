@@ -127,7 +127,10 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:${{ steps.resolve.outputs.raw_version }}
             ghcr.io/${{ github.repository }}:latest
+          annotations: |
+            org.opencontainers.image.description=Meshtastic to CalTopo Gateway Service
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.version=${{ steps.resolve.outputs.raw_version }}
             org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.description=Meshtastic to CalTopo Gateway Service
