@@ -50,6 +50,8 @@ def app(mock_config):
         # against the class we patched
         app.node_id_mapping = mock_db_instance
         app.callsign_mapping = mock_db_instance
+        app.tenants_db = mock_db_instance
+        app.web_config = mock_db_instance
 
         # Attach for testing
         app._MockPersistentDictClass = MockPersistentDictClass
@@ -406,3 +408,29 @@ class TestGatewayApp:
             await task
         except asyncio.CancelledError:
             pass
+
+    def test_update_tenant(self, app):
+        """Test updating a tenant's configuration."""
+        username = "test_user"
+        data = {"caltopo_connect_key": "test_key", "mqtt_channel": "test_chan"}
+
+        app.update_tenant(username, data)
+
+        assert app.tenants_db[username] == data
+        assert app._tenants_cache[username] == data
+
+    def test_delete_tenant(self, app):
+        """Test deleting a tenant's configuration."""
+        username = "test_user"
+        data = {"caltopo_connect_key": "test_key"}
+
+        # Pre-populate
+        app.update_tenant(username, data)
+        assert username in app.tenants_db
+        assert username in app._tenants_cache
+
+        # Delete
+        app.delete_tenant(username)
+
+        assert username not in app.tenants_db
+        assert username not in app._tenants_cache
