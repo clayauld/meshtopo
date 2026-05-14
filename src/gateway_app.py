@@ -525,7 +525,7 @@ class GatewayApp:
         Extracts the packet, decrypts if necessary using channel key, and translates
         it into the JSON-like dictionary format expected by the rest of the application.
         """
-        if "mqtt_pb2" not in globals():
+        if not PROTOBUF_AVAILABLE:
             self.logger.error("Protobuf libraries not available to process message.")
             return
 
