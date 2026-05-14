@@ -78,6 +78,7 @@ class GatewayApp:
         # In-memory caches for performance
         self._node_id_cache: Dict[str, str] = {}
         self._callsign_cache: Dict[str, str] = {}
+        self._temporary_callsigns: set = set()
         self._tenants_cache: Dict[str, Any] = {}
 
         # Track latest status and metrics from devices
@@ -155,6 +156,7 @@ class GatewayApp:
                 self.logger.info("Loading state into memory cache...")
                 self._node_id_cache = dict(self.node_id_mapping)
                 self._callsign_cache = dict(self.callsign_mapping)
+                self._temporary_callsigns.clear()
                 self._tenants_cache = dict(self.tenants_db)
 
             except Exception as e:
@@ -200,6 +202,7 @@ class GatewayApp:
                 # Load into memory cache (empty or after reset)
                 self._node_id_cache = dict(self.node_id_mapping)
                 self._callsign_cache = dict(self.callsign_mapping)
+                self._temporary_callsigns.clear()
 
             # --- Apply Web UI Configuration Overrides ---
             try:
@@ -484,10 +487,17 @@ class GatewayApp:
 
     def _persist_callsign_mapping(self, hardware_id: str, callsign: str) -> None:
         """Persist callsign mapping to cache and database."""
-        if self._callsign_cache.get(hardware_id) == callsign:
+        # Only skip if the callsign matches AND it's not a temporary mapping.
+        # This ensures that if a node was temporarily mapped to its hardware_id,
+        # it can be promoted to a permanent mapping when nodeinfo arrives.
+        if (
+            self._callsign_cache.get(hardware_id) == callsign
+            and hardware_id not in self._temporary_callsigns
+        ):
             return
 
         self._callsign_cache[hardware_id] = callsign
+        self._temporary_callsigns.discard(hardware_id)
         if self.callsign_mapping is not None:
             self.callsign_mapping[hardware_id] = callsign
 
@@ -592,7 +602,17 @@ class GatewayApp:
         # Check cache SECOND (for learned/discovered nodes)
         callsign = self._callsign_cache.get(hardware_id)
         if callsign:
-            return callsign
+            # If it's a temporary mapping, we only return it if policy still allows it
+            if hardware_id in self._temporary_callsigns:
+                if self.config.devices.allow_unknown_devices:
+                    return callsign
+                else:
+                    # Policy changed at runtime, remove from cache/temp
+                    self._callsign_cache.pop(hardware_id, None)
+                    self._temporary_callsigns.discard(hardware_id)
+                    # fall through to block it
+            else:
+                return callsign
 
         # If we reach here, the device is unconfigured (since configured devices
         # are guaranteed to have a device_id and return early).
@@ -601,10 +621,14 @@ class GatewayApp:
             # Fix: Do NOT persist this temporary mapping to avoid
             # "Permanent Callsign" issue. If nodeinfo arrives later,
             # it will be persisted then.
+            # We use the in-memory cache and a temporary set to avoid
+            # redundant logging while allowing elevation to permanent mapping.
             self.logger.info(
                 f"Allowing unknown device {sanitize_for_log(hardware_id)} "
                 f"(allow_unknown_devices=True). Using hardware_id as callsign."
             )
+            self._callsign_cache[hardware_id] = hardware_id
+            self._temporary_callsigns.add(hardware_id)
             return hardware_id
         else:
             self.logger.warning(
