@@ -50,8 +50,8 @@ def app(mock_config):
         # against the class we patched
         app.node_id_mapping = mock_db_instance
         app.callsign_mapping = mock_db_instance
-        app.tenants_db = MockPersistentDict()
-        app.web_config = MockPersistentDict()
+        app.tenants_db = mock_db_instance
+        app.web_config = mock_db_instance
 
         # Attach for testing
         app._MockPersistentDictClass = MockPersistentDictClass
