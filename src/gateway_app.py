@@ -538,11 +538,7 @@ class GatewayApp:
             self.logger.error(f"Failed to parse ServiceEnvelope: {e}")
             return
 
-        from_node = (
-            packet.from_id
-            if hasattr(packet, "from_id")
-            else getattr(packet, "from", None)
-        )
+        from_node = getattr(packet, "from", None)
         if not from_node:
             self.logger.debug("Protobuf packet missing from_node, skipping.")
             return
