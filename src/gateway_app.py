@@ -14,6 +14,7 @@ import base64
 import pydantic
 from aiohttp import web
 
+PROTOBUF_AVAILABLE = False
 try:
     import meshtastic.protobuf.mqtt_pb2 as mqtt_pb2
     import meshtastic.protobuf.mesh_pb2 as mesh_pb2
@@ -21,6 +22,7 @@ try:
     import meshtastic.protobuf.telemetry_pb2 as telemetry_pb2
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     from cryptography.hazmat.backends import default_backend
+    PROTOBUF_AVAILABLE = True
 except ImportError:
     pass
 
