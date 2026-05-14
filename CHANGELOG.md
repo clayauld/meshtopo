@@ -50,7 +50,6 @@
 - Implement tenant cache management and update methods in gateway application
   ([`bb0c2e3`](https://github.com/clayauld/meshtopo/commit/bb0c2e3644cd9adedb44845c2772459c4e556045))
 
-
 ## v1.7.2 (2026-04-03)
 
 ### Chores
