@@ -163,6 +163,10 @@
             <label for="mqtt_channel">Meshtastic MQTT Channel Name (Optional):</label>
             <input type="text" id="mqtt_channel" name="mqtt_channel" value="{{ mqtt_channel }}" placeholder="e.g., Team-Alpha">
             <span class="help-text">Automatically route all traffic from this Meshtastic channel to your account.</span>
+
+            <label for="channel_key">Meshtastic Channel Key (Optional):</label>
+            <input type="password" id="channel_key" name="channel_key" value="{{ channel_key }}" placeholder="Base64 encoded channel key">
+            <span class="help-text">Required to decipher encrypted traffic from your channel.</span>
             {% endif %}
         </div>
 

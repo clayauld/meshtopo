@@ -198,10 +198,17 @@ async def config_get(request: web.Request) -> Dict[str, Any]:
             caltopo_connect_key_set=bool(db.get("caltopo_connect_key")),
             caltopo_group=db.get("caltopo_group", ""),
             mqtt_channel=db.get("mqtt_channel", ""),
+            channel_key=db.get("channel_key", ""),
             nodes=db.get("nodes", {}),
         )
     else:
         db = gateway_app.web_config
+
+        # Determine global channel key from config.crypto.channel_keys if needed.
+        # This is a dict, so we don't have a single channel key, but if they want
+        # to expose it in web, we could map it. Let's just leave it empty for super user
+        # unless they modify the config file directly, or we add UI for global channel keys.
+
         config_data = await get_common_context(
             request,
             role="super_user",
@@ -253,6 +260,9 @@ async def config_post(request: web.Request) -> web.Response:
         tenant_db["caltopo_group"] = str(data.get("caltopo_group", "")).strip()
         tenant_db["mqtt_channel"] = str(data.get("mqtt_channel", "")).strip()
 
+        channel_key = str(data.get("channel_key", "")).strip()
+        tenant_db["channel_key"] = channel_key
+
         # Update specific tenant's nodes
         node_ids = data.getall("node_id[]", [])
         device_ids = data.getall("node_device_id[]", [])
@@ -286,6 +296,7 @@ async def config_post(request: web.Request) -> web.Response:
                             "caltopo_group": "",
                             "caltopo_connect_key": "",
                             "mqtt_channel": "",
+                            "channel_key": "",
                         },
                     )
                     raise web.HTTPFound("/config?success=1")
@@ -608,6 +619,7 @@ async def admin_panel_post(request: web.Request) -> web.Response:
                 "caltopo_connect_key": str(data.get("new_caltopo_key", "")).strip(),
                 "caltopo_group": str(data.get("new_caltopo_group", "")).strip(),
                 "mqtt_channel": str(data.get("new_mqtt_channel", "")).strip(),
+                "channel_key": str(data.get("new_channel_key", "")).strip(),
                 "nodes": {},
             },
         )

@@ -54,8 +54,8 @@ class TestMqttClient:
         mock_msg.payload = b'{"test": 1}'
         # aiomqtt messages have a topic object with a value attribute
         mock_msg.topic = MagicMock()
-        mock_msg.topic.__str__.return_value = "test/topic"
-        mock_msg.topic.value = "test/topic"
+        mock_msg.topic.__str__.return_value = "msh/US/2/json/topic"
+        mock_msg.topic.value = "msh/US/2/json/topic"
 
         # Create an async iterable for messages
         class AsyncMessages:
@@ -95,7 +95,7 @@ class TestMqttClient:
 
         # Verify interactions
         mock_client_instance.subscribe.assert_called_once_with("test/topic")
-        message_callback.assert_called_once_with({"test": 1}, "test/topic")
+        message_callback.assert_called_once_with({"test": 1, "_mqtt_retain": False}, "msh/US/2/json/topic")
 
     @pytest.mark.asyncio
     async def test_run_connection_failure_retry(self, client):
@@ -157,34 +157,50 @@ class TestMqttClient:
         message.payload = b'{"key": "value"}'
         # aiomqtt topic is an object with value attribute
         message.topic = MagicMock()
-        message.topic.value = "test/topic"
-        message.topic.__str__.return_value = "test/topic"
+        message.topic.value = "msh/US/2/json/topic"
+        message.topic.__str__.return_value = "msh/US/2/json/topic"
         del message.retain
 
         await client._process_message(message)
 
-        client.message_callback.assert_called_with({"key": "value"}, "test/topic")
+        client.message_callback.assert_called_with({"key": "value", "_mqtt_retain": False}, "msh/US/2/json/topic")
 
     @pytest.mark.asyncio
     async def test_process_message_retained(self, client):
         message = Mock()
         message.payload = b'{"key": "value"}'
         message.topic = MagicMock()
-        message.topic.value = "test/topic"
-        message.topic.__str__.return_value = "test/topic"
+        message.topic.value = "msh/US/2/json/topic"
+        message.topic.__str__.return_value = "msh/US/2/json/topic"
         message.retain = True
 
         await client._process_message(message)
 
         client.message_callback.assert_called_with(
-            {"key": "value", "_mqtt_retain": True}, "test/topic"
+            {"key": "value", "_mqtt_retain": True}, "msh/US/2/json/topic"
         )
 
     @pytest.mark.asyncio
     async def test_process_message_invalid_json(self, client):
         message = Mock()
         message.payload = b"invalid json"
+        message.topic = MagicMock()
+        message.topic.__str__.return_value = "msh/US/2/json/topic"
 
         await client._process_message(message)
 
         client.message_callback.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_process_message_protobuf(self, client):
+        message = Mock()
+        message.payload = b"protobuf bytes"
+        message.topic = MagicMock()
+        message.topic.__str__.return_value = "msh/US/2/c/topic"
+        del message.retain
+
+        await client._process_message(message)
+
+        client.message_callback.assert_called_with(
+            {"_is_protobuf": True, "_mqtt_retain": False, "payload_bytes": b"protobuf bytes"}, "msh/US/2/c/topic"
+        )

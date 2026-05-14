@@ -96,32 +96,49 @@ class MqttClient:
         """
         Internal handler for incoming MQTT messages.
         Performs byte decoding, JSON parsing, and basic sanitization before
-        invoking the application callback.
+        invoking the application callback. For non-JSON messages, it decodes
+        as protobuf ServiceEnvelope.
 
         Args:
             message: The raw message object from aiomqtt.
         """
+        topic = str(message.topic)
+        retain = getattr(message, "retain", False)
+
+        # Check if JSON by topic convention
+        is_json = "/json/" in topic
+
         try:
-            payload = message.payload.decode("utf-8")
-            self.logger.debug(
-                f"Received message on topic {sanitize_for_log(message.topic)}: "
-                f"{sanitize_for_log(payload)}"
-            )
+            if is_json:
+                payload = message.payload.decode("utf-8")
+                self.logger.debug(
+                    f"Received JSON message on topic {sanitize_for_log(topic)}: "
+                    f"{sanitize_for_log(payload)}"
+                )
+                try:
+                    data = json.loads(payload)
+                except json.JSONDecodeError as e:
+                    self.logger.warning(
+                        f"Failed to parse JSON message: {e}. "
+                        f"Payload: {sanitize_for_log(payload)}"
+                    )
+                    return
 
-            # Parse JSON
-            data = json.loads(payload)
+                data["_mqtt_retain"] = retain
+                await self.message_callback(data, topic)
+            else:
+                self.logger.debug(
+                    f"Received non-JSON message on topic {sanitize_for_log(topic)}"
+                )
 
-            # Inject retain flag
-            if hasattr(message, "retain"):
-                data["_mqtt_retain"] = message.retain
+                # Treat as protobuf, we pass the raw bytes dict to the app callback
+                # We wrap it in a dict to reuse the existing pipeline interface.
+                data = {
+                    "_is_protobuf": True,
+                    "_mqtt_retain": retain,
+                    "payload_bytes": message.payload,
+                }
+                await self.message_callback(data, topic)
 
-            # Await the async message callback
-            await self.message_callback(data, str(message.topic))
-
-        except json.JSONDecodeError as e:
-            self.logger.warning(
-                f"Failed to parse JSON message: {e}. "
-                f"Payload: {sanitize_for_log(message.payload)}"
-            )
         except Exception as e:
             self.logger.error(f"Error processing message: {e}")
