@@ -39,6 +39,14 @@ class MqttClient:
         self.message_callback = message_callback
         self.client: Optional[mqtt.Client] = None
         self.logger = logging.getLogger(__name__)
+        # To avoid duplicate processing of Protobuf vs JSON for same node/message
+        self._processed_messages = set()
+
+    async def _clean_processed_messages(self) -> None:
+        """Periodically clean the processed messages cache to prevent memory leaks."""
+        while True:
+            await asyncio.sleep(60)  # Clean every 60 seconds
+            self._processed_messages.clear()
 
     async def run(self) -> None:
         """
@@ -47,6 +55,9 @@ class MqttClient:
         """
         reconnect_interval = 1
         max_reconnect_interval = 60
+
+        # Start cleanup task
+        cleanup_task = asyncio.create_task(self._clean_processed_messages())
 
         while True:
             try:
@@ -80,6 +91,7 @@ class MqttClient:
             except mqtt.MqttError as e:
                 self.logger.error(f"MQTT error: {e}")
             except asyncio.CancelledError:
+                cleanup_task.cancel()
                 raise
             except Exception as e:
                 self.logger.error(f"Unexpected error in MQTT client: {e}")
@@ -107,6 +119,24 @@ class MqttClient:
 
         # Check if JSON by topic convention
         is_json = "/json/" in topic
+
+        # Deduplication based on topic pattern
+        # If node ID is at the end, use it + channel for deduplication
+        topic_parts = topic.split("/")
+        if len(topic_parts) >= 5:
+            # Topic format usually msh/<region>/2/<type>/<channel>/<node_id>
+            # So msh/US/2/json/LongFast/!1234abcd
+            channel = topic_parts[-2]
+            node_id = topic_parts[-1]
+            dedup_key = f"{channel}/{node_id}"
+
+            # If we see JSON, we prefer it over protobuf and vice-versa
+            # Actually, typically they arrive in the same second.
+            if dedup_key in self._processed_messages:
+                self.logger.debug(f"Skipping duplicate message for {dedup_key}")
+                return
+
+            self._processed_messages.add(dedup_key)
 
         try:
             if is_json:

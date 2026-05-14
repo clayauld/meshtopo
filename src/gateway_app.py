@@ -14,7 +14,6 @@ import base64
 import pydantic
 from aiohttp import web
 
-PROTOBUF_AVAILABLE = False
 try:
     import meshtastic.protobuf.mqtt_pb2 as mqtt_pb2
     import meshtastic.protobuf.mesh_pb2 as mesh_pb2
@@ -22,7 +21,6 @@ try:
     import meshtastic.protobuf.telemetry_pb2 as telemetry_pb2
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     from cryptography.hazmat.backends import default_backend
-    PROTOBUF_AVAILABLE = True
 except ImportError:
     pass
 
@@ -525,7 +523,7 @@ class GatewayApp:
         Extracts the packet, decrypts if necessary using channel key, and translates
         it into the JSON-like dictionary format expected by the rest of the application.
         """
-        if not PROTOBUF_AVAILABLE:
+        if "mqtt_pb2" not in globals():
             self.logger.error("Protobuf libraries not available to process message.")
             return
 
@@ -584,7 +582,7 @@ class GatewayApp:
             # Fallback to default key (AQ== is empty key, but standard default is usually 1OAMXnSjM/I69sPByKxGzQ==)
             # Default key for Meshtastic LongFast is 1OAMXnSjM/I69sPByKxGzQ==
             if not key_bytes:
-                key_bytes = base64.b64decode(DEFAULT_CHANNEL_KEY) # Define DEFAULT_CHANNEL_KEY = "1OAMXnSjM/I69sPByKxGzQ==" at module level
+                key_bytes = base64.b64decode("1OAMXnSjM/I69sPByKxGzQ==")
 
             # Decrypt
             try:
@@ -595,7 +593,7 @@ class GatewayApp:
                 cipher = Cipher(
                     algorithms.AES(key_bytes),
                     modes.CTR(nonce),
-                    backend=None,
+                    backend=default_backend(),
                 )
                 decryptor = cipher.decryptor()
                 decrypted_bytes = (
