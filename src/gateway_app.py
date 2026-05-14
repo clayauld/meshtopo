@@ -584,7 +584,7 @@ class GatewayApp:
             # Fallback to default key (AQ== is empty key, but standard default is usually 1OAMXnSjM/I69sPByKxGzQ==)
             # Default key for Meshtastic LongFast is 1OAMXnSjM/I69sPByKxGzQ==
             if not key_bytes:
-                key_bytes = base64.b64decode("1OAMXnSjM/I69sPByKxGzQ==")
+                key_bytes = base64.b64decode(DEFAULT_CHANNEL_KEY) # Define DEFAULT_CHANNEL_KEY = "1OAMXnSjM/I69sPByKxGzQ==" at module level
 
             # Decrypt
             try:
