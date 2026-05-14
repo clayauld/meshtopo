@@ -308,8 +308,9 @@ class TestGatewayApp:
         # Should return hardware_id
         assert callsign == hardware_id
 
-        # Should NOT be in cache or persistence
-        assert hardware_id not in app._callsign_cache
+        # Should be in cache (to suppress redundant logs) but NOT in persistence
+        assert hardware_id in app._callsign_cache
+        assert app._callsign_cache[hardware_id] == hardware_id
         assert hardware_id not in app.callsign_mapping
 
     def test_telemetry_message(self, app):

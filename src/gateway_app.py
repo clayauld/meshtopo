@@ -601,10 +601,12 @@ class GatewayApp:
             # Fix: Do NOT persist this temporary mapping to avoid
             # "Permanent Callsign" issue. If nodeinfo arrives later,
             # it will be persisted then.
+            # We use the in-memory cache only to avoid redundant logging.
             self.logger.info(
                 f"Allowing unknown device {sanitize_for_log(hardware_id)} "
                 f"(allow_unknown_devices=True). Using hardware_id as callsign."
             )
+            self._callsign_cache[hardware_id] = hardware_id
             return hardware_id
         else:
             self.logger.warning(
