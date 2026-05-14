@@ -595,7 +595,7 @@ class GatewayApp:
                 cipher = Cipher(
                     algorithms.AES(key_bytes),
                     modes.CTR(nonce),
-                    backend=default_backend(),
+                    backend=None,
                 )
                 decryptor = cipher.decryptor()
                 decrypted_bytes = (
