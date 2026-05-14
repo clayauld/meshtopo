@@ -41,7 +41,7 @@
                         <td>{{ t_name }}<input type="hidden" name="managed_tenant_name[]" value="{{ t_name }}"></td>
                         <td>{{ t_data.caltopo_group or 'Not set' }}</td>
                         <td>{{ t_data.mqtt_channel or 'Not set' }}</td>
-                        <td>{{ t_data.nodes|length if t_data.nodes else 0 }}</td>
+                        <td>{{ t_data.node_count }}</td>
                         <td>
                             <div style="margin: 0; display: inline-block;">
                                 <button type="button" class="btn btn-logout" onclick="toggleDeletePrompt('{{ t_name }}')" style="height: 32px; padding: 0 10px;">Delete</button>
