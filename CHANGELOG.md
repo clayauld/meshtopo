@@ -9,7 +9,6 @@
 - Robust handling of temporary callsign mappings for unknown devices
   ([`e56029b`](https://github.com/clayauld/meshtopo/commit/e56029b428383d417b87ae18a92a7bcc7a0ac8b3))
 
-
 ## v1.10.0 (2026-05-15)
 
 ### Bug Fixes
@@ -102,7 +101,6 @@
 
 - Add unit tests for update_tenant and delete_tenant
   ([`deec9d8`](https://github.com/clayauld/meshtopo/commit/deec9d81f77d1d6bc2797b5235207df2382fbb06))
-
 
 ## v1.9.0 (2026-05-14)
 
