@@ -31,6 +31,9 @@ from persistent_dict import PersistentDict
 from utils import sanitize_for_log
 from web import create_app
 
+# Default channel key for Meshtastic LongFast
+DEFAULT_LONGFAST_KEY = "1OAMXnSjM/I69sPByKxGzQ=="
+
 
 class GatewayApp:
     """
@@ -608,10 +611,9 @@ class GatewayApp:
                     except Exception:  # nosec B110
                         pass
 
-            # Fallback to default key (LongFast: 1OAMXnSjM/I69sPByKxGzQ==)
-            # Default key for Meshtastic LongFast is 1OAMXnSjM/I69sPByKxGzQ==
+            # Fallback to default key for Meshtastic LongFast
             if not key_bytes:
-                key_bytes = base64.b64decode("1OAMXnSjM/I69sPByKxGzQ==")
+                key_bytes = base64.b64decode(DEFAULT_LONGFAST_KEY)
 
             # Decrypt
             try:

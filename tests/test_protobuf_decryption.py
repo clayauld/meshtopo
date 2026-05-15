@@ -10,7 +10,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from config.config import Config, CryptoConfig
-from gateway_app import GatewayApp
+from gateway_app import DEFAULT_LONGFAST_KEY, GatewayApp
 
 
 @pytest.fixture
@@ -42,7 +42,7 @@ async def test_protobuf_decryption(gateway_app):
     from_node = 123
     nonce = packet_id.to_bytes(8, "little") + from_node.to_bytes(8, "little")
 
-    key_bytes = base64.b64decode("1OAMXnSjM/I69sPByKxGzQ==")
+    key_bytes = base64.b64decode(DEFAULT_LONGFAST_KEY)
 
     packet = mesh_pb2.MeshPacket()
     packet.id = packet_id
