@@ -21,7 +21,7 @@ Args:
 
 ### `def _clean_processed_messages(self) -> None`
 
-Periodically clean the processed messages cache to prevent memory leaks.
+Periodically rotate the processed messages cache to prevent memory leaks.
 
 ### `def _convert_numeric_to_id(self, numeric_id: Union[int, str]) -> str`
 
