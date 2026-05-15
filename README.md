@@ -49,6 +49,9 @@ Includes Gateway + Integrated MQTT Broker + Traefik
    docker compose up -d
    ```
 
+3. **Access the Web UI:**
+   Navigate to `http://localhost:8080` (or your configured port) to access the dashboard. Use the admin password set during the setup wizard.
+
 ### Option B: Simple (Gateway Only)
 
 Use this if you already have an MQTT broker
@@ -128,6 +131,8 @@ The system follows a simple linear data flow:
 For a detailed look at the system design, multi-tenant capabilities, and underlying data flow, please refer to the [System Architecture Document](docs/architecture.md).
 
 For step-by-step instructions on configuring the LoRa field components and the MQTT bridge hardware, please read the [Meshtastic Node Configuration Guide](docs/meshtastic_node_configuration.md).
+
+For a guide on using the Web Administration UI, see the [Web UI Documentation](docs/web_ui.md).
 
 ---
 

@@ -29,7 +29,6 @@
 - Update mqtt topic format expectation to remove json segment
   ([`f750f92`](https://github.com/clayauld/meshtopo/commit/f750f92725d12de5f0498a014f65d51b61d7882e))
 
-
 ## v1.10.1 (2026-05-15)
 
 ### Bug Fixes

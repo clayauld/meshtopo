@@ -37,10 +37,18 @@ Use the Meshtastic CLI, Web UI, or Smartphone App to configure the MQTT module:
 
 For the MQTT node to bridge data correctly, it must have permission to uplink channel traffic.
 
-- **Role:** Typically set to `CLIENT` or `ROUTER` depending on its location.
-- **Primary Channel (LongFast, etc.):**
-  - **Uplink Enabled:** `True` (Forwards field radio data to the MQTT broker)
-  - **Downlink Enabled:** `False` (Recommended to disable to prevent internet-to-LoRa spam, since MeshTopo is purely a receiving service right now).
+- **Role:** Typically set to `CLIENT` or `ROUTER`.
+- **Primary/Secondary Channels:**
+  - **Uplink Enabled:** `True` (Forwards field radio data to the MQTT broker).
+  - **Downlink Enabled:** `False` (Recommended to disable to prevent internet-to-LoRa spam).
+
+### Private Channels and Encryption
+
+If you are using a private channel with a custom Pre-Shared Key (PSK):
+
+1. Ensure the **Gateway Node** has the channel configured with the correct PSK.
+2. MeshTopo will receive these as "Encrypted Protobufs" (`e` topics).
+3. You must provide the base64 PSK to MeshTopo (via `config.yaml` or the Web UI) so it can decrypt the position reports.
 
 ---
 
@@ -65,6 +73,7 @@ MeshTopo relies heavily on the names provided by the nodes to map them to CalTop
 ### Channels
 
 - The field nodes must share the exact same Channel settings (Name, PSK, Modem Preset) as the MQTT Gateway node so their telemetry can be actively bridged.
+- **MQTT Channel Name**: The name you give your channel in the Meshtastic app (e.g., `Team-Alpha`) is what appears in the MQTT topic. This name is used by MeshTopo for **Topic-Based Multi-Tenant Routing**. Ensure it matches the "MQTT Channel" configured in the MeshTopo Web UI.
 - **Uplink/Downlink:** By default, field nodes do not need MQTT enabled on their individual configurations, as the central Gateway Node handles the bridge. However, their implicit channel settings must permit their traffic to be routed.
 
 ---

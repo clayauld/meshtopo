@@ -13,8 +13,10 @@ The service is designed to be lightweight and easy to deploy, with a focus on Do
   - `asyncio-mqtt`: For asynchronous MQTT communication.
   - `httpx`: For asynchronous HTTP requests to the CalTopo API.
   - `pydantic`: For data validation and configuration management.
-  - `sqlitedict`: for persistent storage of node and callsign mappings.
-- **Deployment:** Docker, Docker Compose
+  - `sqlitedict`: For persistent storage of node and callsign mappings.
+  - `aiohttp`: For the integrated Web Administration UI.
+  - `cryptography`: For AES-CTR decryption of Meshtastic Protobuf packets.
+- **Deployment:** Docker, Docker Compose, Azure Container Apps (with Litestream).
 - **Development Tools:**
   - `pytest`: For testing.
   - `pre-commit`: For code quality checks (black, flake8, isort, mypy).
@@ -27,6 +29,13 @@ The application follows a simple, linear data flow:
 2. **MQTT Broker:** A central message broker (e.g., Mosquitto) receives data from the Meshtastic network.
 3. **MeshTopo Gateway Service:** This Python service connects to the MQTT broker, filters and transforms the data, and forwards it to CalTopo.
 4. **CalTopo Team Account:** The cloud mapping platform where devices appear in real-time.
+
+**Enhanced Features:**
+
+- **Web Administration UI:** An integrated dashboard for live monitoring, log streaming, and remote configuration.
+- **Multi-Tenant Routing:** Route data from different Meshtastic channels or hardware IDs to separate CalTopo maps.
+- **Protobuf Support:** Automatic decryption and parsing of encrypted Meshtastic Protobuf packets.
+- **State Persistence:** Persistent SQLite database with optional cloud replication via Litestream.
 
 The core logic is encapsulated in the `GatewayApp` class (`src/gateway_app.py`), which orchestrates the MQTT client and the CalTopo reporter. The application is highly configurable via a `config.yaml` file.
 
