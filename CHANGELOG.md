@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.9.0 (2026-05-14)
+
+### Features
+
+- Add node mapping support to tenant configuration and bump version to 1.8.0
+  ([`ddc9c77`](https://github.com/clayauld/meshtopo/commit/ddc9c77a245183b9f715254458cef52dd0c77596))
+
+### Refactoring
+
+- Optimize node counting by pre-calculating length in views and updating template display
+  ([`e9819ee`](https://github.com/clayauld/meshtopo/commit/e9819ee72a90e6cd12b7b7b0938f8329d7989a4d))
+
+
 ## v1.8.0 (2026-05-13)
 
 ### Chores
