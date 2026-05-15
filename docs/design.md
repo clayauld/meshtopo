@@ -19,7 +19,7 @@ Backcountry coordinators, event organizers, and response teams often use a mix o
 
 ### 1.3 Scope
 
-- **In-Scope:** The gateway will connect to an MQTT broker, subscribe to Meshtastic position topics, parse the data, and forward it to the CalTopo Position Report API. The application will be configurable, log its status, and be deployable as a Docker container.
+- **In-Scope**: The gateway will connect to an MQTT broker, subscribe to Meshtastic topics (JSON and Protobuf), parse the data (including decryption), and forward it to the CalTopo Position Report API. The application will be configurable, log its status, and be deployable as a Docker container.
 - **Out-of-Scope:** This project will not involve any modification of the Meshtastic firmware. It will not provide a user interface beyond terminal logging. Two-way communication from CalTopo back to Meshtastic is a potential future enhancement but is not part of this version.
 
 ### 1.4 License
@@ -34,7 +34,7 @@ The system operates on a simple, linear data flow model composed of four distinc
 
 1. **Meshtastic Network**: A decentralized mesh network of LoRa nodes. At least one node is configured as an "MQTT Gateway," connecting to a local WiFi network to forward all network traffic.
 2. **MQTT Broker**: A central message broker (e.g., Mosquitto) that acts as the intermediary. It receives all data from the Meshtastic MQTT Gateway and allows other clients, like our service, to subscribe to this data stream.
-3. **Gateway Service (This Project)**: The core application. A Python service that subscribes to the MQTT broker, intelligently filters for position packets, transforms the data, and executes API calls to CalTopo.
+3. **Gateway Service (This Project)**: The core application. A Python service that subscribes to the MQTT broker, intelligently filters for packets (JSON, Cleartext Protobuf, or Encrypted Protobuf), transforms the data, and executes API calls to CalTopo.
 4. **CalTopo API**: A cloud-based API endpoint provided by CalTopo that accepts position reports via HTTP GET requests and plots them on a specified map layer.
 
 ### 2.5 Enhanced System Architecture with Optional Components
@@ -60,8 +60,8 @@ This enhanced architecture supports three deployment modes:
 ### 3.1 Functional Requirements (FR)
 
 - **FR-1**: The system **shall** connect to an MQTT broker using credentials provided in a configuration file.
-- **FR-2**: The system **shall** subscribe to a configurable MQTT topic pattern to capture Meshtastic JSON packets.
-- **FR-3**: The system **shall** parse incoming JSON payloads to extract node ID, latitude, longitude, and timestamp.
+- **FR-2**: The system **shall** subscribe to a configurable MQTT topic pattern to capture Meshtastic JSON and Protobuf packets.
+- **FR-3**: The system **shall** parse incoming payloads (JSON or binary Protobuf) to extract node ID, latitude, longitude, and timestamp. For encrypted Protobuf packets, the system **shall** attempt decryption using configured or default AES-CTR keys.
 - **FR-4**: The system **shall** maintain a mapping of Meshtastic Node IDs to CalTopo callsigns, as defined in the configuration file. The system **shall** support automatic callsign discovery using Meshtastic longname/shortname fields as fallback when explicit mappings are not available. The system **shall** support configurable control over unknown device behavior (allow/block position updates).
 - **FR-5**: The system **shall** construct a valid CalTopo Position Report API URL using either Team Account connect_key or GROUP-based authentication methods.
 - **FR-6**: The system **shall** send an HTTP GET request to the constructed URL for each valid position packet received from a mapped node.
@@ -156,7 +156,10 @@ The internal broker integrates seamlessly with Docker Compose:
 
 ### 5.1 Input: Meshtastic MQTT JSON
 
-The gateway will process JSON objects from the `msh/REGION/2/json/+/+` topic. It will primarily extract `from` and the `payload` object.
+The gateway will process messages from topics following the `msh/REGION/2/+/+/+` pattern. It supports three formats:
+- **JSON**: `msh/REGION/2/json/+/+` (Standard JSON output)
+- **Cleartext Protobuf**: `msh/REGION/2/c/+/+` (Binary protobuf)
+- **Encrypted Protobuf**: `msh/REGION/2/e/+/+` (AES-CTR encrypted protobuf)
 
 **Note**: Replace `REGION` with the appropriate LoRa region code for your country. See the [Meshtastic LoRa Region by Country documentation](https://meshtastic.org/docs/configuration/region-by-country/) for the correct region code. Common region codes include:
 

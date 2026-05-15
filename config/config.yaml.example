@@ -7,14 +7,13 @@ mqtt:
     port: 1883                          # MQTT broker port (8883 for SSL, 1883 for non-SSL)
     username: "meshtopo_user"           # MQTT broker username
     password: "your_mqtt_password"      # MQTT broker password
-    topic: "msh/US/2/json/+/+"         # MQTT topic pattern (can be a list: ["msh/US/2/json/+/+", "msh/EU/2/json/+/+"])
+    topic: "msh/US/2/+/+/+"             # MQTT topic pattern (can be a list: ["msh/US/2/+/+/+", "msh/EU_868/2/+/+/+"])
     keepalive: 60                       # MQTT keepalive interval in seconds
 
 # CalTopo API Configuration
 caltopo:
     connect_key: "YOUR_CONNECT_KEY_HERE"  # From CalTopo Team Account access URL
-    api_mode: "connect_key"               # API mode: "connect_key" or "group"
-    group: "SARTEAM"                      # Global GROUP (required if api_mode is "group")
+    group: "SARTEAM"                      # Global GROUP (optional)
 
 # API Mode Options:
 # - "connect_key": Uses CalTopo Team Account connect key (default)
@@ -40,10 +39,17 @@ devices:
 # - allow_unknown_devices: true  (default) - Unknown devices are tracked and can send position updates
 # - allow_unknown_devices: false - Unknown devices are tracked but position updates are blocked
 
+# Decryption Keys for Meshtastic Channels
+crypto:
+    channel_keys:
+        "LongFast": "1OAMXnSjM/I69sPByKxGzQ==" # Default key for LongFast
+        # "Private-Channel": "base64_encoded_key_here"
+
 # Web UI Configuration (optional)
 web:
     enabled: true                       # Enable the Web UI (default: false)
     port: 8080                          # Port to run the Web UI on
+    multi_tenant_enabled: false         # Enable multi-tenant routing (default: false)
     # admin_password: ""                # It is highly recommended to set this via the WEB_ADMIN_PASSWORD env var
 
 # Internal MQTT Broker Configuration (optional)

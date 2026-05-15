@@ -21,8 +21,8 @@ MeshTopo operates as a linear stream-processing and routing engine with a highly
 
 The core data flow traverses four operational domains:
 
-1. **The Edge Network (Meshtastic):** Field hardware (LoRa mesh radios) propagates physical coordinates. An egress node structured as an "MQTT Gateway" bridges these RF signals to a local or remote TCP/IP network.
-2. **The Message Broker (MQTT):** An intermediary publish-subscribe broker (typically Mosquitto) ingests and organizes JSON telemetry data.
+1. **The Edge Network (Meshtastic):** Field hardware (LoRa mesh radios) propagates physical coordinates. An egress node structured as an "MQTT Gateway" bridges these RF signals to a local or remote TCP/IP network using either **JSON** or **Protobuf** (Cleartext or Encrypted) formats.
+2. **The Message Broker (MQTT):** An intermediary publish-subscribe broker (typically Mosquitto) ingests and organizes telemetry data.
 3. **The Gateway Service (MeshTopo):** A Python-based microservice that subscribes to the MQTT broker, validating, filtering, transforming, and routing the positional data according to dynamic administrative configurations.
 4. **The C4I Platform (CalTopo):** Command, Control, Communications, Computers, and Intelligence (C4I) mapping service that renders the field assets on real-time organizational maps.
 
@@ -59,7 +59,7 @@ graph LR
 
 The Gateway Core is written in Python (using `asyncio`, `aiohttp`, and `asyncio-mqtt`) to handle massive concurrent throughput without thread-blocking.
 
-- **Message Ingestion & Parsing:** Extracts node metadata, position payloads, and timestamp constraints in real-time.
+- **Message Ingestion & Parsing:** Extracts node metadata, position payloads, and timestamp constraints in real-time. Supports JSON parsing as well as binary Protobuf decoding (including AES-CTR decryption for private channels).
 - **Dynamic Node Resolution:** Performs a two-tier resolution to associate transient Node IDs with permanent Hardware IDs, establishing durable object identity.
 - **Reporting Engine:** Dispatches RESTful HTTP payloads to the CalTopo API using appropriate geographic transformations and coordinate math.
 

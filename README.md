@@ -19,6 +19,7 @@ Key features include:
 - **Web Administration UI**: Built-in, authenticated web UI for live monitoring, log viewing, and remote configuration of devices without modifying files.
 - **Multi-Tenant Support**: Manage multiple discrete groups or organizations from a single gateway, allowing you to route specific Meshtastic nodes to different CalTopo accounts.
 - **Persistent SQLite Storage**: Stateful configurations and sessions are securely stored in a persistent SQLite database (with optional Litestream Azure blob replication for High Availability).
+- **Protocol Support**: Handles Meshtastic data in three formats: **Cleartext JSON**, **Cleartext Protobuf**, and **Encrypted Protobuf** (with automatic AES-CTR decryption).
 - **Docker Deployment**: Easy deployment with Docker and Docker Compose, supporting Azure Container Apps.
 - **Lightweight Design**: Minimal resource footprint for edge deployment.
 
@@ -146,15 +147,15 @@ Choose the template that best fits your environment:
 
 ### Main Configuration Parameters
 
-| Parameter                       | Description                                                                                      | Example                |
-| ------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------- |
-| `mqtt.broker`                   | IP address or hostname of your MQTT broker. Use `mosquitto` if using the internal broker.        | `192.168.1.100`        |
-| `mqtt.port`                     | MQTT broker port.                                                                                | `1883`                 |
-| `mqtt.username`                 | MQTT authentication username.                                                                    | `meshtopo_user`        |
-| `mqtt.password`                 | MQTT authentication password.                                                                    | `your_secure_password` |
-| `mqtt.topic`                    | MQTT topic pattern for Meshtastic position packets. **Replace `US` with your LoRa region code.** | `msh/US/2/json/+/+`    |
-| `caltopo.connect_key`           | Your CalTopo Team Account connect key.                                                           | `G3rvY...`             |
-| `devices.allow_unknown_devices` | If `true`, devices not listed in the `nodes` section can send position updates.                  | `true`                 |
+| Parameter                       | Description                                                                               | Example                |
+| ------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------- |
+| `mqtt.broker`                   | IP address or hostname of your MQTT broker. Use `mosquitto` if using the internal broker. | `192.168.1.100`        |
+| `mqtt.port`                     | MQTT broker port.                                                                         | `1883`                 |
+| `mqtt.username`                 | MQTT authentication username.                                                             | `meshtopo_user`        |
+| `mqtt.password`                 | MQTT authentication password.                                                             | `your_secure_password` |
+| `mqtt.topic`                    | MQTT topic pattern for Meshtastic packets. **Replace `US` with your LoRa region code.**   | `msh/US/2/+/+/+`       |
+| `caltopo.connect_key`           | Your CalTopo Team Account connect key.                                                    | `G3rvY...`             |
+| `devices.allow_unknown_devices` | If `true`, devices not listed in the `nodes` section can send position updates.           | `true`                 |
 
 ### Node Display Name Overrides
 

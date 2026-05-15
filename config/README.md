@@ -46,7 +46,7 @@ mqtt:
   port: 1883 # MQTT broker port
   username: "user" # MQTT username
   password: "pass" # MQTT password
-  topic: "msh/US/2/json/+/+" # MQTT topic pattern
+  topic: "msh/US/2/+/+/+" # MQTT topic pattern (wildcard for JSON/Protobuf)
 ```
 
 ### CalTopo Configuration
@@ -54,8 +54,7 @@ mqtt:
 ```yaml
 caltopo:
   connect_key: "YOUR_CONNECT_KEY_HERE" # From Team Account access URL
-  api_mode: "connect_key" # API mode: "connect_key" or "group"
-  group: "SARTEAM" # Global GROUP (required if api_mode is "group")
+  group: "SARTEAM" # Global GROUP (optional)
 ```
 
 **API Mode Options:**
@@ -83,6 +82,15 @@ devices:
 
 - **true** (default): Unknown devices are tracked and can send position updates
 - **false**: Unknown devices are tracked but position updates are blocked
+
+### Crypto Configuration (Decryption)
+
+```yaml
+crypto:
+  channel_keys:
+    "LongFast": "1OAMXnSjM/I69sPByKxGzQ==" # Default Meshtastic key
+    "Private-Team": "base64_encoded_key..." # Custom channel key
+```
 
 ### Internal MQTT Broker Configuration
 
