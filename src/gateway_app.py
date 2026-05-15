@@ -3,6 +3,7 @@ Main gateway application that orchestrates MQTT and CalTopo communication.
 """
 
 import asyncio
+import base64
 import logging
 import os
 import sys
@@ -13,12 +14,25 @@ import httpx
 import pydantic
 from aiohttp import web
 
+try:
+    import meshtastic.protobuf.mesh_pb2 as mesh_pb2
+    import meshtastic.protobuf.mqtt_pb2 as mqtt_pb2
+    import meshtastic.protobuf.portnums_pb2 as portnums_pb2
+    import meshtastic.protobuf.telemetry_pb2 as telemetry_pb2
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+except ImportError:
+    pass
+
 from caltopo_reporter import CalTopoReporter
 from config.config import Config
 from mqtt_client import MqttClient
 from persistent_dict import PersistentDict
 from utils import sanitize_for_log
 from web import create_app
+
+# Default channel key for Meshtastic LongFast
+DEFAULT_LONGFAST_KEY = "1OAMXnSjM/I69sPByKxGzQ=="
 
 
 class GatewayApp:
@@ -85,6 +99,10 @@ class GatewayApp:
 
         # Signal for internal app restarts
         self.restart_requested: bool = False
+
+        # Deduplication cache (rotating sets to avoid race conditions and bound memory)
+        self._current_messages: set[str] = set()
+        self._previous_messages: set[str] = set()
 
         self.configured_devices: set = (
             set()
@@ -287,10 +305,10 @@ class GatewayApp:
                 self.logger.error("MQTT client not initialized. Exiting.")
                 sys.exit(1)
 
-            # Create tasks
             tasks = [
                 asyncio.create_task(self.mqtt_client.run()),
                 asyncio.create_task(self._stats_loop()),
+                asyncio.create_task(self._clean_processed_messages()),
             ]
 
             web_runner = None
@@ -334,6 +352,28 @@ class GatewayApp:
         while self.stop_event and not self.stop_event.is_set():
             await asyncio.sleep(60)
             self._log_statistics()
+
+    async def _clean_processed_messages(self) -> None:
+        """Periodically rotate the processed messages cache to prevent memory leaks."""
+        while self.stop_event and not self.stop_event.is_set():
+            await asyncio.sleep(60)  # Rotate every 60 seconds
+            self._previous_messages = self._current_messages
+            self._current_messages = set()
+
+    def _is_duplicate(self, node_id: Any, packet_id: Any) -> bool:
+        """
+        Check if a message is a duplicate based on node ID and packet ID.
+        Returns True if it's a duplicate, False otherwise (and tracks it).
+        """
+        if packet_id is None:
+            return False
+
+        key = f"{node_id}/{packet_id}"
+        if key in self._current_messages or key in self._previous_messages:
+            return True
+
+        self._current_messages.add(key)
+        return False
 
     async def stop(self) -> None:
         """
@@ -485,23 +525,216 @@ class GatewayApp:
         if username in self._tenants_cache:
             del self._tenants_cache[username]
 
+    async def _process_protobuf_message(
+        self, data: Dict[str, Any], topic: str, channel: Optional[str]
+    ) -> None:
+        """
+        Processes a raw protobuf message.
+        Extracts the packet, decrypts if necessary using channel key, and translates
+        it into the JSON-like dictionary format expected by the rest of the application.
+        """
+        if "mqtt_pb2" not in globals():
+            self.logger.error("Protobuf libraries not available to process message.")
+            return
+
+        payload_bytes = data.get("payload_bytes", b"")
+        retain = data.get("_mqtt_retain", False)
+
+        try:
+            envelope = mqtt_pb2.ServiceEnvelope()
+            envelope.ParseFromString(payload_bytes)
+            packet = envelope.packet
+        except Exception as e:
+            self.logger.error(f"Failed to parse ServiceEnvelope: {e}")
+            return
+
+        from_node = getattr(packet, "from", getattr(packet, "from_", None))
+        if not from_node:
+            self.logger.debug("Protobuf packet missing from, skipping.")
+            return
+
+        numeric_node_id = str(from_node)
+
+        # Deduplication
+        packet_id = getattr(packet, "id", None)
+        if self._is_duplicate(numeric_node_id, packet_id):
+            self.logger.debug(
+                f"Skipping duplicate Protobuf message for {numeric_node_id} "
+                f"packet {packet_id}"
+            )
+            return
+
+        decoded_data = None
+        if packet.HasField("encrypted") and len(packet.encrypted) > 0:
+            # Need to decrypt
+            key_bytes = None
+
+            # Check tenant keys
+            tenant_matches = self._get_tenant_node_configs(
+                self._resolve_hardware_id(numeric_node_id), channel
+            )
+            for match in tenant_matches:
+                tenant_data = match.get("tenant_data", {})
+                tenant_key = tenant_data.get("channel_key")
+                if tenant_key:
+                    try:
+                        key_bytes = base64.b64decode(tenant_key)
+                        break
+                    except Exception:  # nosec B110
+                        pass
+
+            # Fallback to global config
+            if not key_bytes and channel and self.config:
+                global_keys = self.config.crypto.channel_keys
+                if channel in global_keys:
+                    try:
+                        key_bytes = base64.b64decode(
+                            global_keys[channel].get_secret_value()
+                        )
+                    except Exception:  # nosec B110
+                        pass
+
+            # Fallback to default key for Meshtastic LongFast
+            if not key_bytes:
+                key_bytes = base64.b64decode(DEFAULT_LONGFAST_KEY)
+
+            # Decrypt
+            try:
+                packet_id = packet.id
+                nonce = packet_id.to_bytes(8, "little") + from_node.to_bytes(
+                    8, "little"
+                )
+                cipher = Cipher(
+                    algorithms.AES(key_bytes),
+                    modes.CTR(nonce),
+                    backend=default_backend(),
+                )
+                decryptor = cipher.decryptor()
+                decrypted_bytes = (
+                    decryptor.update(packet.encrypted) + decryptor.finalize()
+                )
+
+                decoded_data = mesh_pb2.Data()
+                decoded_data.ParseFromString(decrypted_bytes)
+            except Exception as e:
+                self.logger.debug(
+                    f"Failed to decrypt/parse payload for {numeric_node_id}: {e}"
+                )
+                return
+        elif packet.HasField("decoded"):
+            decoded_data = packet.decoded
+        else:
+            self.logger.debug("Packet neither encrypted nor decoded.")
+            return
+
+        if not decoded_data:
+            return
+
+        # Translate to dict based on portnum
+        msg_type = ""
+        payload_dict = {}
+
+        if decoded_data.portnum == portnums_pb2.POSITION_APP:
+            msg_type = "position"
+            pos = mesh_pb2.Position()
+            pos.ParseFromString(decoded_data.payload)
+            if pos.HasField("latitude_i"):
+                payload_dict["latitude_i"] = pos.latitude_i
+            if pos.HasField("longitude_i"):
+                payload_dict["longitude_i"] = pos.longitude_i
+            if pos.HasField("altitude"):
+                payload_dict["altitude"] = pos.altitude
+            if pos.HasField("time"):
+                payload_dict["time"] = pos.time
+
+        elif decoded_data.portnum == portnums_pb2.NODEINFO_APP:
+            msg_type = "nodeinfo"
+            user = mesh_pb2.User()
+            user.ParseFromString(decoded_data.payload)
+            payload_dict["id"] = user.id
+            payload_dict["longname"] = user.long_name
+            payload_dict["shortname"] = user.short_name
+            payload_dict["hardware"] = user.hw_model
+            payload_dict["role"] = user.role
+
+        elif decoded_data.portnum == portnums_pb2.TELEMETRY_APP:
+            msg_type = "telemetry"
+            tel = telemetry_pb2.Telemetry()
+            tel.ParseFromString(decoded_data.payload)
+            if tel.HasField("device_metrics"):
+                payload_dict["battery_level"] = tel.device_metrics.battery_level
+                payload_dict["voltage"] = tel.device_metrics.voltage
+                payload_dict["uptime_seconds"] = tel.device_metrics.uptime_seconds
+                payload_dict["channel_utilization"] = (
+                    tel.device_metrics.channel_utilization
+                )
+                payload_dict["air_util_tx"] = tel.device_metrics.air_util_tx
+
+        elif decoded_data.portnum == portnums_pb2.TRACEROUTE_APP:
+            # Not fully mapped to JSON right now, but skipping is fine
+            msg_type = "traceroute"
+
+        if not msg_type:
+            # Ignore unsupported protobufs silently
+            return
+
+        json_data = {
+            "from": from_node,
+            "type": msg_type,
+            "payload": payload_dict,
+            "_mqtt_retain": retain,
+        }
+
+        # Route to original JSON handlers
+        # Using await here since it calls the specific handlers
+        if msg_type == "position":
+            await self._process_position_message(json_data, numeric_node_id, channel)
+        elif msg_type == "nodeinfo":
+            self._process_nodeinfo_message(json_data, numeric_node_id)
+        elif msg_type == "telemetry":
+            self._process_telemetry_message(json_data, numeric_node_id)
+        elif msg_type == "traceroute":
+            self._process_traceroute_message(json_data, numeric_node_id)
+
+        self.stats["messages_processed"] += 1
+
+        hw_id = self._resolve_hardware_id(numeric_node_id)
+        if hw_id:
+            state = self.device_states.setdefault(hw_id, {})
+            state["messages_processed"] = state.get("messages_processed", 0) + 1
+            if channel:
+                state["last_channel"] = channel
+
     async def _process_message(self, data: Dict[str, Any], topic: str) -> None:
         """
         Core message dispatcher. Analyzes the 'type' field of incoming
         Meshtastic JSON payloads and routes them to specific handlers.
 
         Args:
-            data: The parsed JSON payload from MQTT.
+            data: The parsed JSON payload from MQTT, or raw protobuf dict.
             topic: The MQTT topic the message was received on.
         """
         self.stats["messages_received"] += 1
         channel = self._extract_channel_from_topic(topic)
+
+        # Intercept protobuf processing
+        if data.get("_is_protobuf"):
+            return await self._process_protobuf_message(data, topic, channel)
 
         try:
             # Extract numeric node ID
             numeric_node_id = data.get("from")
             if not numeric_node_id:
                 self.logger.warning("Received message without from field")
+                return
+
+            # Deduplication
+            packet_id = data.get("id")
+            if self._is_duplicate(numeric_node_id, packet_id):
+                self.logger.debug(
+                    f"Skipping duplicate JSON message for {numeric_node_id} "
+                    f"packet {packet_id}"
+                )
                 return
 
             # Check message type and process accordingly

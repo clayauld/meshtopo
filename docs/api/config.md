@@ -104,6 +104,19 @@ Returns:
 Initialize the global logging system using settings from the current configuration.
 Sets the log level, format, and configures rotating file handlers if enabled.
 
+## `class CryptoConfig`
+
+Configuration for decryption keys.
+
+### `def __init__(self, /, **data: 'Any') -> 'None'`
+
+Create a new model by parsing and validating input data from keyword arguments.
+
+Raises [`ValidationError`][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.
+
+`self` is explicitly positional-only to allow `self` as a field name.
+
 ## `class DeviceConfig`
 
 Settings for device discovery and management.

@@ -26,7 +26,8 @@ Args:
 
 Internal handler for incoming MQTT messages.
 Performs byte decoding, JSON parsing, and basic sanitization before
-invoking the application callback.
+invoking the application callback. For non-JSON messages, it decodes
+as protobuf ServiceEnvelope.
 
 Args:
     message: The raw message object from aiomqtt.
