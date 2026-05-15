@@ -31,7 +31,7 @@ Use the Meshtastic CLI, Web UI, or Smartphone App to configure the MQTT module:
 - **Username:** Your MQTT user as defined in the MeshTopo configuration.
 - **Password:** Your MQTT password.
 - **Root Topic:** Typically `msh`.
-- **JSON Output Enabled:** `True` (Critical: MeshTopo requires JSON payloads, not Protobufs).
+- **JSON Output Enabled:** Optional. MeshTopo supports both JSON and binary Protobuf (Cleartext or Encrypted) formats. Using Protobuf is generally recommended for reduced bandwidth utilization.
 
 ### Channel Settings (Uplink/Downlink)
 
