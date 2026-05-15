@@ -29,6 +29,8 @@ FROM python:3.10-slim AS production
 
 WORKDIR /app
 
+LABEL org.opencontainers.image.description="Meshtastic to CalTopo Gateway Service"
+
 # Install runtime dependencies for Unraid/PUID/PGID support
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \

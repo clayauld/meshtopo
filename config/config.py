@@ -173,6 +173,12 @@ class DeviceConfig(BaseModel):
     unknown_devices_all_tenants: bool = False
 
 
+class CryptoConfig(BaseModel):
+    """Configuration for decryption keys."""
+
+    channel_keys: Dict[str, SecretStr] = Field(default_factory=dict)
+
+
 class WebConfig(BaseModel):
     """Configuration for the Web UI."""
 
@@ -202,6 +208,7 @@ class Config(BaseModel):
     devices: DeviceConfig = Field(default_factory=DeviceConfig)
     storage: StorageConfig = Field(default_factory=StorageConfig)
     web: WebConfig = Field(default_factory=WebConfig)
+    crypto: CryptoConfig = Field(default_factory=CryptoConfig)
 
     @classmethod
     def from_file(cls, config_path: str) -> "Config":

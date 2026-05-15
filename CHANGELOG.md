@@ -14,7 +14,6 @@
 - Optimize node counting by pre-calculating length in views and updating template display
   ([`e9819ee`](https://github.com/clayauld/meshtopo/commit/e9819ee72a90e6cd12b7b7b0938f8329d7989a4d))
 
-
 ## v1.8.0 (2026-05-13)
 
 ### Chores
@@ -453,3 +452,4 @@
 ## v0.1.0 (2025-12-21)
 
 - Initial Release
+test
