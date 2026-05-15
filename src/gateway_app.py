@@ -163,26 +163,7 @@ class GatewayApp:
                     f"{e}. Resetting state file."
                 )
                 # Close potentially open connections
-                if self.node_id_mapping:
-                    try:
-                        self.node_id_mapping.close()
-                    except Exception:
-                        pass  # nosec
-                if self.callsign_mapping:
-                    try:
-                        self.callsign_mapping.close()
-                    except Exception:
-                        pass  # nosec
-                if self.web_config:
-                    try:
-                        self.web_config.close()
-                    except Exception:
-                        pass  # nosec
-                if self.tenants_db:
-                    try:
-                        self.tenants_db.close()
-                    except Exception:
-                        pass  # nosec
+                self.close()
 
                 # Delete the incompatible file
                 if os.path.exists(db_path):
@@ -387,7 +368,7 @@ class GatewayApp:
             "tenants_db": self.tenants_db,
         }
         for name, db in dbs.items():
-            if db and hasattr(db, "close"):
+            if db is not None and hasattr(db, "close"):
                 try:
                     db.close()
                 except Exception as e:
