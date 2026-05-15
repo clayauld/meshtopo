@@ -78,7 +78,7 @@ class GatewayApp:
         # In-memory caches for performance
         self._node_id_cache: Dict[str, str] = {}
         self._callsign_cache: Dict[str, str] = {}
-        self._temporary_callsigns: set = set()
+        self._temporary_callsigns: set[str] = set()
         self._tenants_cache: Dict[str, Any] = {}
 
         # Track latest status and metrics from devices
