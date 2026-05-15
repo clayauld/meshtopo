@@ -157,6 +157,7 @@ The internal broker integrates seamlessly with Docker Compose:
 ### 5.1 Input: Meshtastic MQTT JSON
 
 The gateway will process messages from topics following the `msh/REGION/2/+/+/+` pattern. It supports three formats:
+
 - **JSON**: `msh/REGION/2/json/+/+` (Standard JSON output)
 - **Cleartext Protobuf**: `msh/REGION/2/c/+/+` (Binary protobuf)
 - **Encrypted Protobuf**: `msh/REGION/2/e/+/+` (AES-CTR encrypted protobuf)

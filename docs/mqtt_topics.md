@@ -5,6 +5,7 @@ MeshTopo uses MQTT to receive real-time data from Meshtastic nodes. Understandin
 ## Meshtastic MQTT Topic Standard
 
 Meshtastic nodes configured with the MQTT module enabled publish messages to topics following one of these patterns:
+
 - **JSON Format**: `msh/<region>/2/json/<channel_name>/<node_id>`
 - **Cleartext Protobuf**: `msh/<region>/2/c/<channel_name>/<node_id>`
 - **Encrypted Protobuf**: `msh/<region>/2/e/<channel_name>/<node_id>`
