@@ -66,4 +66,4 @@ async def test_gateway_app_deduplication(app):
         await app._process_protobuf_message(
             {"payload_bytes": b"proto"}, "topic", "channel"
         )
-        assert "123/1003" in app._processed_messages
+        assert "123/1003" in app._current_messages

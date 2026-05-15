@@ -100,8 +100,9 @@ class GatewayApp:
         # Signal for internal app restarts
         self.restart_requested: bool = False
 
-        # To avoid duplicate processing of Protobuf vs JSON for same node/message
-        self._processed_messages: set[str] = set()
+        # Deduplication cache (rotating sets to avoid race conditions and bound memory)
+        self._current_messages: set[str] = set()
+        self._previous_messages: set[str] = set()
 
         self.configured_devices: set = (
             set()
@@ -372,10 +373,11 @@ class GatewayApp:
             self._log_statistics()
 
     async def _clean_processed_messages(self) -> None:
-        """Periodically clean the processed messages cache to prevent memory leaks."""
+        """Periodically rotate the processed messages cache to prevent memory leaks."""
         while self.stop_event and not self.stop_event.is_set():
-            await asyncio.sleep(60)  # Clean every 60 seconds
-            self._processed_messages.clear()
+            await asyncio.sleep(60)  # Rotate every 60 seconds
+            self._previous_messages = self._current_messages
+            self._current_messages = set()
 
     def _is_duplicate(self, node_id: Any, packet_id: Any) -> bool:
         """
@@ -386,10 +388,10 @@ class GatewayApp:
             return False
 
         key = f"{node_id}/{packet_id}"
-        if key in self._processed_messages:
+        if key in self._current_messages or key in self._previous_messages:
             return True
 
-        self._processed_messages.add(key)
+        self._current_messages.add(key)
         return False
 
     async def stop(self) -> None:
