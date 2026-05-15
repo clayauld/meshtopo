@@ -115,10 +115,10 @@ Args:
     latitude: Latitude in decimal degrees
     longitude: Longitude in decimal degrees
     group: Optional GROUP for group-based API mode
-    connect_key: Optional connect_key for multi-tenant support
 
 Returns:
-    bool: True if the update was successfully sent, False otherwise.
+    bool: True if at least one endpoint (connect_key or group) was
+          successfully updated, False otherwise.
 
 ### `def start(self) -> None`
 

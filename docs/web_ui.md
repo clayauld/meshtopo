@@ -11,6 +11,7 @@ By default, the Web UI is available at:
 ### Authentication
 
 Access to the Web UI is protected by an admin password. You can set this password:
+
 1. **During Setup**: Use the `scripts/setup_wizard.py` or `make setup`.
 2. **Via Environment Variable**: Set `WEB_ADMIN_PASSWORD` in your `.env` file or Docker configuration.
 3. **In `config.yaml`**: Set `web.admin_password`.

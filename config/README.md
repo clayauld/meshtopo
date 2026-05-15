@@ -127,6 +127,7 @@ web:
 storage:
   db_path: "meshtopo_state.sqlite" # Path to the persistent SQLite database
 ```
+
 ```
 
 ## Obtaining CalTopo Connect Key
@@ -176,13 +177,13 @@ Devices automatically register in CalTopo using their Meshtastic callsigns:
          acl: "readwrite"
    ```
 
-2. **Generate configuration**:
+1. **Generate configuration**:
 
    ```bash
    make setup-broker
    ```
 
-3. **Start broker**:
+2. **Start broker**:
 
    ```bash
    docker-compose up -d mosquitto

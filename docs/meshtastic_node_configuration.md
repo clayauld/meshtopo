@@ -45,6 +45,7 @@ For the MQTT node to bridge data correctly, it must have permission to uplink ch
 ### Private Channels and Encryption
 
 If you are using a private channel with a custom Pre-Shared Key (PSK):
+
 1. Ensure the **Gateway Node** has the channel configured with the correct PSK.
 2. MeshTopo will receive these as "Encrypted Protobufs" (`e` topics).
 3. You must provide the base64 PSK to MeshTopo (via `config.yaml` or the Web UI) so it can decrypt the position reports.
