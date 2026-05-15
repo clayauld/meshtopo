@@ -601,8 +601,10 @@ class GatewayApp:
             # Decrypt
             try:
                 packet_id = packet.id
-                nonce = packet_id.to_bytes(8, "little") + from_node.to_bytes(
-                    8, "little"
+                nonce = (
+                    packet_id.to_bytes(4, "little")
+                    + from_node.to_bytes(4, "little")
+                    + b"\x00" * 8
                 )
                 cipher = Cipher(
                     algorithms.AES(key_bytes),

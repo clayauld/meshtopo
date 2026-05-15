@@ -40,7 +40,9 @@ async def test_protobuf_decryption(gateway_app):
 
     packet_id = 9999
     from_node = 123
-    nonce = packet_id.to_bytes(8, "little") + from_node.to_bytes(8, "little")
+    nonce = (
+        packet_id.to_bytes(4, "little") + from_node.to_bytes(4, "little") + b"\x00" * 8
+    )
 
     key_bytes = base64.b64decode(DEFAULT_LONGFAST_KEY)
 
