@@ -6,12 +6,11 @@ mqtt:
     port: 1883
     username: "user"
     password: "pass"
-    topic: "msh/US/2/json/+/+"
+    topic: "msh/US/2/+/+/+"
 
 caltopo:
     connect_key: "YOUR_CONNECT_KEY_HERE"
-    api_mode: "connect_key"  # or "group"
-    group: "SARTEAM"         # optional global GROUP (required if api_mode is "group")
+    group: "SARTEAM"         # optional
 
 # Optional: Node display name overrides
 nodes:

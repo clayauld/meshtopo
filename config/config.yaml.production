@@ -6,13 +6,12 @@ mqtt:
     port: 8883
     username: "meshtopo_prod"
     password: "secure_production_password"
-    topic: "msh/US/2/json/+/+"
+    topic: "msh/US/2/+/+/+"
     keepalive: 60
 
 caltopo:
     connect_key: "PRODUCTION_CONNECT_KEY_FROM_CALTOPO_TEAM_ACCOUNT"
-    api_mode: "connect_key"  # or "group"
-    group: "SARTEAM"         # optional global GROUP (required if api_mode is "group")
+    group: "SARTEAM"         # optional
 
 # Optional: Node display name overrides
 nodes:
