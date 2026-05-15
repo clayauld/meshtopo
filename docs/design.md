@@ -19,8 +19,8 @@ Backcountry coordinators, event organizers, and response teams often use a mix o
 
 ### 1.3 Scope
 
-- **In-Scope**: The gateway will connect to an MQTT broker, subscribe to Meshtastic topics (JSON and Protobuf), parse the data (including decryption), and forward it to the CalTopo Position Report API. The application will be configurable, log its status, and be deployable as a Docker container.
-- **Out-of-Scope:** This project will not involve any modification of the Meshtastic firmware. It will not provide a user interface beyond terminal logging. Two-way communication from CalTopo back to Meshtastic is a potential future enhancement but is not part of this version.
+- **In-Scope**: The gateway will connect to an MQTT broker, subscribe to Meshtastic topics (JSON and Protobuf), parse the data (including decryption), and forward it to the CalTopo Position Report API. It includes a built-in Web Administration UI for live monitoring and configuration. It supports multi-tenant operations.
+- **Out-of-Scope:** This project will not involve any modification of the Meshtastic firmware. Two-way communication from CalTopo back to Meshtastic is a potential future enhancement.
 
 ### 1.4 License
 
@@ -65,6 +65,9 @@ This enhanced architecture supports three deployment modes:
 - **FR-4**: The system **shall** maintain a mapping of Meshtastic Node IDs to CalTopo callsigns, as defined in the configuration file. The system **shall** support automatic callsign discovery using Meshtastic longname/shortname fields as fallback when explicit mappings are not available. The system **shall** support configurable control over unknown device behavior (allow/block position updates).
 - **FR-5**: The system **shall** construct a valid CalTopo Position Report API URL using either Team Account connect_key or GROUP-based authentication methods.
 - **FR-6**: The system **shall** send an HTTP GET request to the constructed URL for each valid position packet received from a mapped node.
+- **FR-7**: The system **shall** provide an authenticated Web UI for system administration, including a dashboard, log viewer, and configuration management.
+- **FR-8**: The system **shall** support multi-tenancy, allowing routing of data to different CalTopo accounts based on hardware ID or MQTT channel name.
+- **FR-9**: The system **shall** persist all configuration and node mappings in a persistent SQLite database.
 
 ### 3.2 Non-Functional Requirements (NFR)
 
@@ -82,9 +85,12 @@ This enhanced architecture supports three deployment modes:
 
 - **Language**: **Python 3.10+**. Chosen for its rapid development, excellent library support, and suitability for I/O-bound tasks.
 - **Key Libraries**:
-  - `paho-mqtt`: The de facto standard for MQTT communication in Python.
-  - `requests`: Simplifies making HTTP requests to the CalTopo endpoint.
-  - `PyYAML`: For safe and easy loading of the `config.yaml` file.
+  - `asyncio-mqtt`: High-performance asynchronous MQTT client.
+  - `httpx`: Asynchronous HTTP client for CalTopo API calls.
+  - `aiohttp`: Web server for the Administration UI.
+  - `pydantic`: Data validation and settings management.
+  - `sqlitedict`: Persistent storage using SQLite.
+  - `cryptography`: AES-CTR decryption for Meshtastic packets.
 
 ### 4.2 Class Structure
 

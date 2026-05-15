@@ -26,11 +26,20 @@ Meshtastic nodes configured with the MQTT module enabled publish messages to top
 
 When receiving encrypted Protobuf messages (`e`), MeshTopo automatically attempts to decrypt them using the standard Meshtastic AES-CTR mechanism.
 
-1. **Key Lookup**: The gateway checks for a channel-specific key in the tenant configuration or global configuration.
-2. **Default Key**: If no specific key is found, it falls back to the default Meshtastic `LongFast` key.
-3. **Decryption**: The payload is decrypted using the AES-CTR algorithm with a nonce composed of the Packet ID and Sender ID.
+### The Decryption Process
 
-This allows secure, private mesh networks to be integrated seamlessly with CalTopo without sacrificing end-to-end encryption on the LoRa network.
+1. **Key Lookup**: The gateway checks for a channel-specific key in the tenant configuration or the `crypto.channel_keys` section of `config.yaml`.
+2. **Default Key**: If no specific key is found, it falls back to the default Meshtastic `LongFast` key (`1OAMXnSjM/I69sPByKxGzQ==`).
+3. **Nonce Construction**: The AES-CTR nonce (128-bit IV) is constructed as follows:
+   - **Bytes 0-7**: Packet ID (64-bit integer, Little-Endian)
+   - **Bytes 8-11**: Sender Node ID (32-bit integer, Little-Endian)
+   - **Bytes 12-15**: Zero padding (`\x00\x00\x00\x00`)
+
+This precise construction is critical for interoperability with Meshtastic's `CryptoEngine`.
+
+### Secure Channels
+
+By supporting encrypted Protobufs, MeshTopo allows organizations to maintain full end-to-end encryption on their LoRa mesh while still benefiting from centralized mapping.
 
 ## Message Types
 
@@ -49,14 +58,17 @@ MeshTopo supports two methods for routing data to different CalTopo accounts in 
 
 Each node is explicitly mapped to a tenant in the MeshTopo Web UI. This is useful for fixed teams where hardware is rarely swapped.
 
-### 2. Topic-Based Routing (Advanced)
+### 2. Topic-Based Routing (Recommended for Scale)
 
-Nodes can be routed based on the **`<channel_name>`** segment of the MQTT topic.
+Nodes can be routed based on the **`<channel_name>`** segment of the MQTT topic. This allows for dynamic "plug-and-play" multi-tenancy.
 
-- **Example**: A tenant named "AlphaTeam" can be configured with an `mqtt_channel` of `Alpha-Channel`.
-- Any message arriving on `msh/US/2/json/Alpha-Channel/` will be automatically routed to AlphaTeam's CalTopo account, regardless of which hardware ID sent it.
+- **How it works**: A tenant is configured with a specific `Meshtastic MQTT Channel` (e.g., `SAR-Team-1`).
+- **Routing**: Any message arriving on an MQTT topic containing that channel name (e.g., `msh/US/2/json/SAR-Team-1/...`) is automatically routed to that tenant's CalTopo account.
+- **Benefits**: No need to manually map individual hardware IDs. New radios added to the physical LoRa channel will automatically appear on the correct map.
 
-This is ideal for field deployments where multiple teams share the same broker but operate on different Meshtastic channels.
+### 3. Broadcast Routing
+
+If `unknown_devices_all_tenants` is enabled, any message from a device that is **not** specifically mapped to a tenant will be forwarded to **all** active tenants. This is useful for shared infrastructure or monitoring common public channels (like `LongFast`).
 
 ## Configuration
 

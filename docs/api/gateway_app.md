@@ -108,6 +108,7 @@ the update to the CalTopo Position Report API.
 Args:
     data: The complete JSON message payload.
     numeric_node_id: The 'from' ID (numeric string) of the sender.
+    channel: Optional MQTT channel name for multi-tenant routing.
 
 ### `def _process_protobuf_message(self, data: Dict[str, Any], topic: str, channel: Optional[str]) -> None`
 

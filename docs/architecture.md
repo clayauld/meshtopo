@@ -29,24 +29,26 @@ The core data flow traverses four operational domains:
 ### 2.2 System Components Diagram
 
 ```mermaid
-graph LR
-    subgraph "Field Network"
+graph TD
+    subgraph "Field Network (LoRa)"
         M[Meshtastic Nodes] --> |LoRa| G[MQTT Gateway Node]
     end
 
     subgraph "Infrastructure"
-        G -->|WiFi / JSON| B[MQTT Broker]
+        G -->|WiFi / Protobuf| B[MQTT Broker]
     end
 
-    subgraph "MeshTopo Server"
-        B -->|Subscribe| APP(Gateway Core)
-        APP <--> DB[(SQLite Storage)]
-        UI(Web Admin UI) <--> DB
-        UI <--> APP
+    subgraph "MeshTopo Gateway Service"
+        B -->|Subscribe| MC[MQTT Client]
+        MC -->|Payload| GAP[Gateway Core]
+        GAP <--> DB[(SQLite Persistence)]
+        GAP -->|Request| CR[CalTopo Reporter]
+        UI[Web Admin UI] <--> DB
+        UI <--> GAP
     end
 
-    subgraph "Cloud & Sync"
-        APP -->|HTTPS POST| C[CalTopo API]
+    subgraph "Cloud Services"
+        CR -->|HTTPS POST| CAPI[CalTopo API]
         DB -.->|Litestream| AZ[(Azure Blob Storage)]
     end
 ```
@@ -55,13 +57,14 @@ graph LR
 
 ## 3. Core Capabilities and Subsystems
 
-### 3.1 Gateway Core (Asynchronous Processing)
+### 3.1 Gateway Core (`GatewayApp`)
 
-The Gateway Core is written in Python (using `asyncio`, `aiohttp`, and `asyncio-mqtt`) to handle massive concurrent throughput without thread-blocking.
+The Gateway Core (`src/gateway_app.py`) is written in Python using `asyncio` to handle concurrent throughput without blocking.
 
-- **Message Ingestion & Parsing:** Extracts node metadata, position payloads, and timestamp constraints in real-time. Supports JSON parsing as well as binary Protobuf decoding (including AES-CTR decryption for private channels).
-- **Dynamic Node Resolution:** Performs a two-tier resolution to associate transient Node IDs with permanent Hardware IDs, establishing durable object identity.
-- **Reporting Engine:** Dispatches RESTful HTTP payloads to the CalTopo API using appropriate geographic transformations and coordinate math.
+- **Orchestration**: Manages the lifecycle of the `MqttClient` and `CalTopoReporter`.
+- **Message Ingestion & Parsing**: Extracts node metadata, position payloads, and telemetry. Supports JSON parsing and binary Protobuf decoding (including AES-CTR decryption).
+- **Dynamic Node Resolution**: Associates transient numeric Node IDs with permanent Hardware IDs (e.g., `!123a4edc`), ensuring durable object identity across restarts.
+- **Reporting Engine**: Dispatches geographic updates to CalTopo via the `CalTopoReporter`.
 
 ### 3.2 Multi-Tenant Organization Support
 
@@ -80,11 +83,12 @@ State, user configurations, and node identity relationships are no longer constr
 
 ### 3.4 Web Administration UI
 
-System Administrators and Tenant Managers interact with systems through a secure, built-in application interface built with `aiohttp` web server methodologies.
+Built with `aiohttp`, the Web UI provides a secure portal for system management.
 
-- **Live Monitoring Dashboard:** Real-time metrics across device states, log streaming, and message ingestion ratios.
-- **Identity & Security:** Session caching, CSRF projection, bcrypt password hashing, and role-based access control (Admin vs Tenant).
-- **Zero-Downtime Reconfiguration:** Mapping rules, tenant generation, and group allocations are performed remotely. The Gateway Core honors configuration diffs gracefully without requiring a hypervisor restart.
+- **Live Monitoring Dashboard**: Real-time metrics on message rates, device states, and system health.
+- **Identity & Security**: Authenticated sessions using cryptographically signed cookies and bcrypt password hashing.
+- **Zero-Downtime Reconfiguration**: Tenant assignments, mapping rules, and global settings can be updated via the UI and are applied immediately to the running gateway without requiring a restart.
+- **Live Logs**: Stream application logs directly to the browser for remote troubleshooting.
 
 ---
 

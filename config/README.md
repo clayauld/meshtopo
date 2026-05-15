@@ -110,6 +110,23 @@ mqtt_broker:
       password: "readonly_pass" # Read-only password
       acl: "read" # Read-only access
   acl_enabled: false # Enable Access Control Lists
+
+### Web UI Configuration
+
+```yaml
+web:
+  enabled: true # Enable the Web Administration UI
+  port: 8080 # Web UI port
+  admin_password: "secure_admin_password" # Password for the 'admin' account
+  multi_tenant_enabled: false # Enable multi-tenant features
+```
+
+### Storage Configuration
+
+```yaml
+storage:
+  db_path: "meshtopo_state.sqlite" # Path to the persistent SQLite database
+```
 ```
 
 ## Obtaining CalTopo Connect Key
