@@ -2,6 +2,34 @@
 
 <!-- version list -->
 
+## v1.11.0 (2026-05-15)
+
+### Chores
+
+- Update project dependencies and remove python-semantic-release
+  ([`5f39d61`](https://github.com/clayauld/meshtopo/commit/5f39d61faff7cd8e2333e451f2646e4cb1b69864))
+
+- Upgrade python-gitlab to 8.3.0 and update documentation formatting
+  ([`e761435`](https://github.com/clayauld/meshtopo/commit/e761435f721b97a924ecd3106fb16db03310edbc))
+
+- **deps**: Bump python-gitlab from 6.5.0 to 8.3.0
+  ([`d9a48fc`](https://github.com/clayauld/meshtopo/commit/d9a48fcfd58ba1e516b26b2494eb972f85f05732))
+
+- **deps**: Bump rich from 14.3.3 to 15.0.0
+  ([`cda00d7`](https://github.com/clayauld/meshtopo/commit/cda00d730392447f91b52a0a1b34d1cebf6e44ac))
+
+### Features
+
+- Implement robust PSK decoding, update security documentation, and improve device state handling in
+  MQTT gateway
+  ([`f65805e`](https://github.com/clayauld/meshtopo/commit/f65805e3041d4e84eab07e64d13355ec2460dc1a))
+
+### Testing
+
+- Update mqtt topic format expectation to remove json segment
+  ([`f750f92`](https://github.com/clayauld/meshtopo/commit/f750f92725d12de5f0498a014f65d51b61d7882e))
+
+
 ## v1.10.1 (2026-05-15)
 
 ### Bug Fixes
