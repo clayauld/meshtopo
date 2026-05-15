@@ -36,15 +36,15 @@ class TestMQTTTopicFormat(unittest.TestCase):
                         f"Config file {config_file} should contain msh/ topic prefix",
                     )
                     self.assertIn(
-                        "/2/json/+/+",
+                        "/2/+/+/+",
                         content,
                         f"Config file {config_file} should contain "
-                        f"/2/json/+/+ topic suffix",
+                        f"/2/+/+/+ topic suffix",
                     )
                     # Check that it uses a specific region code, not placeholder
                     self.assertRegex(
                         content,
-                        r"msh/[A-Z_]+/2/json/\+/\+",
+                        r"msh/[A-Z_]+/2/\+/\+/\+",
                         f"Config file {config_file} should use specific region code",
                     )
 
@@ -68,7 +68,7 @@ class TestMQTTTopicFormat(unittest.TestCase):
             content = f.read()
 
         # Check for region code documentation
-        self.assertIn("msh/REGION/2/json/+/+", content)
+        self.assertIn("msh/REGION/2/+/+/+", content)
         self.assertIn("meshtastic.org/docs/configuration/region-by-country/", content)
         self.assertIn("US", content)
         self.assertIn("EU_868", content)
