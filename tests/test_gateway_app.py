@@ -313,7 +313,60 @@ class TestGatewayApp:
         # Should be in cache (to suppress redundant logs) but NOT in persistence
         assert hardware_id in app._callsign_cache
         assert app._callsign_cache[hardware_id] == hardware_id
+        assert hardware_id in app._temporary_callsigns
         assert hardware_id not in app.callsign_mapping
+
+    def test_unknown_device_promotion_to_permanent(self, app):
+        """
+        Verify that a temporary callsign mapping is promoted to
+        permanent when nodeinfo arrives.
+        """
+        app.config.devices.allow_unknown_devices = True
+        app.config.get_node_device_id.return_value = None
+        hardware_id = "!promotable"
+
+        # 1. First it's unknown
+        app._get_or_create_callsign(hardware_id)
+        assert hardware_id in app._temporary_callsigns
+        assert hardware_id not in app.callsign_mapping
+
+        # 2. Then nodeinfo arrives with same callsign (hardware_id)
+        msg = {
+            "from": 123,
+            "type": "nodeinfo",
+            "payload": {
+                "id": hardware_id,
+                "longname": hardware_id,  # Same as hardware_id
+            },
+        }
+        app._process_nodeinfo_message(msg, "123")
+
+        # 3. Should now be permanent and removed from temporary set
+        assert hardware_id not in app._temporary_callsigns
+        assert hardware_id in app.callsign_mapping
+        assert app.callsign_mapping[hardware_id] == hardware_id
+
+    def test_unknown_device_blocked_after_policy_change(self, app):
+        """
+        Verify that a previously allowed unknown device is blocked
+        if allow_unknown_devices is changed to False at runtime.
+        """
+        app.config.devices.allow_unknown_devices = True
+        app.config.get_node_device_id.return_value = None
+        hardware_id = "!temp"
+
+        # 1. Allowed first
+        assert app._get_or_create_callsign(hardware_id) == hardware_id
+        assert hardware_id in app._callsign_cache
+        assert hardware_id in app._temporary_callsigns
+
+        # 2. Policy change
+        app.config.devices.allow_unknown_devices = False
+
+        # 3. Should now be blocked and removed from caches
+        assert app._get_or_create_callsign(hardware_id) is None
+        assert hardware_id not in app._callsign_cache
+        assert hardware_id not in app._temporary_callsigns
 
     def test_telemetry_message(self, app):
         msg = {"type": "telemetry", "payload": {"battery_level": 100}}
