@@ -671,8 +671,10 @@ class GatewayApp:
                 payload_dict["air_util_tx"] = tel.device_metrics.air_util_tx
 
         elif decoded_data.portnum == portnums_pb2.TRACEROUTE_APP:
-            # Not fully mapped to JSON right now, but skipping is fine
             msg_type = "traceroute"
+            route_disc = mesh_pb2.RouteDiscovery()
+            route_disc.ParseFromString(decoded_data.payload)
+            payload_dict["route"] = list(route_disc.route)
 
         if not msg_type:
             # Ignore unsupported protobufs silently
