@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "meshtopo"
-version = "1.9.0"
+version = "1.10.0"
 description = "Meshtastic to CalTopo Gateway Service"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -72,6 +72,7 @@ dev = [
 
 [project.scripts]
 meshtopo = "gateway:main"
+
 
 [tool.black]
 line-length = 88

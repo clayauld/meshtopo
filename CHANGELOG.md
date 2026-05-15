@@ -2,6 +2,100 @@
 
 <!-- version list -->
 
+## v1.10.0 (2026-05-15)
+
+### Bug Fixes
+
+- Do not persist temporary mapping to avoid permanent callsign issue
+  ([`eab3343`](https://github.com/clayauld/meshtopo/commit/eab3343d723ed899f2aef0e50e3f411a5ef0ef28))
+
+- Update packet decryption nonce construction and clean up lock file metadata
+  ([`30d5c1c`](https://github.com/clayauld/meshtopo/commit/30d5c1cbda458bc6a95f131f8adc35a6f29e01f2))
+
+- Update packet source retrieval to include from_ field fallback
+  ([`8595001`](https://github.com/clayauld/meshtopo/commit/8595001402e7e8f730f7ccf1bdad8aaf21b43da8))
+
+### Chores
+
+- Add OCI image description labels to build configurations and Dockerfiles
+  ([`cac2cd4`](https://github.com/clayauld/meshtopo/commit/cac2cd4e6bc18a18a4ad7f85e37e12ba47f0e69a))
+
+- Clean up whitespace in changelog and test suite
+  ([`29b3403`](https://github.com/clayauld/meshtopo/commit/29b34038f4122331f4366e014c97168863f0e6d3))
+
+- Clean up whitespace in release workflow and refactor docker-compose healthcheck and command
+  formatting
+  ([`3139b59`](https://github.com/clayauld/meshtopo/commit/3139b5956f63b8e65097fba88228d1827e63d33d))
+
+- Migrate to python-semantic-release CLI in release workflow and update changelog
+  ([`ab6b476`](https://github.com/clayauld/meshtopo/commit/ab6b4762cbfb0853ed88123fefbd97731526383c))
+
+- **deps**: Bump requests from 2.33.1 to 2.34.2
+  ([`eca3037`](https://github.com/clayauld/meshtopo/commit/eca30371482e2648ce9f7268a8e9f969ae2fc3a5))
+
+- **deps**: Bump tomlkit from 0.14.0 to 0.15.0
+  ([`a97e9fe`](https://github.com/clayauld/meshtopo/commit/a97e9fec5457f8f6d69248625547ff8c79afe2c5))
+
+### Documentation
+
+- Rename cache maintenance terminology from clean to rotate in gateway_app documentation
+  ([`7c0e0b1`](https://github.com/clayauld/meshtopo/commit/7c0e0b133a9805f88ba0c91ebc4ee4bfb04cde5d))
+
+### Features
+
+- Enable protobuf decryption and UI configuration
+  ([`1cb8f72`](https://github.com/clayauld/meshtopo/commit/1cb8f723261aa81ac0108ddfdb216e7d8ada37d6))
+
+- Enable protobuf decryption and UI configuration
+  ([`1e3c888`](https://github.com/clayauld/meshtopo/commit/1e3c888caeca5b5b66da91e93774f129f02b916d))
+
+- Enable protobuf decryption and UI configuration
+  ([`5b01cbe`](https://github.com/clayauld/meshtopo/commit/5b01cbea4b9e6812142ae5c11c83440ec06dc679))
+
+- Enable protobuf decryption and UI configuration
+  ([`689b75f`](https://github.com/clayauld/meshtopo/commit/689b75f011476d223092629507a7712e1622451b))
+
+- Enable protobuf decryption and UI configuration
+  ([`f66699a`](https://github.com/clayauld/meshtopo/commit/f66699afc2f6130e7031e9f0c35448e0aa4f22a4))
+
+- Implement message deduplication in gateway application and remove redundant logic from MQTT client
+  ([`c3fca47`](https://github.com/clayauld/meshtopo/commit/c3fca474779839e52122a469bdf8f31a8a7c59d4))
+
+### Refactoring
+
+- Centralize LongFast default key in DEFAULT_LONGFAST_KEY constant
+  ([`2d68180`](https://github.com/clayauld/meshtopo/commit/2d6818084dbb20291a031c8184aefcd9c70250a7))
+
+- Implement rotating two-stage cache for message deduplication to improve memory safety
+  ([`d1d830f`](https://github.com/clayauld/meshtopo/commit/d1d830fb26a1ba10e515a4d855c30284ad0ce43f))
+
+- Improve database closing and remove broad exception catches
+  ([`574e635`](https://github.com/clayauld/meshtopo/commit/574e6357d681a5986767e96126e72b6e1cfacaae))
+
+- Improve database closing and remove broad exception catches
+  ([`b6bbc86`](https://github.com/clayauld/meshtopo/commit/b6bbc8626bc13a34bb960b355debcf4ae52c4cbc))
+
+- Improve database closing and remove broad exception catches
+  ([`48f539b`](https://github.com/clayauld/meshtopo/commit/48f539b058731d8d115936dee612a84b7a0588b1))
+
+- Improve database closing and remove broad exception catches
+  ([`5e75afc`](https://github.com/clayauld/meshtopo/commit/5e75afcae46ca10ebda2847593b06f23e7f6c891))
+
+- Improve database closing and remove broad exception catches
+  ([`3ff709d`](https://github.com/clayauld/meshtopo/commit/3ff709d2fc70b2f641f612c4169f1619775614ac))
+
+### Testing
+
+- Add unit tests for tenant management and routing
+  ([`d602590`](https://github.com/clayauld/meshtopo/commit/d60259095c89cdadab2e00e336a92fa132453690))
+
+- Add unit tests for update_tenant and delete_tenant
+  ([`ae83a1b`](https://github.com/clayauld/meshtopo/commit/ae83a1b87b7f5ef63bbb6b25dfe004250c37ea54))
+
+- Add unit tests for update_tenant and delete_tenant
+  ([`deec9d8`](https://github.com/clayauld/meshtopo/commit/deec9d81f77d1d6bc2797b5235207df2382fbb06))
+
+
 ## v1.9.0 (2026-05-14)
 
 ### Features
