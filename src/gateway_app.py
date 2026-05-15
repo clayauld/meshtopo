@@ -3,7 +3,6 @@ Main gateway application that orchestrates MQTT and CalTopo communication.
 """
 
 import asyncio
-import base64
 import logging
 import os
 import sys
@@ -28,7 +27,7 @@ from caltopo_reporter import CalTopoReporter
 from config.config import Config
 from mqtt_client import MqttClient
 from persistent_dict import PersistentDict
-from utils import sanitize_for_log
+from utils import decode_psk, sanitize_for_log
 from web import create_app
 
 # Default channel key for Meshtastic LongFast
@@ -482,9 +481,12 @@ class GatewayApp:
         Format: msh/<region>/2/json/<channel>/<node_id>
         """
         parts = topic.split("/")
-        # We expect at least 5 parts for msh/reg/2/json/chan/...
-        if len(parts) >= 5:
-            return parts[4]
+        # The channel name is always the segment immediately following the
+        # format identifier (json, e, or c).
+        for i, part in enumerate(parts):
+            if part in ("json", "e", "c"):
+                if i + 1 < len(parts):
+                    return parts[i + 1]
         return None
 
     def _resolve_hardware_id(self, numeric_node_id: str) -> str:
@@ -565,6 +567,14 @@ class GatewayApp:
 
         numeric_node_id = str(from_node)
 
+        # Register device early so it appears in UI even if decryption fails later
+        hw_id = self._resolve_hardware_id(numeric_node_id)
+        if hw_id:
+            state = self.device_states.setdefault(hw_id, {})
+            state["last_seen"] = time.time()
+            if channel:
+                state["last_channel"] = channel
+
         # Deduplication
         packet_id = getattr(packet, "id", None)
         if self._is_duplicate(numeric_node_id, packet_id):
@@ -588,34 +598,53 @@ class GatewayApp:
                 tenant_key = tenant_data.get("channel_key")
                 if tenant_key:
                     try:
-                        key_bytes = base64.b64decode(tenant_key)
+                        key_bytes = decode_psk(tenant_key)
+                        t_name = match.get("tenant_name", "unknown")
+                        self.logger.debug(
+                            f"Using tenant channel key for {t_name} "
+                            f"on channel {channel}"
+                        )
                         break
-                    except Exception:  # nosec B110
-                        pass
+                    except ValueError as e:
+                        self.logger.error(
+                            f"Invalid tenant channel key format for "
+                            f"{match.get('tenant_name', 'unknown')}: {e}"
+                        )
 
             # Fallback to global config
             if not key_bytes and channel and self.config:
                 global_keys = self.config.crypto.channel_keys
                 if channel in global_keys:
                     try:
-                        key_bytes = base64.b64decode(
-                            global_keys[channel].get_secret_value()
+                        key_bytes = decode_psk(global_keys[channel].get_secret_value())
+                        self.logger.debug(
+                            f"Using global config channel key for channel {channel}"
                         )
-                    except Exception:  # nosec B110
-                        pass
+                    except ValueError as e:
+                        self.logger.error(
+                            f"Invalid global channel key format for {channel}: {e}"
+                        )
 
-            # Fallback to default key for Meshtastic LongFast
             if not key_bytes:
-                key_bytes = base64.b64decode(DEFAULT_LONGFAST_KEY)
+                self.logger.warning(
+                    f"No key found for channel '{channel}' (tenant or global). "
+                    f"Falling back to default LongFast key."
+                )
+                key_bytes = decode_psk(DEFAULT_LONGFAST_KEY)
 
             # Decrypt
             try:
                 packet_id = packet.id
+                # Meshtastic AES-CTR Nonce (128-bit IV):
+                # - Bytes 0-7: Packet ID (64-bit, little-endian)
+                # - Bytes 8-11: Node ID (from field, 32-bit, little-endian)
+                # - Bytes 12-15: Zero padding (32-bit)
                 nonce = (
-                    packet_id.to_bytes(4, "little")
+                    packet_id.to_bytes(8, "little")
                     + from_node.to_bytes(4, "little")
-                    + b"\x00" * 8
+                    + b"\x00" * 4
                 )
+
                 cipher = Cipher(
                     algorithms.AES(key_bytes),
                     modes.CTR(nonce),
@@ -629,9 +658,10 @@ class GatewayApp:
                 decoded_data = mesh_pb2.Data()
                 decoded_data.ParseFromString(decrypted_bytes)
             except Exception as e:
-                self.logger.debug(
+                self.logger.error(
                     f"Failed to decrypt/parse payload for {numeric_node_id}: {e}"
                 )
+                self.stats["errors"] += 1
                 return
         elif packet.HasField("decoded"):
             decoded_data = packet.decoded
@@ -650,13 +680,13 @@ class GatewayApp:
             msg_type = "position"
             pos = mesh_pb2.Position()
             pos.ParseFromString(decoded_data.payload)
-            if pos.HasField("latitude_i"):
+            if pos.latitude_i:
                 payload_dict["latitude_i"] = pos.latitude_i
-            if pos.HasField("longitude_i"):
+            if pos.longitude_i:
                 payload_dict["longitude_i"] = pos.longitude_i
-            if pos.HasField("altitude"):
+            if pos.altitude:
                 payload_dict["altitude"] = pos.altitude
-            if pos.HasField("time"):
+            if pos.time:
                 payload_dict["time"] = pos.time
 
         elif decoded_data.portnum == portnums_pb2.NODEINFO_APP:
@@ -781,6 +811,7 @@ class GatewayApp:
             hw_id = self._resolve_hardware_id(numeric_node_id)
             if hw_id:
                 state = self.device_states.setdefault(hw_id, {})
+                state["last_seen"] = time.time()
                 state["messages_processed"] = state.get("messages_processed", 0) + 1
                 if channel:
                     state["last_channel"] = channel

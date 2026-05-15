@@ -44,7 +44,7 @@
                     <td>{{ state.role or '-' }}</td>
                     <td>{{ state.battery_level|default('-') }}{% if state.battery_level %}%{% endif %}</td>
                     <td>{{ state.voltage|default('-') }}{% if state.voltage %}V{% endif %}</td>
-                    <td class="last-seen-cell" data-timestamp="{{ state.last_seen }}">{{ state.last_seen | round(2) }}</td>
+                    <td class="last-seen-cell" data-timestamp="{{ state.get('last_seen', 0) }}">{{ state.get('last_seen', 0) | round(2) }}</td>
                     {% if multi_tenant and role == 'super_user' %}
                     <td>{{ state.tenant_name or '-' }}</td>
                     {% endif %}

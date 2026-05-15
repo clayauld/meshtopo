@@ -43,7 +43,7 @@ devices:
 crypto:
     channel_keys:
         "LongFast": "1OAMXnSjM/I69sPByKxGzQ==" # Default key for LongFast
-        # "Private-Channel": "base64_encoded_key_here"
+        "Private-Channel": "paste_psk_from_app_here" # Can be Base64, URL-safe, or Hex
 
 # Web UI Configuration (optional)
 web:
