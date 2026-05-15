@@ -181,6 +181,7 @@ commit_version_number = true
 upload_to_pypi = false
 upload_to_release = false
 build_command = ""
+pre_commit_command = "pre-commit run --files CHANGELOG.md pyproject.toml docs/api/*.md || true"
 
 [tool.semantic_release.changelog.default_templates]
 changelog_file = "CHANGELOG.md"
