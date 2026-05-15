@@ -206,8 +206,8 @@ async def config_get(request: web.Request) -> Dict[str, Any]:
 
         # Determine global channel key from config.crypto.channel_keys if needed.
         # This is a dict, so we don't have a single channel key, but if they want
-        # to expose it in web, we could map it. Let's just leave it empty for super user
-        # unless they modify the config file directly, or we add UI for global channel keys.
+        # unless they modify the config file directly, or we add UI for global
+        # channel keys.
 
         config_data = await get_common_context(
             request,

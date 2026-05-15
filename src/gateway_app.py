@@ -3,6 +3,7 @@ Main gateway application that orchestrates MQTT and CalTopo communication.
 """
 
 import asyncio
+import base64
 import logging
 import os
 import sys
@@ -10,17 +11,16 @@ import time
 from typing import Any, Dict, Optional, Union
 
 import httpx
-import base64
 import pydantic
 from aiohttp import web
 
 try:
-    import meshtastic.protobuf.mqtt_pb2 as mqtt_pb2
     import meshtastic.protobuf.mesh_pb2 as mesh_pb2
+    import meshtastic.protobuf.mqtt_pb2 as mqtt_pb2
     import meshtastic.protobuf.portnums_pb2 as portnums_pb2
     import meshtastic.protobuf.telemetry_pb2 as telemetry_pb2
-    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 except ImportError:
     pass
 
@@ -96,6 +96,9 @@ class GatewayApp:
 
         # Signal for internal app restarts
         self.restart_requested: bool = False
+
+        # To avoid duplicate processing of Protobuf vs JSON for same node/message
+        self._processed_messages: set[str] = set()
 
         self.configured_devices: set = (
             set()
@@ -317,10 +320,10 @@ class GatewayApp:
                 self.logger.error("MQTT client not initialized. Exiting.")
                 sys.exit(1)
 
-            # Create tasks
             tasks = [
                 asyncio.create_task(self.mqtt_client.run()),
                 asyncio.create_task(self._stats_loop()),
+                asyncio.create_task(self._clean_processed_messages()),
             ]
 
             web_runner = None
@@ -364,6 +367,27 @@ class GatewayApp:
         while self.stop_event and not self.stop_event.is_set():
             await asyncio.sleep(60)
             self._log_statistics()
+
+    async def _clean_processed_messages(self) -> None:
+        """Periodically clean the processed messages cache to prevent memory leaks."""
+        while self.stop_event and not self.stop_event.is_set():
+            await asyncio.sleep(60)  # Clean every 60 seconds
+            self._processed_messages.clear()
+
+    def _is_duplicate(self, node_id: Any, packet_id: Any) -> bool:
+        """
+        Check if a message is a duplicate based on node ID and packet ID.
+        Returns True if it's a duplicate, False otherwise (and tracks it).
+        """
+        if packet_id is None:
+            return False
+
+        key = f"{node_id}/{packet_id}"
+        if key in self._processed_messages:
+            return True
+
+        self._processed_messages.add(key)
+        return False
 
     async def stop(self) -> None:
         """
@@ -538,12 +562,21 @@ class GatewayApp:
             self.logger.error(f"Failed to parse ServiceEnvelope: {e}")
             return
 
-        from_node = getattr(packet, "from_", None)
+        from_node = getattr(packet, "from", None)
         if not from_node:
-            self.logger.debug("Protobuf packet missing from_node, skipping.")
+            self.logger.debug("Protobuf packet missing from, skipping.")
             return
 
         numeric_node_id = str(from_node)
+
+        # Deduplication
+        packet_id = getattr(packet, "id", None)
+        if self._is_duplicate(numeric_node_id, packet_id):
+            self.logger.debug(
+                f"Skipping duplicate Protobuf message for {numeric_node_id} "
+                f"packet {packet_id}"
+            )
+            return
 
         decoded_data = None
         if packet.HasField("encrypted") and len(packet.encrypted) > 0:
@@ -561,21 +594,21 @@ class GatewayApp:
                     try:
                         key_bytes = base64.b64decode(tenant_key)
                         break
-                    except Exception:
+                    except Exception:  # nosec B110
                         pass
 
             # Fallback to global config
-            if not key_bytes and channel:
+            if not key_bytes and channel and self.config:
                 global_keys = self.config.crypto.channel_keys
                 if channel in global_keys:
                     try:
                         key_bytes = base64.b64decode(
                             global_keys[channel].get_secret_value()
                         )
-                    except Exception:
+                    except Exception:  # nosec B110
                         pass
 
-            # Fallback to default key (AQ== is empty key, but standard default is usually 1OAMXnSjM/I69sPByKxGzQ==)
+            # Fallback to default key (LongFast: 1OAMXnSjM/I69sPByKxGzQ==)
             # Default key for Meshtastic LongFast is 1OAMXnSjM/I69sPByKxGzQ==
             if not key_bytes:
                 key_bytes = base64.b64decode("1OAMXnSjM/I69sPByKxGzQ==")
@@ -708,6 +741,15 @@ class GatewayApp:
             numeric_node_id = data.get("from")
             if not numeric_node_id:
                 self.logger.warning("Received message without from field")
+                return
+
+            # Deduplication
+            packet_id = data.get("id")
+            if self._is_duplicate(numeric_node_id, packet_id):
+                self.logger.debug(
+                    f"Skipping duplicate JSON message for {numeric_node_id} "
+                    f"packet {packet_id}"
+                )
                 return
 
             # Check message type and process accordingly

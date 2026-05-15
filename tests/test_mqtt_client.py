@@ -95,7 +95,9 @@ class TestMqttClient:
 
         # Verify interactions
         mock_client_instance.subscribe.assert_called_once_with("test/topic")
-        message_callback.assert_called_once_with({"test": 1, "_mqtt_retain": False}, "msh/US/2/json/topic")
+        message_callback.assert_called_once_with(
+            {"test": 1, "_mqtt_retain": False}, "msh/US/2/json/topic"
+        )
 
     @pytest.mark.asyncio
     async def test_run_connection_failure_retry(self, client):
@@ -163,7 +165,9 @@ class TestMqttClient:
 
         await client._process_message(message)
 
-        client.message_callback.assert_called_with({"key": "value", "_mqtt_retain": False}, "msh/US/2/json/topic")
+        client.message_callback.assert_called_with(
+            {"key": "value", "_mqtt_retain": False}, "msh/US/2/json/topic"
+        )
 
     @pytest.mark.asyncio
     async def test_process_message_retained(self, client):
@@ -202,5 +206,10 @@ class TestMqttClient:
         await client._process_message(message)
 
         client.message_callback.assert_called_with(
-            {"_is_protobuf": True, "_mqtt_retain": False, "payload_bytes": b"protobuf bytes"}, "msh/US/2/c/topic"
+            {
+                "_is_protobuf": True,
+                "_mqtt_retain": False,
+                "payload_bytes": b"protobuf bytes",
+            },
+            "msh/US/2/c/topic",
         )

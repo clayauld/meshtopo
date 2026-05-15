@@ -19,6 +19,10 @@ Args:
     config_path: Filesystem path to the YAML configuration file.
                 Defaults to 'config/config.yaml'.
 
+### `def _clean_processed_messages(self) -> None`
+
+Periodically clean the processed messages cache to prevent memory leaks.
+
 ### `def _convert_numeric_to_id(self, numeric_id: Union[int, str]) -> str`
 
 Convert a numeric node ID to its standard Meshtastic string representation.
@@ -61,6 +65,11 @@ Initialize persistent dictionaries for state storage.
 Args:
     db_path: Path to the SQLite database file.
 
+### `def _is_duplicate(self, node_id: Any, packet_id: Any) -> bool`
+
+Check if a message is a duplicate based on node ID and packet ID.
+Returns True if it's a duplicate, False otherwise (and tracks it).
+
 ### `def _log_statistics(self) -> None`
 
 Log current statistics.
@@ -79,7 +88,7 @@ Core message dispatcher. Analyzes the 'type' field of incoming
 Meshtastic JSON payloads and routes them to specific handlers.
 
 Args:
-    data: The parsed JSON payload from MQTT.
+    data: The parsed JSON payload from MQTT, or raw protobuf dict.
     topic: The MQTT topic the message was received on.
 
 ### `def _process_nodeinfo_message(self, data: Dict[str, Any], numeric_node_id: str) -> None`
@@ -99,6 +108,12 @@ the update to the CalTopo Position Report API.
 Args:
     data: The complete JSON message payload.
     numeric_node_id: The 'from' ID (numeric string) of the sender.
+
+### `def _process_protobuf_message(self, data: Dict[str, Any], topic: str, channel: Optional[str]) -> None`
+
+Processes a raw protobuf message.
+Extracts the packet, decrypts if necessary using channel key, and translates
+it into the JSON-like dictionary format expected by the rest of the application.
 
 ### `def _process_telemetry_message(self, data: Dict[str, Any], numeric_node_id: str) -> None`
 
