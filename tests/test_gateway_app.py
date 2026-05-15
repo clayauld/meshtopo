@@ -471,12 +471,8 @@ class TestGatewayApp:
 
     def test_get_tenant_node_configs_multiple_tenants(self, app):
         """Test that a message can be routed to multiple tenants."""
-        app.update_tenant(
-            "t1", {"nodes": {"!12345678": {"device_id": "T1-NODE"}}}
-        )
-        app.update_tenant(
-            "t2", {"nodes": {"!12345678": {"device_id": "T2-NODE"}}}
-        )
+        app.update_tenant("t1", {"nodes": {"!12345678": {"device_id": "T1-NODE"}}})
+        app.update_tenant("t2", {"nodes": {"!12345678": {"device_id": "T2-NODE"}}})
 
         results = app._get_tenant_node_configs("!12345678")
         assert len(results) == 2
