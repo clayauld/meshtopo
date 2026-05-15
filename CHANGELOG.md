@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.10.1 (2026-05-15)
+
+### Bug Fixes
+
+- Robust handling of temporary callsign mappings for unknown devices
+  ([`e56029b`](https://github.com/clayauld/meshtopo/commit/e56029b428383d417b87ae18a92a7bcc7a0ac8b3))
+
+
 ## v1.10.0 (2026-05-15)
 
 ### Bug Fixes
