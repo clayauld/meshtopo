@@ -434,3 +434,99 @@ class TestGatewayApp:
 
         assert username not in app.tenants_db
         assert username not in app._tenants_cache
+
+    def test_get_tenant_node_configs_channel_match(self, app):
+        """Test matching by MQTT channel."""
+        tenant_data = {
+            "mqtt_channel": "Emergency",
+            "nodes": {"!12345678": {"device_id": "EMS-1"}},
+        }
+        app.update_tenant("ems_tenant", tenant_data)
+
+        # Match by channel
+        results = app._get_tenant_node_configs("!12345678", channel="Emergency")
+        assert len(results) == 1
+        assert results[0]["tenant_name"] == "ems_tenant"
+        assert results[0]["node_config"]["device_id"] == "EMS-1"
+
+        # Case insensitive match
+        results = app._get_tenant_node_configs("!12345678", channel="emergency")
+        assert len(results) == 1
+
+    def test_get_tenant_node_configs_hardware_id_prefix(self, app):
+        """Test hardware ID matching with and without '!' prefix."""
+        tenant_data = {"nodes": {"!12345678": {"device_id": "NODE-1"}}}
+        app.update_tenant("t1", tenant_data)
+
+        # Match with !
+        results = app._get_tenant_node_configs("!12345678")
+        assert len(results) == 1
+        assert results[0]["node_config"]["device_id"] == "NODE-1"
+
+        # Match without ! (it should be added/handled)
+        results = app._get_tenant_node_configs("12345678")
+        assert len(results) == 1
+        assert results[0]["node_config"]["device_id"] == "NODE-1"
+
+    def test_get_tenant_node_configs_multiple_tenants(self, app):
+        """Test that a message can be routed to multiple tenants."""
+        app.update_tenant(
+            "t1", {"nodes": {"!12345678": {"device_id": "T1-NODE"}}}
+        )
+        app.update_tenant(
+            "t2", {"nodes": {"!12345678": {"device_id": "T2-NODE"}}}
+        )
+
+        results = app._get_tenant_node_configs("!12345678")
+        assert len(results) == 2
+        names = [r["tenant_name"] for r in results]
+        assert "t1" in names
+        assert "t2" in names
+
+    @pytest.mark.asyncio
+    async def test_process_position_multi_tenant_routing(self, app):
+        """Test position routing in multi-tenant mode."""
+        app.config.web.multi_tenant_enabled = True
+        app.caltopo_reporter = AsyncMock()
+        app.caltopo_reporter.send_position_update.return_value = True
+
+        tenant_data = {
+            "caltopo_connect_key": "t1_key",
+            "nodes": {"!12345678": {"device_id": "T1-NODE"}},
+        }
+        app.update_tenant("tenant1", tenant_data)
+
+        msg = {
+            "type": "position",
+            "payload": {"latitude_i": 100000000, "longitude_i": 200000000},
+        }
+
+        # Match tenant1
+        await app._process_position_message(msg, "305419896")  # !12345678
+
+        app.caltopo_reporter.send_position_update.assert_called_with(
+            "T1-NODE", 10.0, 20.0, group=None, connect_key="t1_key"
+        )
+        assert app.stats["position_updates_sent"] == 1
+
+    @pytest.mark.asyncio
+    async def test_process_position_multi_tenant_broadcast(self, app):
+        """Test broadcasting to all tenants when unmapped."""
+        app.config.web.multi_tenant_enabled = True
+        app.config.devices.unknown_devices_all_tenants = True
+        app.caltopo_reporter = AsyncMock()
+        app.caltopo_reporter.send_position_update.return_value = True
+
+        app.update_tenant("t1", {"caltopo_connect_key": "k1"})
+        app.update_tenant("t2", {"caltopo_connect_key": "k2"})
+
+        msg = {
+            "type": "position",
+            "payload": {"latitude_i": 100000000, "longitude_i": 200000000},
+        }
+
+        # Unmapped device
+        await app._process_position_message(msg, "999")  # !000003e7
+
+        assert app.caltopo_reporter.send_position_update.call_count == 2
+        assert app.stats["position_updates_sent"] == 2
