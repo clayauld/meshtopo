@@ -75,10 +75,10 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          
+
           # Run version bump
           semantic-release version
-          
+
           # Determine if a release was made
           if git log -1 --pretty=%B | grep -q "chore(release):"; then
             echo "released=true" >> $GITHUB_OUTPUT
@@ -89,7 +89,7 @@ jobs:
           else
             echo "released=false" >> $GITHUB_OUTPUT
           fi
-          
+
           # Push and create GH release
           semantic-release publish
 

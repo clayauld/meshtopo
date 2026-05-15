@@ -16,25 +16,25 @@ services:
             - "${MQTT_WS_PORT:-9001}:9001"
             - "${MQTT_TLS_PORT:-8883}:8883"
         command:
-          - sh
-          - -c
-          - |
-            cat <<EOF > /mosquitto/config/mosquitto.conf
-            persistence true
-            persistence_location /mosquitto/data/
-            log_dest stdout
-            #log_type all
-            listener 1883
-            protocol mqtt
-            listener 8883
-            certfile /mosquitto/certs/meshtopo.yourorg.org.crt
-            keyfile /mosquitto/certs/meshtopo.yourorg.org.key
-            listener 9001
-            protocol websockets
-            allow_anonymous true
-            password_file /mosquitto/config/passwd
-            EOF
-            exec mosquitto -c /mosquitto/config/mosquitto.conf
+            - sh
+            - -c
+            - |
+                cat <<EOF > /mosquitto/config/mosquitto.conf
+                persistence true
+                persistence_location /mosquitto/data/
+                log_dest stdout
+                #log_type all
+                listener 1883
+                protocol mqtt
+                listener 8883
+                certfile /mosquitto/certs/meshtopo.yourorg.org.crt
+                keyfile /mosquitto/certs/meshtopo.yourorg.org.key
+                listener 9001
+                protocol websockets
+                allow_anonymous true
+                password_file /mosquitto/config/passwd
+                EOF
+                exec mosquitto -c /mosquitto/config/mosquitto.conf
         volumes:
             - /mnt/user/appdata/meshtopo/data:/mosquitto/data
             - /mnt/user/appdata/meshtopo/logs/mosquitto/:/mosquitto/log
@@ -44,7 +44,12 @@ services:
         networks:
             - meshtopo
         healthcheck:
-            test: ["CMD-SHELL", "export MQTT_USER=$$(awk '/^mqtt:/{f=1} f&&/username:/{print $$2; exit}' /mosquitto/config/config.yaml) && export MQTT_PASSWORD=$$(awk '/^mqtt:/{f=1} f&&/password:/{print $$2; exit}' /mosquitto/config/config.yaml) && mosquitto_pub -h localhost -u $$MQTT_USER -P $$MQTT_PASSWORD -t test -m healthcheck"]
+            test:
+                - "CMD-SHELL"
+                - |
+                  export MQTT_USER=$$(awk '/^mqtt:/{f=1} f&&/username:/{print $$2; exit}' /mosquitto/config/config.yaml) && \
+                  export MQTT_PASSWORD=$$(awk '/^mqtt:/{f=1} f&&/password:/{print $$2; exit}' /mosquitto/config/config.yaml) && \
+                  mosquitto_pub -h localhost -u $$MQTT_USER -P $$MQTT_PASSWORD -t test -m healthcheck
             interval: 30s
             timeout: 10s
             retries: 3
