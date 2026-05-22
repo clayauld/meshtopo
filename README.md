@@ -8,6 +8,12 @@ A lightweight Python gateway service that bridges Meshtastic LoRa mesh networks 
 
 ---
 
+> [!IMPORTANT]
+> * This project is under **active** development.
+> * Expect bugs and breaking changes.
+
+---
+
 ## What is `meshtopo`?
 
 **MeshTopo** solves the communication gap between off-grid LoRa mesh networks (Meshtastic) and online mapping platforms (CalTopo). It acts as a reliable bridge that forwards location data from Meshtastic nodes directly to CalTopo maps, providing real-time situational awareness for backcountry coordinators, event organizers, and response teams.
