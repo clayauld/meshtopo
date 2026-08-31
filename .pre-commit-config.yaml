@@ -37,7 +37,7 @@ repos:
 
   # Python formatting
   - repo: https://github.com/psf/black
-    rev: 26.3.1
+    rev: 26.5.1
     hooks:
       - id: black
         language_version: python3
@@ -45,7 +45,7 @@ repos:
 
   # Python import sorting
   - repo: https://github.com/pycqa/isort
-    rev: 9.0.0a3
+    rev: 9.0.1
     hooks:
       - id: isort
         files: ^(src|tests|scripts|config)/.*\.py$
@@ -62,7 +62,7 @@ repos:
 
   # Python type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.0.0
+    rev: v2.3.1
     hooks:
       - id: mypy
         additional_dependencies: [pydantic, types-PyYAML, types-requests, aiohttp, aiohttp-jinja2]
@@ -86,7 +86,7 @@ repos:
 
   # Dockerfile linting
   - repo: https://github.com/hadolint/hadolint
-    rev: v2.14.0
+    rev: v2.15.1
     hooks:
       - id: hadolint-docker
         args: [--ignore, DL3008, --ignore, DL3009]
@@ -99,21 +99,21 @@ repos:
 
   # Shell script linting
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.11.0.1
+    rev: v0.11.0.1-1
     hooks:
       - id: shellcheck
         args: [-e, SC1091]
 
   # Markdown linting
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.48.0
+    rev: v0.49.1
     hooks:
       - id: markdownlint
         args: [--fix, --config, .markdownlint.json]
 
   # Conventional Commits
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.15.1
+    rev: v4.18.0
     hooks:
       - id: commitizen
         stages: [commit-msg]
